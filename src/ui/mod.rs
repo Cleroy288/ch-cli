@@ -8,6 +8,7 @@ use crate::domain::{INPUT_BOX_HEIGHT, TITLE_BOX_HEIGHT};
 
 pub mod components;
 pub mod layout;
+pub mod strings;
 pub mod styles;
 
 // Re-export the goodbye message function for convenience

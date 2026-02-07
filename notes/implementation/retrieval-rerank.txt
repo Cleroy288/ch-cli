@@ -1,0 +1,198 @@
+================================================================================
+SEMANTIC RERANKING - IMPLEMENTATION NOTES
+================================================================================
+
+Date: 2026-01-31
+Status: Phase 4 Complete
+
+================================================================================
+DESIGN DECISIONS
+================================================================================
+
+1. Cross-Encoder Model Choice
+   - Chose BAAI/bge-reranker-base for good balance of quality/speed
+   - ~278M params, ~1.1GB memory
+   - Alternatives: bge-reranker-large (better but slower)
+
+2. Scoring Approach
+   - Process (query, document) pairs through BERT
+   - Use [CLS] token embedding -> linear classifier -> sigmoid
+   - Output: relevance probability (0-1)
+
+3. Integration Strategy
+   - Reranker loaded in daemon alongside embedder
+   - Fallback to position-based scores if model not loaded
+   - Score documents in batch for efficiency
+
+4. Candidate Expansion
+   - Fetch 3x limit from hybrid search when reranking
+   - More candidates = better chance of finding relevant results
+   - Reranker filters down to best matches
+
+================================================================================
+IMPLEMENTATION DETAILS
+================================================================================
+
+BgeReranker (cross_encoder.rs)
+------------------------------
+- Loads BERT model with classification head
+- Tokenizes (query, document) pairs with [SEP] separator
+- Forward pass: tokens -> BERT -> [CLS] -> linear -> sigmoid
+
+Key methods:
+- score(query, document) -> f32
+- score_batch(query, documents) -> Vec<f32>
+- score_pairs(pairs) -> Vec<f32>
+
+Daemon Integration (server.rs)
+------------------------------
+- Reranker loaded in load_models() alongside embedder
+- DaemonRequest::Rerank handled with actual model
+- Fallback: 1/(rank+1) scores if model unavailable
+
+Search Integration (commands.rs)
+--------------------------------
+- Added --rerank flag to Search command
+- rerank_results() function calls daemon
+- Documents formatted as "{kind} {name} {signature}"
+- Results sorted by rerank score, truncated to limit
+
+================================================================================
+CLASSIFIER HEAD LOADING
+================================================================================
+
+BGE reranker weights use different naming conventions:
+- Tried: "classifier.weight", "score.weight", "cls.predictions..."
+- If not found: random init with warning (needs fine-tuning)
+
+Weight loading code:
+```rust
+for (w_name, _b_name) in weight_names.iter().zip(bias_names.iter()) {
+    if let Ok(linear) = candle_nn::linear(hidden_size, 1, vb.pp(...)) {
+        return Ok(linear);
+    }
+}
+// Fallback: random initialization
+```
+
+================================================================================
+RESULT FORMAT
+================================================================================
+
+HybridSearchResult extended with rerank_score:
+```rust
+pub struct HybridSearchResult {
+    pub symbol: Symbol,
+    pub rrf_score: f32,
+    pub keyword_rank: Option<usize>,
+    pub semantic_rank: Option<usize>,
+    pub keyword_score: Option<f32>,
+    pub semantic_distance: Option<f32>,
+    pub rerank_score: Option<f32>,  // NEW
+}
+```
+
+Output shows rerank score as R:x.xxx:
+```
+  1. fn foo (file.rs:10) [RRF:0.032 K:1 S:3 R:0.892]
+```
+
+================================================================================
+CLI CHANGES
+================================================================================
+
+Added --rerank flag:
+```rust
+Search {
+    // ...existing fields...
+
+    /// Rerank results using cross-encoder
+    #[arg(short, long)]
+    rerank: bool,
+}
+```
+
+Usage:
+```bash
+ch-cli search --semantic --rerank "query"
+ch-cli search --semantic --rerank --context "query"
+```
+
+================================================================================
+TESTING
+================================================================================
+
+Unit tests (cross_encoder.rs):
+- test_score_single - single pair scoring
+- test_score_batch - batch scoring, relevance ordering
+
+Manual testing:
+1. Start daemon: ch-cli daemon start
+2. Wait for reranker to load
+3. Run: ch-cli search --semantic --rerank "some function"
+4. Verify R: scores appear in output
+5. Check ordering differs from non-reranked
+
+================================================================================
+KNOWN ISSUES
+================================================================================
+
+1. Classifier weight names vary
+   - Different BGE versions use different names
+   - Fallback to random init may give poor scores
+
+2. No caching of rerank scores
+   - Same query/doc recomputed each time
+   - Could cache for repeated queries
+
+3. Document truncation
+   - Long signatures truncated at 512 tokens
+   - May lose important context
+
+================================================================================
+FILES CREATED/MODIFIED
+================================================================================
+
+Created:
+- src/retrieval/rerank/mod.rs
+- src/retrieval/rerank/cross_encoder.rs
+- doc/retrieval/reranking.md
+- notes/implementation/retrieval-rerank.txt
+
+Modified:
+- src/retrieval/mod.rs (added pub mod rerank, exports)
+- src/retrieval/daemon/server.rs (reranker loading, handling)
+- src/retrieval/hybrid/mod.rs (rerank_score field)
+- src/cli/mod.rs (--rerank flag)
+- src/cli/commands.rs (rerank_results function)
+- src/main.rs (pass rerank flag)
+
+================================================================================
+NEXT STEPS (Phase 5: Query Expansion)
+================================================================================
+
+1. LLM Integration
+   - Load Phi-3-mini into daemon
+   - Interpret natural language queries
+   - Extract symbol names and intent
+
+2. SearchSpec Generation
+   - Convert query to structured search
+   - Symbol names, file filters, context hints
+
+3. CLI Integration
+   - Automatic query expansion when using --semantic
+
+================================================================================
+MEMORY BUDGET CHECK
+================================================================================
+
+Current daemon memory usage:
+- BGE embedder (bge-small-en-v1.5): ~130MB
+- BGE reranker (bge-reranker-base): ~1.1GB
+- Total: ~1.3GB
+
+Remaining budget for Phi-3 LLM: ~4GB
+Total target: ~6GB (as per user's choice)
+
+================================================================================

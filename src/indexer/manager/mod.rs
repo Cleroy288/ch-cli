@@ -1,0 +1,22 @@
+//! Index Manager - High-level orchestration for semantic indexing.
+//!
+//! This module provides the main entry point for indexing entire projects,
+//! coordinating the crawler, parser, search index, and semantic analysis.
+//!
+//! Supports both full and incremental indexing with persistent storage.
+
+mod builder;
+mod config;
+mod error;
+mod helpers;
+mod incremental;
+mod indexing;
+mod parsing;
+mod query;
+mod types;
+mod watching;
+
+// Re-export public types
+pub use builder::IndexManager;
+pub use error::{IndexError, IndexManagerResult};
+pub use types::{IndexResult, IndexStats, ProgressCallback, WatchCallback};

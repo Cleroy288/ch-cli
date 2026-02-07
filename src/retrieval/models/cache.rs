@@ -1,6 +1,7 @@
-//! Model Weight Caching
+//! Model Weight Cache - Core
 //!
-//! Provides caching for downloaded model weights to avoid re-downloading.
+//! Provides caching for downloaded model weights to avoid
+//! re-downloading. Stores metadata in cache.json.
 
 use std::collections::HashMap;
 use std::fs;
@@ -31,14 +32,16 @@ pub struct CachedModel {
 #[derive(Debug)]
 pub struct ModelCache {
 	/// base directory for cache
-	cache_dir: PathBuf,
+	pub(crate) cache_dir: PathBuf,
 	/// cached model metadata
-	models: HashMap<String, CachedModel>,
+	pub(crate) models: HashMap<String, CachedModel>,
 }
 
 impl ModelCache {
 	/// Create a new model cache at the specified directory
-	pub fn new(cache_dir: impl AsRef<Path>) -> ModelResult<Self> {
+	pub fn new(
+		cache_dir: impl AsRef<Path>,
+	) -> ModelResult<Self> {
 		let cache_dir = cache_dir.as_ref().to_path_buf();
 		fs::create_dir_all(&cache_dir)?;
 
@@ -55,10 +58,9 @@ impl ModelCache {
 		&self.cache_dir
 	}
 
-	/// Check if a model is cached
+	/// Check if a model is cached (files must exist)
 	pub fn is_cached(&self, model_id: &str) -> bool {
 		if let Some(cached) = self.models.get(model_id) {
-			// verify files still exist
 			cached.weights_path.exists()
 				&& cached.tokenizer_path.exists()
 				&& cached.config_path.exists()
@@ -68,67 +70,71 @@ impl ModelCache {
 	}
 
 	/// Get cached model info
-	pub fn get(&self, model_id: &str) -> Option<&CachedModel> {
+	pub fn get(
+		&self,
+		model_id: &str,
+	) -> Option<&CachedModel> {
 		self.models.get(model_id)
 	}
 
 	/// Add a model to the cache
-	pub fn add(&mut self, model: CachedModel) -> ModelResult<()> {
-		self.models.insert(model.model_id.clone(), model);
+	pub fn add(
+		&mut self,
+		model: CachedModel,
+	) -> ModelResult<()> {
+		self.models
+			.insert(model.model_id.clone(), model);
 		self.save_metadata()
 	}
+}
 
-	/// Remove a model from the cache
-	pub fn remove(&mut self, model_id: &str) -> ModelResult<()> {
-		if let Some(cached) = self.models.remove(model_id) {
-			// delete files
-			let _ = fs::remove_file(&cached.weights_path);
-			let _ = fs::remove_file(&cached.tokenizer_path);
-			let _ = fs::remove_file(&cached.config_path);
-		}
-		self.save_metadata()
-	}
-
-	/// Get total cache size in bytes
-	pub fn total_size(&self) -> u64 {
-		self.models.values().map(|m| m.size_bytes).sum()
-	}
-
-	/// List all cached models
-	pub fn list(&self) -> Vec<&CachedModel> {
-		self.models.values().collect()
-	}
-
+/// Internal cache operations.
+impl ModelCache {
 	/// Load metadata from disk
 	fn load_metadata(&mut self) -> ModelResult<()> {
-		let metadata_path = self.cache_dir.join("cache.json");
-		if metadata_path.exists() {
-			let content = fs::read_to_string(&metadata_path)?;
+		let path = self.cache_dir.join("cache.json");
+		if path.exists() {
+			let content = fs::read_to_string(&path)?;
 			self.models = serde_json::from_str(&content)
-				.map_err(|e| ModelError::Hub(format!("cache metadata: {}", e)))?;
+				.map_err(|e| {
+					ModelError::Hub(format!(
+						"cache metadata: {}",
+						e
+					))
+				})?;
 		}
 		Ok(())
 	}
 
 	/// Save metadata to disk
-	fn save_metadata(&self) -> ModelResult<()> {
-		let metadata_path = self.cache_dir.join("cache.json");
-		let content = serde_json::to_string_pretty(&self.models)
-			.map_err(|e| ModelError::Hub(format!("serialize cache: {}", e)))?;
-		fs::write(&metadata_path, content)?;
+	pub(crate) fn save_metadata(
+		&self,
+	) -> ModelResult<()> {
+		let path = self.cache_dir.join("cache.json");
+		let content =
+			serde_json::to_string_pretty(&self.models)
+				.map_err(|e| {
+					ModelError::Hub(format!(
+						"serialize cache: {}",
+						e
+					))
+				})?;
+		fs::write(&path, content)?;
 		Ok(())
 	}
-}
 
-impl Default for ModelCache {
-	fn default() -> Self {
-		let cache_dir = directories::ProjectDirs::from("com", "ch-cli", "ch-cli")
-			.map(|d| d.cache_dir().join("models"))
-			.unwrap_or_else(|| PathBuf::from(".ch-cli/models"));
+	/// Get mutable reference to models map
+	pub(crate) fn models_mut(
+		&mut self,
+	) -> &mut HashMap<String, CachedModel> {
+		&mut self.models
+	}
 
-		Self::new(cache_dir).unwrap_or_else(|_| Self {
-			cache_dir: PathBuf::from(".ch-cli/models"),
-			models: HashMap::new(),
-		})
+	/// Get reference to models map
+	pub(crate) fn models(
+		&self,
+	) -> &HashMap<String, CachedModel> {
+		&self.models
 	}
 }
+

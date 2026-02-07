@@ -31,29 +31,10 @@ pub use rerank::{BgeReranker, RerankedItem};
 
 use std::path::PathBuf;
 
-use thiserror::Error;
-
-/// Errors that can occur in the retrieval module
-#[derive(Error, Debug)]
-pub enum RetrievalError {
-	#[error("Daemon not running: {0}")]
-	DaemonNotRunning(String),
-
-	#[error("Daemon communication error: {0}")]
-	DaemonCommunication(String),
-
-	#[error("Model loading error: {0}")]
-	ModelLoading(String),
-
-	#[error("Embedding error: {0}")]
-	Embedding(String),
-
-	#[error("IO error: {0}")]
-	Io(#[from] std::io::Error),
-}
-
-/// Result type for retrieval operations
-pub type RetrievalResult<T> = Result<T, RetrievalError>;
+// Re-export errors from domain for backward compat
+pub use crate::domain::errors::retrieval::{
+	RetrievalError, RetrievalResult,
+};
 
 /// Configuration for the retrieval system
 #[derive(Debug, Clone)]
@@ -75,9 +56,11 @@ pub struct RetrievalConfig {
 impl Default for RetrievalConfig {
 	/// Create default configuration using platform-specific directories
 	fn default() -> Self {
-		let base_dir = directories::ProjectDirs::from("com", "ch-cli", "ch-cli")
-			.map(|d| d.data_dir().to_path_buf())
-			.unwrap_or_else(|| PathBuf::from(".ch-cli"));
+		let base_dir = directories::ProjectDirs::from(
+			"com", "ch-cli", "ch-cli"
+		)
+		.map(|d| d.data_dir().to_path_buf())
+		.unwrap_or_else(|| PathBuf::from(".ch-cli"));
 
 		Self {
 			socket_path: base_dir.join("ml.sock"),
@@ -85,7 +68,8 @@ impl Default for RetrievalConfig {
 			model_cache: base_dir.join("models"),
 			embedding_model: "BAAI/bge-small-en-v1.5".to_string(),
 			reranker_model: "BAAI/bge-reranker-base".to_string(),
-			expansion_model: "microsoft/phi-3-mini-4k-instruct".to_string(),
+			expansion_model:
+				"microsoft/phi-3-mini-4k-instruct".to_string(),
 		}
 	}
 }

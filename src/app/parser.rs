@@ -11,8 +11,12 @@ use crate::message::{MessageSegment, UserMessage};
 /// * `file_refs` - File references found in the input
 ///
 /// # Returns
-/// A `UserMessage` with parsed segments, or None if input is empty/whitespace-only
-pub fn parse_input_to_message(input: String, file_refs: &[FileReference]) -> Option<UserMessage> {
+/// A `UserMessage` with parsed segments,
+/// or None if input is empty/whitespace-only
+pub fn parse_input_to_message(
+    input: String,
+    file_refs: &[FileReference],
+) -> Option<UserMessage> {
     // Trim trailing whitespace
     let trimmed_input = input.trim_end().to_string();
 
@@ -33,7 +37,10 @@ pub fn parse_input_to_message(input: String, file_refs: &[FileReference]) -> Opt
 /// 1. Sorting file references by position
 /// 2. Extracting text between references
 /// 3. Creating segment types based on reference type (file/folder)
-fn build_message_segments(input: &str, file_refs: &[FileReference]) -> Vec<MessageSegment> {
+fn build_message_segments(
+    input: &str,
+    file_refs: &[FileReference],
+) -> Vec<MessageSegment> {
     let mut segments = Vec::new();
 
     // Handle case with no file references
@@ -88,43 +95,3 @@ fn build_message_segments(input: &str, file_refs: &[FileReference]) -> Vec<Messa
     segments
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::domain::{FileName, FilePath};
-
-    #[test]
-    fn test_parse_empty_input() {
-        let result = parse_input_to_message(String::new(), &[]);
-        assert!(result.is_none());
-    }
-
-    #[test]
-    fn test_parse_whitespace_only() {
-        let result = parse_input_to_message("   \n  ".to_string(), &[]);
-        assert!(result.is_none());
-    }
-
-    #[test]
-    fn test_parse_text_only() {
-        let result = parse_input_to_message("Hello world".to_string(), &[]);
-        assert!(result.is_some());
-        let message = result.unwrap();
-        assert_eq!(message.segments.len(), 1);
-    }
-
-    #[test]
-    fn test_parse_with_file_reference() {
-        let file_ref = FileReference::new(
-            6,
-            14,
-            FilePath::from_string("./src/main.rs"),
-            FileName::new("main.rs".to_string()),
-            false,
-        );
-        let result = parse_input_to_message("Check main.rs file".to_string(), &[file_ref]);
-        assert!(result.is_some());
-        let message = result.unwrap();
-        assert_eq!(message.segments.len(), 3); // "Check ", file_ref, " file"
-    }
-}

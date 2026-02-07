@@ -1,0 +1,546 @@
+================================================================================
+MODEL LOADING FIXES - IMPLEMENTATION NOTES
+================================================================================
+
+Date: 2026-01-31
+Status: COMPLETE ✓
+
+================================================================================
+FIXES IMPLEMENTED
+================================================================================
+
+PHASE A: Reranker (XLM-RoBERTa) - COMPLETE ✓
+- Updated candle-transformers from 0.8 to 0.9
+- Replaced BertModel with XLMRobertaForSequenceClassification
+- Model now loads successfully
+
+PHASE B: Sharded Model Loading (Phi-3) - COMPLETE ✓
+- Added ShardIndex struct to parse model.safetensors.index.json
+- Updated download_model() to handle sharded models
+- Updated ModelInfo to use weights_paths: Vec<PathBuf>
+- Phi-3 (7.6GB, 2 shards) now loads successfully
+
+================================================================================
+TEST RESULTS
+================================================================================
+
+All 3 models load successfully:
+- BAAI/bge-small-en-v1.5 (embeddings) ✓
+- BAAI/bge-reranker-base (reranker) ✓
+- microsoft/phi-3-mini-4k-instruct (query expansion) ✓
+
+Full pipeline test passed:
+$ ch-cli retrieve "How does hybrid search work? What is RRF fusion?"
+- Query expansion: Detected "RRF" symbol
+- Hybrid search: Found 15 candidates
+- Reranking: Applied cross-encoder scoring
+- Context expansion: Generated XML with line numbers
+- Time: 9234ms
+
+================================================================================
+ERRORS ENCOUNTERED
+================================================================================
+
+Two model loading errors prevent full pipeline functionality:
+
+ERROR 1: Reranker Model (BGE-reranker-base)
+-------------------------------------------
+Error message:
+  "Candle error: cannot find tensor embeddings.word_embeddings.weight"
+
+Root cause:
+  - BGE-reranker-base uses XLM-RoBERTa architecture (NOT BERT)
+  - Current code uses: candle_transformers::models::bert::BertModel
+  - XLM-RoBERTa weight names: "roberta.embeddings.word_embeddings.weight"
+  - BERT weight names: "bert.embeddings.word_embeddings.weight"
+  - VarBuilder cannot find tensors because prefixes don't match
+
+Model info (from HuggingFace):
+  - Model type: xlm-roberta
+  - Architecture: XLMRobertaForSequenceClassification
+  - Hidden size: 768
+  - Layers: 12
+  - Attention heads: 12
+  - Vocab size: 250,002
+
+
+ERROR 2: LLM Model (Phi-3-mini-4k-instruct)
+-------------------------------------------
+Error message:
+  "Model file not found: weights: request error:
+   https://huggingface.co/microsoft/Phi-3-mini-4k-instruct/resolve/main/pytorch_model.bin:
+   status code 404"
+
+Root cause:
+  - Phi-3 model weights are SHARDED into multiple files
+  - Files: model-00001-of-00002.safetensors, model-00002-of-00002.safetensors
+  - Total size: ~7.6GB split across 2 files
+  - Current download_model() only tries: model.safetensors, pytorch_model.bin
+  - Neither exists - only sharded versions available
+
+Model file structure:
+  - model.safetensors.index.json (manifest with weight_map)
+  - model-00001-of-00002.safetensors (~4.97GB, layers 0-20)
+  - model-00002-of-00002.safetensors (~2.67GB, layers 21-31 + lm_head)
+
+
+================================================================================
+FIX PLAN
+================================================================================
+
+PHASE A: Fix Reranker (XLM-RoBERTa)
+-----------------------------------
+
+Step A1: Check candle-transformers for XLM-RoBERTa support
+  - candle-transformers 0.9.2 has xlm_roberta module
+  - API: candle_transformers::models::xlm_roberta
+
+Step A2: Update cross_encoder.rs
+  Files to modify:
+  - src/retrieval/rerank/cross_encoder.rs
+
+  Changes:
+  1. Replace BERT import:
+     - OLD: use candle_transformers::models::bert::{BertModel, Config as BertConfig};
+     - NEW: use candle_transformers::models::xlm_roberta::{XLMRobertaModel, Config};
+
+  2. Update struct:
+     - OLD: model: BertModel
+     - NEW: model: XLMRobertaModel
+
+  3. Update config parsing:
+     - XLM-RoBERTa config has same fields as BERT config
+     - May need custom Config struct if candle's doesn't match
+
+  4. Update model loading:
+     - OLD: BertModel::load(vb.clone(), &config)?
+     - NEW: XLMRobertaModel::load(vb.pp("roberta"), &config)?
+     - Note: need to prefix with "roberta" to match weight names
+
+  5. Update classifier loading:
+     - XLM-RoBERTa classifier weights: "classifier.weight", "classifier.bias"
+     - May be at root level, not prefixed
+
+Step A3: Test reranker
+  - ch-cli daemon stop
+  - cargo build --release
+  - ch-cli daemon start
+  - Check status shows reranker loaded
+
+
+PHASE B: Fix Sharded Model Loading (Phi-3)
+------------------------------------------
+
+Step B1: Update download_model() in models/mod.rs
+  Files to modify:
+  - src/retrieval/models/mod.rs
+
+  Changes:
+  1. Add ModelInfo field for multiple weight files:
+     - OLD: weights_path: PathBuf
+     - NEW: weights_paths: Vec<PathBuf>
+
+  2. Add sharded model detection:
+     ```rust
+     fn download_model(model_id: &str) -> ModelResult<ModelInfo> {
+         let api = Api::new()?;
+         let repo = api.model(model_id.to_string());
+
+         // Try single file first
+         if let Ok(path) = repo.get("model.safetensors") {
+             return Ok(ModelInfo { weights_paths: vec![path], ... });
+         }
+
+         // Try sharded model (index file)
+         if let Ok(index_path) = repo.get("model.safetensors.index.json") {
+             let index: ShardIndex = serde_json::from_str(&fs::read_to_string(&index_path)?)?;
+             let shards: Vec<PathBuf> = index.weight_map.values()
+                 .collect::<HashSet<_>>()  // unique shard names
+                 .into_iter()
+                 .map(|name| repo.get(name))
+                 .collect::<Result<_, _>>()?;
+             return Ok(ModelInfo { weights_paths: shards, ... });
+         }
+
+         // Fallback to pytorch
+         let path = repo.get("pytorch_model.bin")?;
+         Ok(ModelInfo { weights_paths: vec![path], ... })
+     }
+     ```
+
+  3. Add ShardIndex struct:
+     ```rust
+     #[derive(Deserialize)]
+     struct ShardIndex {
+         metadata: ShardMetadata,
+         weight_map: HashMap<String, String>,
+     }
+
+     #[derive(Deserialize)]
+     struct ShardMetadata {
+         total_size: u64,
+     }
+     ```
+
+Step B2: Update weight loading in all consumers
+  Files to modify:
+  - src/retrieval/hybrid/embedding.rs
+  - src/retrieval/rerank/cross_encoder.rs
+  - src/retrieval/query/llm.rs
+
+  Changes:
+  - Update VarBuilder creation to accept multiple paths:
+    ```rust
+    // OLD
+    VarBuilder::from_mmaped_safetensors(&[weights_path], DType::F32, &device)?
+
+    // NEW
+    VarBuilder::from_mmaped_safetensors(&model_info.weights_paths, DType::F32, &device)?
+    ```
+
+Step B3: Test LLM loading
+  - ch-cli daemon stop
+  - cargo build --release
+  - ch-cli daemon start (will download ~7.6GB on first run)
+  - Check status shows LLM loaded
+
+
+================================================================================
+VERIFICATION
+================================================================================
+
+After both fixes:
+
+1. Check daemon status:
+   $ ch-cli daemon status
+
+   Expected output:
+   Loaded Models:
+     - BAAI/bge-small-en-v1.5 (embeddings)
+     - BAAI/bge-reranker-base (reranker)
+     - microsoft/phi-3-mini-4k-instruct (query expansion)
+
+2. Test full pipeline:
+   $ ch-cli retrieve "How does hybrid search work?" --limit 5
+
+   Expected:
+   - Query expansion: Interprets query semantically
+   - Hybrid search: Returns relevant code
+   - Reranking: Orders by relevance
+   - Context expansion: Provides caller/callee info
+
+3. Compare with Augment MCP:
+   - Same query to both tools
+   - Compare result quality
+   - Document findings
+
+
+================================================================================
+DEPENDENCIES
+================================================================================
+
+Cargo.toml already has required dependencies:
+- candle-core = "0.8"
+- candle-nn = "0.8"
+- candle-transformers = "0.8"
+- hf-hub = "0.4"
+- serde = { version = "1.0", features = ["derive"] }
+- serde_json = "1.0"
+
+No new dependencies needed.
+
+
+================================================================================
+RISKS & MITIGATIONS
+================================================================================
+
+Risk 1: XLM-RoBERTa API differences
+  - Mitigation: Check candle-transformers source for exact API
+  - Fallback: Implement custom XLM-RoBERTa loader if needed
+
+Risk 2: Large download time for Phi-3 (~7.6GB)
+  - Mitigation: hf-hub caches downloads, only first run is slow
+  - User info: Add progress indication during download
+
+Risk 3: Memory usage with all models loaded
+  - Current: ~130MB (embedder only)
+  - Target: ~5.3GB (all models)
+  - User's budget: ~6GB
+  - Status: Within budget
+
+Risk 4: Sharded model index format changes
+  - Mitigation: Parse index.json defensively
+  - Fallback: Hard-code common shard patterns if parsing fails
+
+
+================================================================================
+DETAILED IMPLEMENTATION CODE
+================================================================================
+
+PHASE A: Reranker Fix (cross_encoder.rs)
+----------------------------------------
+
+NEW cross_encoder.rs (key changes):
+
+```rust
+//! BGE Cross-Encoder Reranker (XLM-RoBERTa based)
+
+use std::path::Path;
+
+use candle_core::{DType, Device, Tensor};
+use candle_nn::VarBuilder;
+// CHANGE: Use XLM-RoBERTa instead of BERT
+use candle_transformers::models::xlm_roberta::{
+    Config as XLMRobertaConfig,
+    XLMRobertaForSequenceClassification,
+};
+use tokenizers::{PaddingParams, Tokenizer, TruncationParams};
+
+use crate::retrieval::models::{download_model, get_device, load_tokenizer};
+use crate::retrieval::models::{ModelError, ModelResult};
+
+pub const DEFAULT_RERANKER: &str = "BAAI/bge-reranker-base";
+pub const MAX_SEQ_LEN: usize = 512;
+
+pub struct BgeReranker {
+    // CHANGE: Use XLMRobertaForSequenceClassification (includes classifier)
+    model: XLMRobertaForSequenceClassification,
+    tokenizer: Tokenizer,
+    device: Device,
+}
+
+impl BgeReranker {
+    pub fn from_paths(
+        weights_path: &Path,
+        tokenizer_path: &Path,
+        config_path: &Path,
+        device: Device,
+    ) -> ModelResult<Self> {
+        // Load config
+        let config_str = std::fs::read_to_string(config_path)?;
+        let config: XLMRobertaConfig = serde_json::from_str(&config_str)
+            .map_err(|e| ModelError::WeightLoad(format!("config: {}", e)))?;
+
+        // Load weights
+        let vb = unsafe {
+            VarBuilder::from_mmaped_safetensors(&[weights_path], DType::F32, &device)?
+        };
+
+        // CHANGE: Create XLMRobertaForSequenceClassification with num_labels=1
+        let model = XLMRobertaForSequenceClassification::new(1, &config, vb)?;
+
+        // Load tokenizer
+        let mut tokenizer = load_tokenizer(&tokenizer_path.to_path_buf())?;
+        configure_tokenizer(&mut tokenizer);
+
+        Ok(Self { model, tokenizer, device })
+    }
+
+    pub fn score_pairs(&self, pairs: &[(String, String)]) -> ModelResult<Vec<f32>> {
+        // ... tokenization same as before ...
+
+        // CHANGE: Forward returns logits directly
+        let logits = self.model.forward(
+            &token_ids_tensor,
+            &attention_mask_tensor,
+            &token_type_ids_tensor,
+        )?;
+
+        // Apply sigmoid for probability
+        let scores = candle_nn::ops::sigmoid(&logits)?;
+        let scores_squeezed = scores.squeeze(1)?;
+        Ok(scores_squeezed.to_vec1::<f32>()?)
+    }
+}
+```
+
+
+PHASE B: Sharded Model Loading (models/mod.rs)
+----------------------------------------------
+
+NEW models/mod.rs (key changes):
+
+```rust
+use std::collections::HashSet;
+use std::path::PathBuf;
+
+use hf_hub::api::sync::Api;
+use serde::Deserialize;
+
+/// Information about a downloaded model
+#[derive(Debug, Clone)]
+pub struct ModelInfo {
+    pub model_id: String,
+    // CHANGE: Support multiple weight files for sharded models
+    pub weights_paths: Vec<PathBuf>,
+    pub tokenizer_path: PathBuf,
+    pub config_path: PathBuf,
+}
+
+/// Sharded model index structure
+#[derive(Deserialize)]
+struct ShardIndex {
+    #[serde(default)]
+    metadata: Option<ShardMetadata>,
+    weight_map: std::collections::HashMap<String, String>,
+}
+
+#[derive(Deserialize)]
+struct ShardMetadata {
+    #[serde(default)]
+    total_size: u64,
+}
+
+/// Download model files from HuggingFace Hub
+/// Handles both single-file and sharded models
+pub fn download_model(model_id: &str) -> ModelResult<ModelInfo> {
+    let api = Api::new().map_err(|e| ModelError::Hub(e.to_string()))?;
+    let repo = api.model(model_id.to_string());
+
+    // Download tokenizer
+    let tokenizer_path = repo
+        .get("tokenizer.json")
+        .map_err(|e| ModelError::FileNotFound(format!("tokenizer: {}", e)))?;
+
+    // Download config
+    let config_path = repo
+        .get("config.json")
+        .map_err(|e| ModelError::FileNotFound(format!("config: {}", e)))?;
+
+    // Try to download weights (single file or sharded)
+    let weights_paths = download_weights(&repo)?;
+
+    Ok(ModelInfo {
+        model_id: model_id.to_string(),
+        weights_paths,
+        tokenizer_path,
+        config_path,
+    })
+}
+
+/// Download model weights, handling sharded models
+fn download_weights(repo: &hf_hub::api::sync::ApiRepo) -> ModelResult<Vec<PathBuf>> {
+    // Try 1: Single safetensors file
+    if let Ok(path) = repo.get("model.safetensors") {
+        return Ok(vec![path]);
+    }
+
+    // Try 2: Sharded safetensors (check for index file)
+    if let Ok(index_path) = repo.get("model.safetensors.index.json") {
+        let index_content = std::fs::read_to_string(&index_path)?;
+        let index: ShardIndex = serde_json::from_str(&index_content)
+            .map_err(|e| ModelError::WeightLoad(format!("index parse: {}", e)))?;
+
+        // Get unique shard file names
+        let shard_names: HashSet<&String> = index.weight_map.values().collect();
+        let mut shard_paths = Vec::new();
+
+        for shard_name in shard_names {
+            let path = repo
+                .get(shard_name)
+                .map_err(|e| ModelError::FileNotFound(format!("shard {}: {}", shard_name, e)))?;
+            shard_paths.push(path);
+        }
+
+        // Sort for deterministic ordering
+        shard_paths.sort();
+        return Ok(shard_paths);
+    }
+
+    // Try 3: Single pytorch file (fallback)
+    if let Ok(path) = repo.get("pytorch_model.bin") {
+        return Ok(vec![path]);
+    }
+
+    Err(ModelError::FileNotFound(
+        "No model weights found (tried model.safetensors, sharded, pytorch_model.bin)".to_string()
+    ))
+}
+```
+
+
+PHASE B: Update weight loading in llm.rs
+----------------------------------------
+
+```rust
+// In Phi3Model::from_paths():
+pub fn from_paths(
+    weights_paths: &[PathBuf],  // CHANGE: Accept slice of paths
+    tokenizer_path: &Path,
+    config_path: &Path,
+    device: Device,
+) -> ModelResult<Self> {
+    // Load config
+    let config_str = std::fs::read_to_string(config_path)?;
+    let config: Phi3Config = serde_json::from_str(&config_str)
+        .map_err(|e| ModelError::WeightLoad(format!("config: {}", e)))?;
+
+    // CHANGE: Load all weight shards
+    let vb = unsafe {
+        VarBuilder::from_mmaped_safetensors(weights_paths, DType::F32, &device)?
+    };
+
+    let model = Phi3Model_::new(&config, vb)?;
+    // ... rest same as before
+}
+
+// In Phi3Model::from_model_id():
+pub fn from_model_id(model_id: &str) -> ModelResult<Self> {
+    let device = get_device();
+    let model_info = download_model(model_id)?;
+
+    Self::from_paths(
+        &model_info.weights_paths,  // CHANGE: Pass all paths
+        &model_info.tokenizer_path,
+        &model_info.config_path,
+        device,
+    )
+}
+```
+
+
+================================================================================
+BENCHMARK RESULTS
+================================================================================
+
+After model loading fixes, a comprehensive benchmark was conducted comparing
+ch-cli vs Augment MCP codebase-retrieval tool.
+
+Results: See notes/benchmarks/ch-cli-vs-augment-mcp.md
+
+Key findings:
+- ch-cli: ~9s per query (ML inference overhead)
+- Augment MCP: <1s per query
+- ch-cli retrieval accuracy needs improvement (query expansion issues)
+- ch-cli provides better structured XML output for LLM consumption
+
+Recommendations for improvement:
+1. Filter common words from query expansion ("How", "Where", "What")
+2. Enable GPU acceleration (Metal/CUDA) to reduce inference time
+3. Index documentation files (doc/, notes/) alongside code
+4. Improve reranking document richness
+
+================================================================================
+REFERENCES
+================================================================================
+
+Candle XLM-RoBERTa:
+- https://docs.rs/candle-transformers/latest/candle_transformers/models/xlm_roberta/
+
+BGE Reranker Model:
+- https://huggingface.co/BAAI/bge-reranker-base
+- Architecture: XLMRobertaForSequenceClassification
+
+Phi-3 Model:
+- https://huggingface.co/microsoft/Phi-3-mini-4k-instruct
+- Sharded safetensors (2 files)
+
+HF-Hub Rust:
+- https://docs.rs/hf-hub/latest/hf_hub/
+
+Candle VarBuilder multiple files:
+- VarBuilder::from_mmaped_safetensors accepts &[PathBuf]
+- Merges weights from all files into single namespace
+
+
+================================================================================

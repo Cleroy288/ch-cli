@@ -1,0 +1,212 @@
+================================================================================
+QUERY EXPANSION - IMPLEMENTATION NOTES
+================================================================================
+
+Date: 2026-01-31
+Status: Phase 5 Complete
+
+================================================================================
+DESIGN DECISIONS
+================================================================================
+
+1. LLM Model Choice
+   - Chose microsoft/Phi-3-mini-4k-instruct
+   - 3.8B params, ~4GB memory
+   - Good balance of quality vs resource usage
+   - 4k context window sufficient for queries
+
+2. Prompt Engineering
+   - Structured JSON output format
+   - Clear instructions for symbol extraction
+   - Intent categorization
+   - File filter suggestions
+
+3. Fallback Strategy
+   - Heuristic parsing when LLM unavailable
+   - CamelCase/snake_case word extraction
+   - Keyword-based intent detection
+   - Graceful degradation
+
+4. Integration Approach
+   - QueryInterpreter wraps LLM
+   - Daemon handles Expand requests
+   - Automatic fallback if model fails
+
+================================================================================
+IMPLEMENTATION DETAILS
+================================================================================
+
+Phi3Model (llm.rs)
+------------------
+- Uses candle-transformers phi3 module
+- Loads weights via memory-mapped safetensors
+- Autoregressive text generation
+- Configurable max tokens (default 256)
+
+Key methods:
+- from_model_id(id) -> load from HuggingFace
+- generate(prompt, max_tokens) -> generated text
+- expand_query(query) -> JSON response
+
+QueryInterpreter (interpreter.rs)
+---------------------------------
+- Wraps optional Phi3Model
+- interpret() uses LLM if available
+- Falls back to heuristic parsing
+- Returns SearchSpec
+
+Parsing Utilities (mod.rs)
+--------------------------
+- parse_intent(str) -> QueryIntent enum
+- parse_llm_response(query, json) -> SearchSpec
+- fallback_parse(query) -> SearchSpec
+
+================================================================================
+PROMPT TEMPLATE
+================================================================================
+
+```
+You are a code search assistant. Given a natural language query about code, extract:
+1. Symbol names (functions, classes, structs, etc.) to search for
+2. The user's intent (find_definition, find_usages, understand, modify, debug, search)
+3. File patterns to filter (e.g., "*.rs", "src/auth/**")
+
+Query: {query}
+
+Respond in this exact JSON format:
+{
+  "symbols": ["symbol1", "symbol2"],
+  "intent": "search",
+  "file_patterns": ["*.rs"],
+  "hints": ["any additional context"]
+}
+
+JSON response:
+```
+
+================================================================================
+FALLBACK HEURISTICS
+================================================================================
+
+Symbol extraction:
+- Split query on whitespace
+- Keep words with uppercase or underscore
+- Filter common English words
+
+Intent detection by keywords:
+- "where", "definition" -> FindDefinition
+- "used", "calls", "references" -> FindUsages
+- "how", "what", "explain" -> Understand
+- "fix", "change", "modify" -> Modify
+- "bug", "error", "debug" -> Debug
+- default -> Search
+
+================================================================================
+DAEMON INTEGRATION
+================================================================================
+
+Model loading:
+```rust
+// In load_models()
+match QueryInterpreter::with_model_id(&self.config.expansion_model) {
+    Ok(interp) => {
+        self.interpreter = interp;
+    }
+    Err(e) => {
+        // Use fallback heuristics
+    }
+}
+```
+
+Request handling:
+```rust
+DaemonRequest::Expand { query } => {
+    let spec = self.interpreter.interpret(&query);
+    DaemonResponse::SearchSpec(spec)
+}
+```
+
+Required method signature change:
+- handle_request(&self, ...) -> handle_request(&mut self, ...)
+- handle_client(&self, ...) -> handle_client(&mut self, ...)
+
+================================================================================
+TESTING
+================================================================================
+
+Unit tests:
+- test_parse_intent - intent enum parsing
+- test_fallback_parse - heuristic symbol/intent extraction
+- test_parse_llm_response - JSON parsing
+
+Manual testing:
+1. Start daemon: ch-cli daemon start
+2. Wait for LLM to load (~5-10s)
+3. Run: ch-cli daemon status (verify LLM listed)
+4. Test expansion via daemon client
+
+================================================================================
+KNOWN ISSUES
+================================================================================
+
+1. Large model size
+   - ~4GB memory for Phi-3
+   - May fail on low-memory systems
+   - Fallback provides degraded experience
+
+2. Latency
+   - 200-500ms per query expansion
+   - Not suitable for real-time autocomplete
+
+3. JSON parsing fragility
+   - LLM may produce invalid JSON
+   - Fallback handles this gracefully
+
+4. Context window
+   - 4k tokens may truncate long queries
+   - Usually sufficient for code search
+
+================================================================================
+FILES CREATED/MODIFIED
+================================================================================
+
+Created:
+- src/retrieval/query/mod.rs
+- src/retrieval/query/llm.rs
+- src/retrieval/query/interpreter.rs
+- doc/retrieval/query-expansion.md
+- notes/implementation/retrieval-query.txt
+
+Modified:
+- src/retrieval/mod.rs (added pub mod query, exports)
+- src/retrieval/daemon/server.rs (interpreter field, LLM loading, Expand handler)
+
+================================================================================
+MEMORY BUDGET FINAL
+================================================================================
+
+All models loaded:
+- BGE embedder (bge-small-en-v1.5): ~130MB
+- BGE reranker (bge-reranker-base): ~1.1GB
+- Phi-3 LLM (Phi-3-mini-4k): ~4GB
+- Total: ~5.3GB
+
+Target was ~6GB - within budget!
+
+================================================================================
+NEXT STEPS (Phase 6: Agentic Execution)
+================================================================================
+
+1. RetrievalPipeline Orchestrator
+   - Combine all phases into unified pipeline
+   - Query -> Expand -> Search -> Context -> Rerank -> Output
+
+2. Feedback Loop
+   - Allow LLM to request more context
+   - Iterative refinement of results
+
+3. CLI Integration
+   - ch-cli retrieve "natural language query"
+   - Full pipeline execution
+
+================================================================================

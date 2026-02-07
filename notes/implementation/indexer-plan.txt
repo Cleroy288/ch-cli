@@ -1,0 +1,384 @@
+================================================================================
+SEMANTIC CODE INDEXER - IMPLEMENTATION PLAN
+================================================================================
+
+Project Goal: Build a high-performance semantic code indexer in Rust that provides
+intelligent code search and navigation capabilities using Tree-sitter, Tantivy,
+and Stack-graphs.
+
+References:
+- Tree-sitter: https://tree-sitter.github.io/tree-sitter
+- Tree-sitter Rust docs: https://docs.rs/tree-sitter/0.26.3
+- Tantivy: https://docs.rs/tantivy/latest/tantivy/
+- Stack-graphs: https://github.com/github/stack-graphs/tree/main/stack-graphs
+- Stack-graphs docs: https://docs.rs/stack-graphs/0.14.1
+
+================================================================================
+PHASE 0: PLANNING & ARCHITECTURE
+================================================================================
+
+□ 0.1 Define Core Requirements
+  - [ ] List supported programming languages (start with Rust, expand later)
+  - [ ] Define what symbols to index (functions, structs, traits, variables, etc.)
+  - [ ] Decide on search capabilities (fuzzy, exact, reference finding)
+  - [ ] Define performance targets (index speed, query speed, memory usage)
+
+□ 0.2 Design Module Structure
+  - [ ] Create module hierarchy plan:
+        src/
+        ├── indexer/         # Core indexing logic
+        │   ├── mod.rs
+        │   ├── parser.rs    # Tree-sitter integration
+        │   ├── crawler.rs   # File system crawler
+        │   └── symbols.rs   # Symbol extraction
+        ├── search/          # Search engine
+        │   ├── mod.rs
+        │   ├── tantivy.rs   # Tantivy integration
+        │   └── query.rs     # Query processing
+        ├── semantic/        # Semantic analysis
+        │   ├── mod.rs
+        │   ├── graph.rs     # Stack-graphs integration
+        │   └── resolver.rs  # Name resolution
+        └── cli/             # CLI interface (integrate with existing UI)
+            ├── mod.rs
+            └── commands.rs
+
+□ 0.3 Document Data Models
+  - [ ] Define Symbol struct (name, type, location, scope)
+  - [ ] Define CodeLocation struct (file, line, column, byte offset)
+  - [ ] Define SymbolReference struct (symbol, reference location)
+  - [ ] Define IndexMetadata struct (version, languages, stats)
+
+================================================================================
+PHASE 1: FOUNDATION - TREE-SITTER INTEGRATION
+================================================================================
+
+□ 1.1 Add Dependencies
+  - [ ] Add to Cargo.toml:
+        tree-sitter = "0.26"
+        tree-sitter-rust = "0.23"  # Start with Rust language
+        # Add more language parsers as needed:
+        # tree-sitter-javascript = "*"
+        # tree-sitter-python = "*"
+        # tree-sitter-go = "*"
+
+□ 1.2 Create Basic Parser Module
+  - [ ] Create src/indexer/parser.rs
+  - [ ] Implement LanguageParser trait for abstraction
+  - [ ] Initialize Tree-sitter parser for Rust
+  - [ ] Test: Parse a simple .rs file and print the AST
+
+□ 1.3 Write Tree-sitter Queries
+  - [ ] Create queries/ directory for query files
+  - [ ] Write queries/rust.scm with patterns for:
+        - Function definitions: (function_item)
+        - Struct definitions: (struct_item)
+        - Trait definitions: (trait_item)
+        - Impl blocks: (impl_item)
+        - Variable declarations: (let_declaration)
+        - Type aliases: (type_item)
+  - [ ] Load and compile queries in parser module
+  - [ ] Test: Extract function names from a sample file
+
+□ 1.4 Implement Symbol Extraction
+  - [ ] Create src/indexer/symbols.rs
+  - [ ] Define Symbol enum/struct with metadata:
+        - name: String
+        - kind: SymbolKind (Function, Struct, Trait, etc.)
+        - location: CodeLocation
+        - visibility: Visibility (pub, pub(crate), private)
+        - signature: Option<String> (for functions)
+        - doc_comment: Option<String>
+  - [ ] Extract symbols using Tree-sitter queries
+  - [ ] Handle nested symbols (methods in impl blocks)
+  - [ ] Test: Extract all symbols from src/main.rs
+
+□ 1.5 Incremental Parsing Setup
+  - [ ] Implement file change detection (mtime tracking)
+  - [ ] Store tree state for incremental updates
+  - [ ] Test: Modify a file and re-parse only changed portions
+
+Milestone 1: ✓ Can parse Rust files and extract all symbols with locations
+
+================================================================================
+PHASE 2: FILE SYSTEM CRAWLING
+================================================================================
+
+□ 2.1 Create Crawler Module
+  - [ ] Create src/indexer/crawler.rs
+  - [ ] Implement directory traversal using walkdir or ignore crate
+  - [ ] Add .gitignore support (use ignore crate)
+  - [ ] Filter files by language extensions (.rs, .js, etc.)
+  - [ ] Test: Crawl current project and list all .rs files
+
+□ 2.2 Parallel Processing
+  - [ ] Add rayon = "1.10" to Cargo.toml
+  - [ ] Implement parallel file processing using rayon
+  - [ ] Add progress tracking for large codebases
+  - [ ] Handle errors gracefully (skip unparseable files)
+  - [ ] Test: Index the entire ch-cli project in parallel
+
+□ 2.3 Workspace Detection
+  - [ ] Detect Cargo.toml for Rust workspaces
+  - [ ] Support multi-crate projects
+  - [ ] Track workspace root for relative paths
+  - [ ] Test: Index a workspace with multiple crates
+
+Milestone 2: ✓ Can crawl and parse entire codebases in parallel
+
+================================================================================
+PHASE 3: TANTIVY SEARCH ENGINE INTEGRATION
+================================================================================
+
+□ 3.1 Add Tantivy Dependencies
+  - [ ] Add to Cargo.toml:
+        tantivy = "0.22"
+  - [ ] Create src/search/ module structure
+
+□ 3.2 Define Search Schema
+  - [ ] Create src/search/tantivy.rs
+  - [ ] Define Tantivy schema with fields:
+        - symbol_name: TEXT (tokenized, stored)
+        - symbol_kind: STRING (not tokenized, stored)
+        - file_path: STRING (stored)
+        - line_number: U64 (stored, indexed)
+        - column_number: U64 (stored, indexed)
+        - signature: TEXT (tokenized, stored, optional)
+        - doc_comment: TEXT (tokenized, stored, optional)
+        - visibility: STRING (stored)
+        - full_qualified_name: TEXT (stored) # e.g., "mod::struct::method"
+  - [ ] Create index directory structure (.ch-cli-index/)
+  - [ ] Test: Create index and verify schema
+
+□ 3.3 Implement Index Writer
+  - [ ] Create IndexWriter wrapper around Tantivy
+  - [ ] Implement add_symbol() method
+  - [ ] Batch document insertions for performance
+  - [ ] Implement commit() with error handling
+  - [ ] Test: Index 100 symbols and verify they're stored
+
+□ 3.4 Implement Index Reader/Searcher
+  - [ ] Create IndexReader wrapper
+  - [ ] Implement search methods:
+        - search_by_name(query: &str) -> Vec<Symbol>
+        - search_by_kind(kind: SymbolKind) -> Vec<Symbol>
+        - find_symbol_at_location(file: &Path, line: u64) -> Option<Symbol>
+  - [ ] Add fuzzy search support (QueryParser with fuzzy)
+  - [ ] Implement ranking/scoring
+  - [ ] Test: Search for symbols and verify results
+
+□ 3.5 Index Management
+  - [ ] Implement index versioning
+  - [ ] Add index rebuild command
+  - [ ] Track indexed files and timestamps
+  - [ ] Implement incremental index updates
+  - [ ] Test: Update index after file change
+
+Milestone 3: ✓ Can index and search symbols with Tantivy
+
+================================================================================
+PHASE 4: STACK-GRAPHS SEMANTIC ANALYSIS
+================================================================================
+
+□ 4.1 Add Stack-graphs Dependencies
+  - [ ] Add to Cargo.toml:
+        stack-graphs = "0.14"
+        tree-sitter-stack-graphs = "*"  # Check latest version
+  - [ ] Create src/semantic/ module
+
+□ 4.2 Understand Stack-graphs Concepts
+  - [ ] Study stack-graphs documentation
+  - [ ] Understand nodes: definition, reference, scope
+  - [ ] Understand edges: connects symbols across scopes
+  - [ ] Read example implementations
+  - [ ] Create notes/stack-graphs-concepts.md with learnings
+
+□ 4.3 Build Initial Graph
+  - [ ] Create src/semantic/graph.rs
+  - [ ] Initialize StackGraph for project
+  - [ ] Add file-level nodes to graph
+  - [ ] Create scope nodes for modules
+  - [ ] Test: Build graph for single file
+
+□ 4.4 Implement Definition & Reference Tracking
+  - [ ] Add definition nodes when encountering symbol declarations
+  - [ ] Add reference nodes when encountering symbol uses
+  - [ ] Connect definitions to their scopes
+  - [ ] Handle imports/use statements
+  - [ ] Test: Track definitions and references in one file
+
+□ 4.5 Cross-file Resolution
+  - [ ] Implement module path resolution
+  - [ ] Connect references to definitions across files
+  - [ ] Handle pub/private visibility rules
+  - [ ] Implement "go to definition" logic
+  - [ ] Implement "find all references" logic
+  - [ ] Test: Resolve symbol across multiple files
+
+□ 4.6 Advanced Resolution
+  - [ ] Handle trait implementations
+  - [ ] Resolve method calls on types
+  - [ ] Handle generic types and bounds
+  - [ ] Support macro expansions (if feasible)
+  - [ ] Test: Complex scenarios with traits and generics
+
+Milestone 4: ✓ Can resolve symbols semantically across entire codebase
+
+================================================================================
+PHASE 5: INTEGRATION & CLI COMMANDS
+================================================================================
+
+□ 5.1 Design CLI Commands
+  - [ ] Plan commands:
+        index         - Build/rebuild the index
+        search <term> - Search for symbols
+        goto <symbol> - Jump to definition
+        refs <symbol> - Find all references
+        symbols       - List all symbols in current file
+        stats         - Show index statistics
+
+□ 5.2 Integrate with Existing UI
+  - [ ] Add IndexManager to App struct
+  - [ ] Create src/indexer/manager.rs for high-level orchestration
+  - [ ] Wire up indexer with UI components
+  - [ ] Add status display for indexing progress
+
+□ 5.3 Implement Search UI
+  - [ ] Create new UI component for search results
+  - [ ] Display symbol matches with file/line info
+  - [ ] Add keyboard navigation for results
+  - [ ] Support opening files at specific locations
+  - [ ] Test: Search and navigate to results
+
+□ 5.4 Background Indexing
+  - [ ] Implement async indexing using tokio or async-std
+  - [ ] Add file watcher for auto-reindex (using notify crate)
+  - [ ] Show indexing status in UI
+  - [ ] Handle index corruption gracefully
+  - [ ] Test: Index updates automatically on file save
+
+Milestone 5: ✓ Full CLI with search and navigation
+
+================================================================================
+PHASE 6: OPTIMIZATION & POLISH
+================================================================================
+
+□ 6.1 Performance Optimization
+  - [ ] Profile indexing performance with large codebases
+  - [ ] Optimize query performance
+  - [ ] Reduce memory footprint
+  - [ ] Benchmark against test projects (100, 1000, 10000 files)
+  - [ ] Document performance characteristics
+
+□ 6.2 Error Handling
+  - [ ] Add comprehensive error types
+  - [ ] Handle parse errors gracefully
+  - [ ] Provide helpful error messages
+  - [ ] Add logging with tracing crate
+  - [ ] Test: Handle malformed files
+
+□ 6.3 Configuration
+  - [ ] Create .ch-cli-config.toml for settings:
+        - Languages to index
+        - Exclude patterns
+        - Index location
+        - Max file size
+  - [ ] Support per-project configuration
+  - [ ] Add sensible defaults
+
+□ 6.4 Testing
+  - [ ] Unit tests for parser
+  - [ ] Unit tests for symbol extraction
+  - [ ] Integration tests for indexing
+  - [ ] Integration tests for search
+  - [ ] Test with real-world projects
+  - [ ] Add benchmark suite
+
+□ 6.5 Documentation
+  - [ ] Write user documentation
+  - [ ] Document architecture (architecture.md)
+  - [ ] Add inline documentation
+  - [ ] Create examples/
+  - [ ] Write troubleshooting guide
+
+Milestone 6: ✓ Production-ready indexer with excellent UX
+
+================================================================================
+PHASE 7: MULTI-LANGUAGE SUPPORT (FUTURE)
+================================================================================
+
+□ 7.1 Add Language Abstraction
+  - [ ] Create Language trait
+  - [ ] Implement for Rust (existing)
+  - [ ] Add TypeScript/JavaScript support
+  - [ ] Add Python support
+  - [ ] Add Go support
+  - [ ] Test: Index multi-language projects
+
+□ 7.2 Language-specific Queries
+  - [ ] Create queries/ for each language
+  - [ ] Handle language-specific features
+  - [ ] Test: Parse and index each language
+
+Milestone 7: ✓ Multi-language semantic indexer
+
+================================================================================
+IMPLEMENTATION STRATEGY
+================================================================================
+
+Development Approach:
+1. Build in phases - complete one milestone before moving to next
+2. Write tests alongside implementation
+3. Use existing ch-cli UI as the interface
+4. Start with Rust-only support, expand later
+5. Keep performance in mind from day one
+6. Document as you go
+
+Key Decisions to Make Early:
+- [ ] Where to store index? (.ch-cli-index/ in project root)
+- [ ] How to handle multi-workspace projects?
+- [ ] Should indexing be automatic or manual?
+- [ ] How to display search results in TUI?
+
+Tools & Libraries Summary:
+✓ tree-sitter + language parsers - AST parsing
+✓ tantivy - Full-text search engine
+✓ stack-graphs - Semantic resolution
+✓ rayon - Parallel processing
+✓ ignore - .gitignore support
+✓ notify - File watching (optional)
+✓ tracing - Logging
+
+================================================================================
+SUCCESS METRICS
+================================================================================
+
+The indexer is successful when:
+✓ Can index 10,000+ file project in < 30 seconds
+✓ Search returns results in < 100ms
+✓ Correctly resolves 95%+ of symbol references
+✓ Handles incremental updates efficiently
+✓ Gracefully handles parse errors
+✓ Memory usage stays reasonable (< 500MB for large projects)
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. Review this plan and adjust based on project priorities
+2. Start with Phase 1 - Tree-sitter integration
+3. Build incrementally, testing at each step
+4. Keep existing ch-cli functionality working throughout
+5. Consider creating feature branches for each phase
+
+================================================================================
+NOTES
+================================================================================
+
+- This is an ambitious project - estimate 4-8 weeks for full implementation
+- Can ship early with just Phase 1-3 (basic search without semantic resolution)
+- Stack-graphs is the most complex part - may need deep dive
+- Consider starting with read-only index, add updates later
+- Performance critical - profile early and often
+
+================================================================================

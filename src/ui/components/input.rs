@@ -16,8 +16,11 @@ use crate::ui::styles::{self, colors};
 /// file/folder references highlighted.
 pub fn render_input(frame: &mut Frame, area: Rect, app: &App) {
     let input_text = if app.input().is_empty() {
-        Line::from("Type something... (@ for files/folders, ESC or Ctrl+C to quit)")
-            .style(Style::default().fg(colors::PLACEHOLDER))
+        Line::from(
+            "Type something... (@ for files/folders, \
+            ESC or Ctrl+C to quit)",
+        )
+        .style(Style::default().fg(colors::PLACEHOLDER))
     } else {
         build_styled_input_line(app)
     };

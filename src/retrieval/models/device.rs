@@ -7,6 +7,15 @@ use candle_core::Device;
 use std::env;
 use std::fmt;
 
+#[cfg(feature = "metal")]
+use super::device_platform::{
+	get_metal_device_name, get_metal_memory_mb,
+};
+#[cfg(feature = "cuda")]
+use super::device_platform::{
+	get_cuda_device_name, get_cuda_memory_mb,
+};
+
 /// Device type enumeration for GPU/CPU backends
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DeviceType {
@@ -51,12 +60,13 @@ impl Default for DeviceInfo {
 
 /// Check if CPU mode is forced via environment variable
 pub fn is_force_cpu_mode() -> bool {
-	let val = env::var("CH_FORCE_CPU").unwrap_or_default(); // env var value or empty
+	// env var value or empty string
+	let val = env::var("CH_FORCE_CPU").unwrap_or_default();
 	val == "1" || val.to_lowercase() == "true"
 }
 
-/// Detect available GPU device at runtime
-pub fn detect_device() -> DeviceInfo {
+/// Get information about the detected compute device
+pub fn get_device_info() -> DeviceInfo {
 	// check force CPU mode first
 	if is_force_cpu_mode() {
 		return DeviceInfo {
@@ -94,8 +104,8 @@ pub fn detect_device() -> DeviceInfo {
 	DeviceInfo::default()
 }
 
-/// Get the best available device with automatic fallback
-pub fn get_device_with_fallback() -> Device {
+/// Get the default device with runtime detection and fallback
+pub fn get_device() -> Device {
 	// check force CPU mode first
 	if is_force_cpu_mode() {
 		return Device::Cpu;
@@ -121,124 +131,3 @@ pub fn get_device_with_fallback() -> Device {
 	Device::Cpu
 }
 
-/// Get Metal device name (macOS only)
-#[cfg(feature = "metal")]
-fn get_metal_device_name() -> String {
-	// metal-rs could provide device name but for simplicity use sysctl
-	#[cfg(target_os = "macos")]
-	{
-		use std::process::Command;
-		let output = Command::new("sysctl")
-			.args(["-n", "machdep.cpu.brand_string"])
-			.output();
-		if let Ok(out) = output {
-			let cpu = String::from_utf8_lossy(&out.stdout); // CPU brand string
-			if cpu.contains("Apple") {
-				return "Apple Silicon GPU".to_string();
-			}
-		}
-	}
-	"Metal GPU".to_string()
-}
-
-/// Get Metal GPU memory (macOS only)
-#[cfg(feature = "metal")]
-fn get_metal_memory_mb() -> Option<u64> {
-	#[cfg(target_os = "macos")]
-	{
-		use std::process::Command;
-		let output = Command::new("sysctl")
-			.args(["-n", "hw.memsize"])
-			.output();
-		if let Ok(out) = output {
-			let mem_str = String::from_utf8_lossy(&out.stdout); // total system memory
-			if let Ok(bytes) = mem_str.trim().parse::<u64>() {
-				// unified memory: report total system memory
-				return Some(bytes / 1_000_000);
-			}
-		}
-	}
-	None
-}
-
-/// Get CUDA device name (placeholder)
-#[cfg(feature = "cuda")]
-fn get_cuda_device_name() -> String {
-	"NVIDIA GPU".to_string()
-}
-
-/// Get CUDA GPU memory (placeholder)
-#[cfg(feature = "cuda")]
-fn get_cuda_memory_mb() -> Option<u64> {
-	None
-}
-
-#[cfg(test)]
-mod tests {
-	use super::*;
-
-	#[test]
-	fn test_device_detection() {
-		let info = detect_device(); // get current device info
-		assert!(!info.device_name.is_empty());
-		// device_type should be one of the valid variants
-		match info.device_type {
-			DeviceType::Cpu | DeviceType::Metal | DeviceType::Cuda => {}
-		}
-	}
-
-	#[test]
-	fn test_force_cpu_env_var() {
-		// save original value
-		let original = env::var("CH_FORCE_CPU").ok();
-
-		// test with "1"
-		env::set_var("CH_FORCE_CPU", "1");
-		assert!(is_force_cpu_mode());
-
-		// test with "true"
-		env::set_var("CH_FORCE_CPU", "true");
-		assert!(is_force_cpu_mode());
-
-		// test with "TRUE"
-		env::set_var("CH_FORCE_CPU", "TRUE");
-		assert!(is_force_cpu_mode());
-
-		// test with empty/unset
-		env::remove_var("CH_FORCE_CPU");
-		assert!(!is_force_cpu_mode());
-
-		// restore original value
-		match original {
-			Some(val) => env::set_var("CH_FORCE_CPU", val),
-			None => env::remove_var("CH_FORCE_CPU"),
-		}
-	}
-
-	#[test]
-	fn test_fallback_to_cpu() {
-		// save original value
-		let original = env::var("CH_FORCE_CPU").ok();
-
-		// force CPU mode
-		env::set_var("CH_FORCE_CPU", "1");
-		let device = get_device_with_fallback(); // should return CPU
-
-		// verify it's CPU (Device doesn't impl PartialEq so check via debug)
-		let debug_str = format!("{:?}", device);
-		assert!(debug_str.contains("Cpu"));
-
-		// restore original value
-		match original {
-			Some(val) => env::set_var("CH_FORCE_CPU", val),
-			None => env::remove_var("CH_FORCE_CPU"),
-		}
-	}
-
-	#[test]
-	fn test_device_type_display() {
-		assert_eq!(format!("{}", DeviceType::Cpu), "CPU");
-		assert_eq!(format!("{}", DeviceType::Metal), "Metal");
-		assert_eq!(format!("{}", DeviceType::Cuda), "CUDA");
-	}
-}

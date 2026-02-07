@@ -1,22 +1,43 @@
 //! Model Daemon Module
 //!
-//! Provides a background daemon that keeps ML models loaded in memory
-//! to avoid reload latency on each request.
+//! Background daemon for ML models.
 //!
 //! Components:
-//! - `protocol`: IPC message types (DaemonRequest, DaemonResponse)
+//! - `protocol`: IPC message types
+//! - `protocol_types`: Shared data structs
 //! - `server`: Background model server
-//! - `client`: Client to communicate with daemon
-//! - `lifecycle`: Start/stop/status management
+//! - `client`: Client to communicate
+//! - `lifecycle`: Start/stop/status
+//! - `health`: Health checks and recovery
+
+mod async_methods;
+mod async_ops;
+mod health_check;
+#[doc(hidden)]
+pub mod lifecycle_helpers;
+mod lifecycle_pid;
+mod protocol_serde;
 
 pub mod async_client;
 pub mod client;
+pub mod health;
 pub mod lifecycle;
 pub mod protocol;
+pub mod protocol_types;
 pub mod server;
 
 pub use async_client::AsyncDaemonClient;
 pub use client::{DaemonClient, DocGenStatus};
-pub use lifecycle::{daemon_status, ensure_daemon_ready, prewarm_daemon, start_daemon, stop_daemon};
-pub use protocol::{DaemonRequest, DaemonResponse, DaemonStatus, DocEntryResponse};
-pub use server::ModelDaemon;
+pub use health::{
+	ensure_daemon_ready, ensure_healthy_daemon,
+	health_check, prewarm_daemon, HealthStatus,
+};
+pub use lifecycle::{
+	daemon_status, default_paths, restart_daemon,
+	start_daemon, stop_daemon,
+};
+pub use protocol::{
+	DaemonRequest, DaemonResponse, DaemonStatus,
+	DocEntryResponse,
+};
+pub use server::{DocGenProgress, ModelDaemon};

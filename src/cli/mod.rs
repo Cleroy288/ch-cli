@@ -55,17 +55,24 @@ pub enum Commands {
         #[arg(short, long)]
         kind: Option<String>,
 
-        /// Use semantic (hybrid) search combining keywords and embeddings
+        /// Use semantic (hybrid) search combining keywords
+        /// and embeddings
         #[arg(long)]
         semantic: bool,
 
-        /// Expand results with contextual information (parent, callers, callees)
+        /// Expand results with contextual information
+        /// (parent, callers, callees)
         #[arg(short, long)]
         context: bool,
 
-        /// Rerank results using cross-encoder for better relevance
+        /// Rerank results using cross-encoder for better
+        /// relevance
         #[arg(short, long)]
         rerank: bool,
+
+        /// Show full file content for results
+        #[arg(long)]
+        full: bool,
     },
 
     /// Manage the ML model daemon
@@ -164,6 +171,33 @@ pub enum Commands {
     Docs {
         #[command(subcommand)]
         action: DocsAction,
+    },
+
+    /// Show detailed information about a symbol
+    /// (definition, references, callers)
+    Info {
+        /// The symbol name to look up
+        symbol: String,
+
+        /// Show source code snippet
+        #[arg(short, long)]
+        code: bool,
+
+        /// Show callers (who calls this symbol)
+        #[arg(long)]
+        callers: bool,
+
+        /// Show callees (what this symbol calls)
+        #[arg(long)]
+        callees: bool,
+
+        /// Show all references
+        #[arg(short, long)]
+        refs: bool,
+
+        /// Show everything (code + callers + callees + refs)
+        #[arg(short, long)]
+        all: bool,
     },
 }
 

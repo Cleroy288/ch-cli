@@ -23,7 +23,9 @@
 //! let symbols = parser.parse_file("src/main.rs")?;
 //!
 //! for symbol in symbols {
-//!     println!("{}: {} at line {}", symbol.kind, symbol.name, symbol.location.line);
+//!     println!("{}: {} at line {}",
+//!         symbol.kind, symbol.name,
+//!         symbol.location.line);
 //! }
 //! ```
 //!
@@ -42,7 +44,9 @@
 //! // Search for symbols
 //! let hits = search.search("handle", 10)?;
 //! for hit in hits {
-//!     println!("{}: {} (score: {})", hit.symbol.kind, hit.symbol.name, hit.score);
+//!     println!("{}: {} (score: {})",
+//!         hit.symbol.kind, hit.symbol.name,
+//!         hit.score);
 //! }
 //! ```
 
@@ -62,18 +66,34 @@ pub mod watcher;
 
 // Re-export commonly used types
 pub use analyzer::{CodebaseAnalysis, CodebaseAnalyzer, ProjectType};
-pub use crawler::{CrawlStats, Crawler, CrawlerConfig, DetectedLanguage, FileResult, Language};
+pub use crawler::{
+	CrawlStats, Crawler, CrawlerConfig,
+	DetectedLanguage, FileResult, Language,
+};
 pub use doc_parser::DocParser;
-pub use manager::{IndexError, IndexManager, IndexManagerResult, IndexResult, IndexStats};
+pub use manager::{
+	IndexError, IndexManager, IndexManagerResult,
+	IndexResult, IndexStats,
+};
 pub use parser::{ExtractedReference, RustParser};
 pub use search::{SearchError, SearchHit, SearchIndex};
 pub use semantic::{
-    AllUsages, Definition, ReferenceContext, ResolutionResult, SemanticGraph, SemanticStats,
-    SymbolReference,
+	AllUsages, Definition, ReferenceContext,
+	ResolutionResult, SemanticGraph,
+	SemanticStats, SymbolReference,
 };
 pub use state::{ChangeSet, FileState, IndexState, INDEX_DIR_NAME};
-pub use symbols::{CodeLocation, ContentType, DocumentType, Symbol, SymbolKind, Visibility};
+pub use symbols::{
+	CodeLocation, ContentType, DocumentType,
+	Symbol, SymbolKind, Visibility,
+};
 pub use trigram::{TrigramIndex, TrigramStats};
-pub use triple_search::{TripleIndexStats, TripleSearchIndex, TripleSearchResults};
-pub use watcher::{ChangeKind, FileChangeEvent, FileWatcher, WatcherError};
+pub use triple_search::{
+	TripleIndexStats, TripleSearchIndex,
+	TripleSearchResults,
+};
+pub use watcher::{
+	ChangeKind, FileChangeEvent, FileWatcher,
+	WatcherError, WatcherResult,
+};
 

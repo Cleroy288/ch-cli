@@ -30,15 +30,17 @@ impl MessageSegment {
             MessageSegment::FileReference {
                 full_path,
                 display_name,
-            } => {
-                format!("File: {} ({})", display_name, full_path)
-            }
+            } => format!(
+                "File: {} ({})",
+                display_name, full_path
+            ),
             MessageSegment::FolderReference {
                 full_path,
                 display_name,
-            } => {
-                format!("Folder: {} ({})", display_name, full_path)
-            }
+            } => format!(
+                "Folder: {} ({})",
+                display_name, full_path
+            ),
         }
     }
 
@@ -46,8 +48,12 @@ impl MessageSegment {
     pub fn display_text(&self) -> String {
         match self {
             MessageSegment::Text(text) => text.clone(),
-            MessageSegment::FileReference { display_name, .. } => display_name.clone(),
-            MessageSegment::FolderReference { display_name, .. } => display_name.clone(),
+            MessageSegment::FileReference {
+                display_name, ..
+            } => display_name.clone(),
+            MessageSegment::FolderReference {
+                display_name, ..
+            } => display_name.clone(),
         }
     }
 }

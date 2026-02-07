@@ -1,6 +1,9 @@
 use ratatui::layout::Rect;
 
-use crate::domain::{INPUT_BOX_HEIGHT, MAX_PICKER_HEIGHT, PICKER_WIDTH, TITLE_BOX_HEIGHT};
+use crate::domain::{
+    INPUT_BOX_HEIGHT, MAX_PICKER_HEIGHT, PICKER_WIDTH,
+    TITLE_BOX_HEIGHT,
+};
 
 /// Calculate the area for the type chooser picker overlay.
 ///
@@ -10,7 +13,9 @@ pub fn calculate_type_chooser_area(input_area: Rect) -> Rect {
         x: input_area.x,
         y: input_area.y + input_area.height,
         width: input_area.width.min(PICKER_WIDTH),
-        height: 6, // Fixed height for type chooser (2 options + borders + title)
+        // Fixed height for type chooser
+        // (2 options + borders + title)
+        height: 6,
     }
 }
 
@@ -19,7 +24,10 @@ pub fn calculate_type_chooser_area(input_area: Rect) -> Rect {
 /// Positions the picker below the input box, using most of the bottom area.
 /// Respects the maximum picker height constant.
 pub fn calculate_file_list_area(input_area: Rect, bottom_area: Rect) -> Rect {
-    let max_height = (bottom_area.height.saturating_sub(2)).min(MAX_PICKER_HEIGHT);
+    let max_height = bottom_area
+        .height
+        .saturating_sub(2)
+        .min(MAX_PICKER_HEIGHT);
     Rect {
         x: input_area.x,
         y: input_area.y + input_area.height,
@@ -44,3 +52,4 @@ pub fn calculate_help_text_area(picker_area: Rect) -> Rect {
 pub fn get_main_layout_constraints() -> (u16, u16) {
     (TITLE_BOX_HEIGHT, INPUT_BOX_HEIGHT)
 }
+

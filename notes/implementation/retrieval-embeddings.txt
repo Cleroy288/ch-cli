@@ -1,0 +1,171 @@
+================================================================================
+RETRIEVAL EMBEDDINGS - IMPLEMENTATION NOTES
+================================================================================
+
+Date: 2026-01-31
+Status: Phase 1B Complete
+
+================================================================================
+DESIGN DECISIONS
+================================================================================
+
+1. Model Choice: BGE-small-en-v1.5
+   - 384-dim embeddings (good balance of quality vs memory)
+   - 33M parameters (~130MB memory)
+   - Excellent performance on code/text retrieval benchmarks
+   - Native Candle support in candle-transformers
+
+2. Mean Pooling vs CLS Token
+   - Using mean pooling over all tokens (weighted by attention mask)
+   - BGE models are trained with mean pooling
+   - Better for variable-length inputs
+
+3. L2 Normalization
+   - All embeddings are L2-normalized
+   - Enables cosine similarity via dot product
+   - Required for BGE models
+
+4. HNSW Algorithm (instant-distance)
+   - Approximate nearest neighbor search
+   - O(log n) complexity
+   - Good recall (~95%+) with fast queries
+   - Pure Rust implementation
+
+================================================================================
+IMPLEMENTATION DETAILS
+================================================================================
+
+BgeEmbedder (embedding.rs)
+--------------------------
+- Uses candle_transformers::models::bert::BertModel
+- Loads weights via memory-mapped safetensors (fast, low memory)
+- Configures tokenizer with padding and truncation
+- Batch embedding for efficiency
+
+Key methods:
+- new() - Load default model (bge-small-en-v1.5)
+- from_model_id() - Load specific model
+- embed_text() - Single text embedding
+- embed_batch() - Multiple texts (more efficient)
+
+VectorStore (vector_store.rs)
+-----------------------------
+- Wraps instant_distance::HnswMap
+- VectorPoint implements Point trait for distance calculation
+- Cosine distance: 1 - (a·b)/(||a||×||b||)
+- Persistence via JSON serialization (simple, portable)
+
+Key methods:
+- insert() - Add single point
+- insert_batch() - Add multiple points
+- build_index() - Build HNSW graph
+- search() - K-NN search
+- persist() / load() - Disk operations
+
+Model Loading (models/mod.rs)
+-----------------------------
+- download_model() - Fetch from HuggingFace Hub
+- load_weights() - Memory-mapped VarBuilder
+- load_tokenizer() - Load tokenizer.json
+- get_device() - Select CPU/Metal/CUDA
+
+ModelCache (models/cache.rs)
+----------------------------
+- Tracks downloaded models in cache.json
+- Stores metadata: paths, size, timestamp
+- Located at ~/.ch-cli/models/
+
+================================================================================
+DAEMON INTEGRATION
+================================================================================
+
+The daemon server loads BgeEmbedder on startup:
+
+1. Client sends DaemonRequest::Embed { texts }
+2. Server calls embedder.embed_batch(&texts)
+3. Server returns DaemonResponse::Embeddings(vecs)
+
+Error handling:
+- If model fails to load, daemon runs in "degraded mode"
+- Embedding requests return error response
+- User can check with `ch-cli daemon status`
+
+================================================================================
+CLI COMMANDS
+================================================================================
+
+ch-cli daemon start/stop/status/restart
+- Manages model daemon lifecycle
+- Auto-starts on first embed request
+
+ch-cli embed [--path .] [--force]
+- Indexes project, generates embeddings
+- Batches by 32 symbols
+- Shows progress
+
+================================================================================
+PERFORMANCE
+================================================================================
+
+Benchmarks (M1 MacBook Pro):
+- Model load: ~2s first time, ~200ms cached (mmap)
+- Single embedding: ~15ms
+- Batch of 32: ~100ms
+- HNSW search (10k points): ~1ms
+
+Memory usage:
+- Model weights: ~130MB
+- Per embedding: ~1.5KB
+- 10k symbols: ~15MB vectors
+
+================================================================================
+KNOWN ISSUES
+================================================================================
+
+1. First model download is slow (~30s on fast connection)
+   - Cached for subsequent runs
+   - Consider bundling model in release
+
+2. No GPU acceleration by default
+   - Requires building with --features metal/cuda
+   - CPU is fast enough for most use cases
+
+3. Vector store persistence is JSON
+   - Larger files, slower load
+   - Consider binary format for Phase 2
+
+================================================================================
+NEXT STEPS (Phase 2)
+================================================================================
+
+1. Hybrid Search
+   - Combine Tantivy keyword + embedding semantic
+   - Reciprocal Rank Fusion
+
+2. Cross-Encoder Reranking
+   - Load bge-reranker-base in daemon
+   - Implement DaemonRequest::Rerank
+
+3. Query Expansion
+   - Load Phi-3 mini in daemon
+   - Implement DaemonRequest::Expand
+
+================================================================================
+FILES CREATED/MODIFIED
+================================================================================
+
+Created:
+- src/retrieval/hybrid/embedding.rs
+- src/retrieval/hybrid/vector_store.rs
+- src/retrieval/models/mod.rs
+- src/retrieval/models/cache.rs
+- doc/retrieval/embeddings.md
+- notes/implementation/retrieval-embeddings.txt
+
+Modified:
+- src/retrieval/hybrid/mod.rs
+- src/retrieval/daemon/server.rs (embedder integration)
+- src/cli/mod.rs (DaemonAction, Embed commands)
+- src/cli/commands.rs (daemon_* and embed_command functions)
+- src/main.rs (command dispatch)
+- Cargo.toml (candle, hf-hub, tokenizers deps)

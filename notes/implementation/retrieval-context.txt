@@ -1,0 +1,197 @@
+================================================================================
+CONTEXT EXPANSION - IMPLEMENTATION NOTES
+================================================================================
+
+Date: 2026-01-31
+Status: Phase 3 Complete
+
+================================================================================
+DESIGN DECISIONS
+================================================================================
+
+1. Use Existing SemanticGraph
+   - Chose to use existing SemanticGraph instead of stack-graphs
+   - Simpler integration, no new dependencies
+   - Already tracks definitions and references
+   - find_definitions(), find_references() provide what we need
+
+2. Code Extraction Strategy
+   - Read source files on demand (not pre-cached)
+   - Use brace counting for symbol end detection
+   - Fallback to estimated line counts by symbol kind
+   - Include line numbers in snippets for reference
+
+3. Token Budgeting
+   - Estimate ~4 characters per token (rough heuristic)
+   - Default budget: 10,000 tokens
+   - Stop adding blocks when budget exhausted
+   - Process symbols in relevance order (search ranking)
+
+4. XML Output Format
+   - Structured for LLM consumption
+   - Escape special characters (&, <, >, ", ')
+   - Include all contextual information
+   - Self-describing with meaningful tag names
+
+================================================================================
+IMPLEMENTATION DETAILS
+================================================================================
+
+GraphWalker (graph_walker.rs)
+-----------------------------
+- Uses SemanticGraph.find_definitions() for parent lookup
+- Uses SemanticGraph.find_references() for caller detection
+- Uses SemanticGraph.references_in_file() for callee detection
+- Extracts types from signature using simple parsing
+
+Key methods:
+- find_parent() -> Option<ParentContext>
+- find_callers() -> Vec<CallerInfo>
+- find_callees() -> Vec<CalleeInfo>
+- find_related_types() -> Vec<RelatedType>
+
+BlockBuilder (block_builder.rs)
+-------------------------------
+- Reads source file and extracts code around symbol
+- Uses find_symbol_end() for intelligent boundary detection
+- Formats with line numbers: "  42 | code here"
+- Integrates with GraphWalker for context
+
+Key methods:
+- build(&Symbol) -> RetrievalResult<ContextualBlock>
+- build_many(&[Symbol]) -> Vec<RetrievalResult<ContextualBlock>>
+- extract_code(&Symbol) -> RetrievalResult<String>
+
+ContextExpander (block_builder.rs)
+----------------------------------
+- Orchestrates BlockBuilder with token budget
+- Produces final XML output
+- Handles errors gracefully (prints warning, continues)
+
+Key methods:
+- expand(&[Symbol]) -> Vec<ContextualBlock>
+- expand_to_xml(&[Symbol]) -> String
+
+================================================================================
+SYMBOL END DETECTION ALGORITHM
+================================================================================
+
+fn find_symbol_end(lines, start_idx, symbol) -> usize:
+    1. Initialize brace_count = 0, found_opening = false
+    2. Iterate through lines from start_idx
+    3. For each character:
+       - '{' -> brace_count++, found_opening = true
+       - '}' -> brace_count--
+       - If found_opening && brace_count == 0 -> return current line + 1
+    4. If > 100 lines without closing, break
+    5. Fallback: estimate based on symbol kind
+
+Estimates by kind:
+- Function/Method: 20 lines
+- Struct/Enum: 15 lines
+- Impl: 30 lines
+- Trait: 25 lines
+- Other: 5 lines
+
+================================================================================
+TYPE EXTRACTION FROM SIGNATURE
+================================================================================
+
+Simple heuristic parsing:
+1. Split signature by non-alphanumeric (except _)
+2. Keep words starting with uppercase
+3. Filter out builtin types (bool, String, Vec, Option, Result, etc.)
+4. Deduplicate results
+
+Relationship detection:
+- "-> TypeName" or "-> Result<TypeName" -> ReturnType
+- ": TypeName" -> ParameterType
+- Otherwise -> UsedInSignature
+
+================================================================================
+CLI INTEGRATION
+================================================================================
+
+Added --context flag to search command:
+
+ch-cli search --semantic "query"           # hybrid search
+ch-cli search --semantic --context "query" # with context expansion
+
+The --context flag:
+1. Forces semantic analysis during indexing
+2. Expands search results through ContextExpander
+3. Outputs XML format instead of simple list
+
+================================================================================
+TESTING
+================================================================================
+
+Unit tests:
+- test_find_symbol_end_function - brace matching
+- test_extract_types - type parsing from signatures
+
+Manual testing:
+1. Index a project with functions, structs, methods
+2. Run: ch-cli search --semantic --context "some_function"
+3. Verify XML output contains:
+   - Code snippet with line numbers
+   - Parent context (if applicable)
+   - Callers and callees
+   - Related types from signature
+
+================================================================================
+KNOWN ISSUES
+================================================================================
+
+1. File I/O per block
+   - Each ContextualBlock reads source file
+   - Could cache file contents for repeated access
+
+2. Heuristic type parsing
+   - Simple split-based parsing may miss complex types
+   - Generic bounds not fully handled
+
+3. Callee scope limitation
+   - Only detects callees within 50 lines of symbol start
+   - May miss calls in long functions
+
+4. Brace counting limitations
+   - May fail on code with braces in strings/comments
+   - Could use tree-sitter for precise boundaries
+
+================================================================================
+FILES CREATED/MODIFIED
+================================================================================
+
+Created:
+- src/retrieval/context/mod.rs
+- src/retrieval/context/graph_walker.rs
+- src/retrieval/context/block_builder.rs
+- doc/retrieval/context-expansion.md
+- notes/implementation/retrieval-context.txt
+
+Modified:
+- src/retrieval/mod.rs (added pub mod context, re-exports)
+- src/cli/mod.rs (added --context flag to Search)
+- src/cli/commands.rs (search_semantic with context, output_with_context)
+- src/main.rs (pass context flag to search_command)
+
+================================================================================
+NEXT STEPS (Phase 4: Reranking)
+================================================================================
+
+1. Cross-Encoder Model
+   - Load BGE reranker (BAAI/bge-reranker-base)
+   - Add to daemon server
+   - Score (query, document) pairs
+
+2. Reranking Pipeline
+   - Take top-N from hybrid search
+   - Score each with cross-encoder
+   - Reorder by cross-encoder scores
+
+3. CLI Integration
+   - Add --rerank flag
+   - Optionally enable with --semantic --context
+
+================================================================================

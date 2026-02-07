@@ -1,0 +1,76 @@
+GPU Acceleration Implementation Notes
+=====================================
+
+Date: 2026-01-31
+Status: Implemented
+
+Overview
+--------
+Added runtime GPU detection and acceleration for ch-cli ML models.
+Supports Metal on macOS and CUDA on Linux with auto-fallback to CPU.
+
+Files Changed
+-------------
+1. src/retrieval/models/device.rs (NEW)
+   - DeviceType enum: Cpu, Metal, Cuda
+   - DeviceInfo struct: device_type, device_name, memory_mb
+   - detect_device(): runtime GPU detection
+   - get_device_with_fallback(): returns Device with fallback
+   - is_force_cpu_mode(): checks CH_FORCE_CPU env var
+   - Unit tests for all functions
+
+2. src/retrieval/models/mod.rs (MODIFIED)
+   - Added pub mod device
+   - Exported DeviceInfo, DeviceType
+   - Updated get_device() to use device module
+   - Added get_device_info() function
+
+3. src/retrieval/daemon/protocol.rs (MODIFIED)
+   - Added DeviceStatus struct
+   - Updated DaemonStatus: replaced memory_bytes with device field
+
+4. src/retrieval/daemon/server.rs (MODIFIED)
+   - Added device_info field to ModelDaemon
+   - Log device info on startup
+   - Include DeviceStatus in status response
+
+5. src/cli/commands.rs (MODIFIED)
+   - Updated daemon_status_command() to show device info
+
+Key Decisions
+-------------
+1. Runtime detection vs compile-time:
+   - Compile-time feature flags still control which backends are available
+   - Runtime detection selects best available within enabled backends
+   - Graceful fallback on GPU failure
+
+2. Device info collection:
+   - Metal: uses sysctl for device name and memory
+   - CUDA: placeholder for device name/memory
+   - Could be enhanced with metal-rs or cuda-sys crates
+
+3. Environment variable:
+   - CH_FORCE_CPU=1 forces CPU mode for testing/debugging
+   - Checked before any GPU detection
+
+Testing
+-------
+Unit tests in device.rs:
+- test_device_detection: verifies detect_device() returns valid info
+- test_force_cpu_env_var: verifies CH_FORCE_CPU handling
+- test_fallback_to_cpu: verifies forced CPU mode works
+- test_device_type_display: verifies Display impl
+
+Manual testing:
+1. cargo build --release --features metal
+2. ./target/release/ch-cli daemon start
+3. ./target/release/ch-cli daemon status (check Device field)
+4. CH_FORCE_CPU=1 ./target/release/ch-cli daemon restart
+5. ./target/release/ch-cli daemon status (should show CPU)
+
+Future Enhancements
+-------------------
+- Use metal-rs for accurate Metal device info
+- Use cuda-sys for CUDA device info
+- Add GPU memory monitoring during inference
+- Multi-GPU support (device selection)

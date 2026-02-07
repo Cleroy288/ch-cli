@@ -1,6 +1,6 @@
-use ch_cli::{app::App, cli, events, startup, ui, Cli, Commands};
 use ch_cli::cli::{DaemonAction, DocsAction};
 use ch_cli::retrieval::daemon::{ensure_daemon_ready, prewarm_daemon};
+use ch_cli::{app::App, cli, events, startup, ui, Cli, Commands};
 use clap::Parser;
 use std::io;
 use std::process::ExitCode;
@@ -10,7 +10,8 @@ fn main() -> ExitCode {
     let cli_args = Cli::parse();
 
     // Pre-warm daemon in background for commands that might need it later
-    // This starts the daemon early so models are loaded by the time we need them
+    // This starts the daemon early so models
+    // are loaded by the time we need them
     prewarm_daemon_if_needed(&cli_args.command);
 
     // Handle CLI commands or launch TUI
@@ -20,8 +21,19 @@ fn main() -> ExitCode {
             // Run startup flow (check for index, prompt if needed)
             match startup::run_startup() {
                 Ok(_) => {
+                    // Spawn file watcher for auto-reindex on changes
+                    let project_path =
+                        std::env::current_dir().unwrap_or_default();
+                    let watcher_handle =
+                        startup::spawn_watcher(&project_path);
+
                     // Startup successful (indexed or skipped), launch TUI
-                    if let Err(e) = run_tui() {
+                    let tui_result = run_tui();
+
+                    // Stop watcher when TUI exits
+                    watcher_handle.stop();
+
+                    if let Err(e) = tui_result {
                         eprintln!("Error: {}", e);
                         return ExitCode::FAILURE;
                     }
@@ -43,7 +55,12 @@ fn main() -> ExitCode {
             semantic,
             verbose,
         }) => {
-            if let Err(e) = cli::commands::index_command(&path, semantic, verbose) {
+            let result = cli::commands::index_command(
+                &path,
+                semantic,
+                verbose,
+            );
+            if let Err(e) = result {
                 eprintln!("Error: {}", e);
                 return ExitCode::FAILURE;
             }
@@ -58,12 +75,24 @@ fn main() -> ExitCode {
             semantic,
             context,
             rerank,
+            full,
         }) => {
             // Ensure daemon is ready for semantic search
             if semantic && !ensure_daemon_ready() {
-                eprintln!("Warning: Daemon not ready, search may be slower");
+                eprintln!(
+                    "Warning: Daemon not ready, search may be slower"
+                );
             }
-            if let Err(e) = cli::commands::search_command(&query, limit, fuzzy, kind.as_deref(), semantic, context, rerank) {
+            if let Err(e) = cli::commands::search_command(
+                &query,
+                limit,
+                fuzzy,
+                kind.as_deref(),
+                semantic,
+                context,
+                rerank,
+                full,
+            ) {
                 eprintln!("Error: {}", e);
                 return ExitCode::FAILURE;
             }
@@ -82,7 +111,11 @@ fn main() -> ExitCode {
             symbol,
             include_definition,
         }) => {
-            if let Err(e) = cli::commands::refs_command(&symbol, include_definition) {
+            let result = cli::commands::refs_command(
+                &symbol,
+                include_definition,
+            );
+            if let Err(e) = result {
                 eprintln!("Error: {}", e);
                 return ExitCode::FAILURE;
             }
@@ -90,7 +123,11 @@ fn main() -> ExitCode {
 
         // Symbols command
         Some(Commands::Symbols { file, kind }) => {
-            if let Err(e) = cli::commands::symbols_command(file.as_deref(), kind.as_deref()) {
+            let result = cli::commands::symbols_command(
+                file.as_deref(),
+                kind.as_deref(),
+            );
+            if let Err(e) = result {
                 eprintln!("Error: {}", e);
                 return ExitCode::FAILURE;
             }
@@ -107,12 +144,22 @@ fn main() -> ExitCode {
         // Daemon command
         Some(Commands::Daemon { action }) => {
             let result = match action {
-                DaemonAction::Start => cli::commands::daemon_start_command(),
-                DaemonAction::Stop => cli::commands::daemon_stop_command(),
-                DaemonAction::Status => cli::commands::daemon_status_command(),
-                DaemonAction::Restart => cli::commands::daemon_restart_command(),
+                DaemonAction::Start => {
+                    cli::commands::daemon_start_command()
+                }
+                DaemonAction::Stop => {
+                    cli::commands::daemon_stop_command()
+                }
+                DaemonAction::Status => {
+                    cli::commands::daemon_status_command()
+                }
+                DaemonAction::Restart => {
+                    cli::commands::daemon_restart_command()
+                }
                 DaemonAction::Run { socket } => {
-                    cli::commands::daemon_run_command(socket.as_deref())
+                    cli::commands::daemon_run_command(
+                        socket.as_deref(),
+                    )
                 }
             };
             if let Err(e) = result {
@@ -125,9 +172,14 @@ fn main() -> ExitCode {
         Some(Commands::Embed { path, force }) => {
             // Ensure daemon is ready for embedding
             if !ensure_daemon_ready() {
-                eprintln!("Warning: Daemon not ready, embedding may be slower");
+                eprintln!(
+                    "Warning: Daemon not ready, embedding may be slower"
+                );
             }
-            if let Err(e) = cli::commands::embed_command(&path, force) {
+            let result = cli::commands::embed_command(
+                &path, force,
+            );
+            if let Err(e) = result {
                 eprintln!("Error: {}", e);
                 return ExitCode::FAILURE;
             }
@@ -146,13 +198,23 @@ fn main() -> ExitCode {
             threshold,
             min_results,
         }) => {
-            // Ensure daemon is ready before retrieval (blocking wait)
+            // Ensure daemon is ready (blocking wait)
             if !ensure_daemon_ready() {
-                eprintln!("Warning: Daemon not ready, retrieval may be slower");
+                eprintln!(
+                    "Warning: Daemon not ready, retrieval may be slower"
+                );
             }
             if let Err(e) = cli::commands::retrieve_command(
-                &query, limit, max_tokens, no_expand, no_rerank, no_context, xml, structured,
-                threshold, min_results,
+                &query,
+                limit,
+                max_tokens,
+                no_expand,
+                no_rerank,
+                no_context,
+                xml,
+                structured,
+                threshold,
+                min_results,
             ) {
                 eprintln!("Error: {}", e);
                 return ExitCode::FAILURE;
@@ -163,14 +225,44 @@ fn main() -> ExitCode {
         Some(Commands::Docs { action }) => {
             // Ensure daemon is ready for docs commands
             if !ensure_daemon_ready() {
-                eprintln!("Warning: Daemon not ready, operation may fail");
+                eprintln!(
+                    "Warning: Daemon not ready, operation may fail"
+                );
             }
             let result = match action {
-                DocsAction::Generate { force } => cli::commands::docs_generate_command(force),
-                DocsAction::Status => cli::commands::docs_status_command(),
-                DocsAction::Show { symbol } => cli::commands::docs_show_command(&symbol),
-                DocsAction::Search { query, limit } => cli::commands::docs_search_command(&query, limit),
+                DocsAction::Generate { force } => {
+                    cli::commands::docs_generate_command(force)
+                }
+                DocsAction::Status => {
+                    cli::commands::docs_status_command()
+                }
+                DocsAction::Show { symbol } => {
+                    cli::commands::docs_show_command(&symbol)
+                }
+                DocsAction::Search { query, limit } => {
+                    cli::commands::docs_search_command(
+                        &query, limit,
+                    )
+                }
             };
+            if let Err(e) = result {
+                eprintln!("Error: {}", e);
+                return ExitCode::FAILURE;
+            }
+        }
+
+        // Info command - show detailed symbol information
+        Some(Commands::Info {
+            symbol,
+            code,
+            callers,
+            callees,
+            refs,
+            all,
+        }) => {
+            let result = cli::commands::info_command(
+                &symbol, code, callers, callees, refs, all,
+            );
             if let Err(e) = result {
                 eprintln!("Error: {}", e);
                 return ExitCode::FAILURE;

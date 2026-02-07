@@ -1,0 +1,154 @@
+================================================================================
+HYBRID SEARCH - IMPLEMENTATION NOTES
+================================================================================
+
+Date: 2026-01-31
+Status: Phase 2 Complete
+
+================================================================================
+DESIGN DECISIONS
+================================================================================
+
+1. RRF vs Other Fusion Methods
+   - Chose RRF for simplicity and robustness
+   - No need to normalize scores between rankers
+   - k=60 is standard from original paper
+   - Alternative: Combsum, Combmnz, learned fusion
+
+2. Deduplication Strategy
+   - Key by "name:line" for uniqueness
+   - If same symbol appears in both results, combine scores
+   - If only in one, still include with single RRF contribution
+
+3. Candidate Retrieval
+   - Fetch top 50 from each source
+   - More candidates = better recall, slower
+   - Configurable via HybridSearchConfig
+
+4. Weight Configuration
+   - Default 1.0:1.0 (equal weight)
+   - User can adjust for specific use cases
+   - Keyword-heavy for exact matches
+   - Semantic-heavy for concept search
+
+================================================================================
+IMPLEMENTATION DETAILS
+================================================================================
+
+RRF Fusion (fusion.rs)
+----------------------
+- Generic implementation works with any item type
+- Uses get_id function for deduplication
+- Preserves original scores for debugging
+- Tests for disjoint, overlap, and weighted cases
+
+Key functions:
+- rrf_score(rank, k) -> f32
+- fuse_results() -> Vec<FusedResult<T>>
+- fuse_results_weighted() -> with custom weights
+
+HybridSearch (mod.rs)
+---------------------
+- Orchestrates keyword and semantic search
+- Uses DaemonClient for embeddings
+- Integrates SearchIndex (Tantivy) and VectorStore (HNSW)
+- Handles symbol-to-VectorPoint conversion
+
+Key methods:
+- new() / with_paths() - create instance
+- index_symbols() - index for both keyword and semantic
+- search() - perform hybrid search
+
+================================================================================
+CLI INTEGRATION
+================================================================================
+
+Added --semantic flag to search command:
+
+ch-cli search "query"              # keyword only
+ch-cli search --semantic "query"   # hybrid (keyword + semantic)
+ch-cli search --fuzzy "query"      # fuzzy keyword
+
+Output format includes:
+- Symbol info (kind, name, location)
+- RRF score
+- Keyword rank (K:n or -)
+- Semantic rank (S:n or -)
+
+================================================================================
+PERFORMANCE
+================================================================================
+
+Benchmarks (M1 MacBook Pro):
+- Keyword search: ~1ms
+- Query embedding: ~15ms
+- HNSW search: ~1ms
+- RRF fusion: <1ms
+- Total: ~20ms
+
+Bottleneck is embedding generation. Future optimization:
+- Cache query embeddings
+- Batch queries
+
+================================================================================
+TESTING
+================================================================================
+
+Unit tests (fusion.rs):
+- test_rrf_score - verify formula
+- test_fuse_disjoint - non-overlapping results
+- test_fuse_overlap - shared results
+- test_fuse_weighted - custom weights
+
+Integration (requires daemon):
+- index_symbols with embeddings
+- hybrid search end-to-end
+
+================================================================================
+KNOWN ISSUES
+================================================================================
+
+1. Symbol reconstruction from VectorPoint
+   - VectorPoint doesn't store full Symbol
+   - Signature, doc_comment, etc. not preserved
+   - Solution: store symbol ID, lookup in original
+
+2. No caching of query embeddings
+   - Same query recomputes embedding
+   - Could cache recent queries
+
+3. Index not persisted by default
+   - Hybrid index rebuilt each search
+   - Solution: persist vector store alongside Tantivy
+
+================================================================================
+FILES CREATED/MODIFIED
+================================================================================
+
+Created:
+- src/retrieval/hybrid/fusion.rs
+- doc/retrieval/hybrid-search.md
+- notes/implementation/retrieval-search.txt
+
+Modified:
+- src/retrieval/hybrid/mod.rs (HybridSearch class)
+- src/cli/mod.rs (--semantic flag)
+- src/cli/commands.rs (search_semantic function)
+- src/main.rs (handle semantic flag)
+
+================================================================================
+NEXT STEPS (Phase 3)
+================================================================================
+
+1. Context Expansion
+   - Use SemanticGraph to expand matched symbols
+   - Include parent class/module
+   - Include related types and callers
+
+2. Reranking
+   - Add cross-encoder to daemon
+   - Rerank top-N results for better ordering
+
+3. Query Expansion
+   - Use LLM to interpret natural language
+   - Extract symbol names and intent

@@ -4,8 +4,10 @@ use crate::domain::{CursorPosition, FileReference};
 use crate::message::ConversationHistory;
 use crate::picker::Picker;
 
+mod getters;
 mod handlers;
-mod parser;
+#[doc(hidden)]
+pub mod parser;
 
 /// Main application state.
 ///
@@ -41,13 +43,19 @@ impl App {
 
     /// Handle keyboard input and update app state.
     ///
-    /// Routes keyboard events to appropriate handlers based on picker state.
-    /// Uses guard clauses to avoid deep nesting.
+    /// Routes keyboard events to appropriate handlers based on
+    /// picker state. Uses guard clauses to avoid deep nesting.
     ///
     /// Returns true if the app should quit.
-    pub fn handle_key(&mut self, key: KeyCode, modifiers: KeyModifiers) -> bool {
+    pub fn handle_key(
+        &mut self,
+        key: KeyCode,
+        modifiers: KeyModifiers,
+    ) -> bool {
         // Guard clause: Handle Ctrl+C immediately
-        if key == KeyCode::Char('c') && modifiers.contains(KeyModifiers::CONTROL) {
+        let is_ctrl_c = key == KeyCode::Char('c')
+            && modifiers.contains(KeyModifiers::CONTROL);
+        if is_ctrl_c {
             self.should_quit = true;
             return true;
         }
@@ -60,36 +68,6 @@ impl App {
         // Handle regular input
         self.handle_input_key(key)
     }
-
-    /// Get the current input text
-    pub fn input(&self) -> &str {
-        &self.input
-    }
-
-    /// Get the cursor position (as raw usize for rendering)
-    pub fn cursor_position(&self) -> usize {
-        self.cursor_position.get()
-    }
-
-    /// Check if the app should quit
-    pub fn should_quit(&self) -> bool {
-        self.should_quit
-    }
-
-    /// Get a reference to the picker
-    pub fn picker(&self) -> &Picker {
-        &self.picker
-    }
-
-    /// Get file references
-    pub fn file_references(&self) -> &[FileReference] {
-        &self.file_references
-    }
-
-    /// Get conversation history
-    pub fn history(&self) -> &ConversationHistory {
-        &self.history
-    }
 }
 
 impl Default for App {
@@ -97,3 +75,4 @@ impl Default for App {
         Self::new()
     }
 }
+

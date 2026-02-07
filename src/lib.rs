@@ -7,6 +7,7 @@ pub mod indexer;
 pub mod message;
 pub mod picker;
 pub mod retrieval;
+pub mod service;
 pub mod startup;
 pub mod ui;
 

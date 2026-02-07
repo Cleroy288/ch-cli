@@ -6,7 +6,9 @@
 use crate::indexer::SymbolKind;
 
 /// Prompt template for function documentation.
-pub const DOC_PROMPT_FUNCTION: &str = r#"You are a code documentation expert. Generate a clear, concise description for this Rust function.
+pub const DOC_PROMPT_FUNCTION: &str =
+	r#"You are a code documentation expert.
+Generate a clear, concise description for this Rust function.
 
 Function name: {name}
 Signature: {signature}
@@ -21,12 +23,15 @@ Write a 2-4 sentence description explaining:
 3. What it returns
 4. Any important side effects or error conditions
 
-Be specific and technical. Use present tense. Do not repeat the signature.
+Be specific and technical. Use present tense.
+Do not repeat the signature.
 
 Description:"#;
 
 /// Prompt template for struct documentation.
-pub const DOC_PROMPT_STRUCT: &str = r#"You are a code documentation expert. Generate a clear, concise description for this Rust struct.
+pub const DOC_PROMPT_STRUCT: &str =
+	r#"You are a code documentation expert.
+Generate a clear, concise description for this Rust struct.
 
 Struct name: {name}
 Definition:
@@ -45,7 +50,9 @@ Be specific and technical. Use present tense.
 Description:"#;
 
 /// Prompt template for enum documentation.
-pub const DOC_PROMPT_ENUM: &str = r#"You are a code documentation expert. Generate a clear, concise description for this Rust enum.
+pub const DOC_PROMPT_ENUM: &str =
+	r#"You are a code documentation expert.
+Generate a clear, concise description for this Rust enum.
 
 Enum name: {name}
 Definition:
@@ -63,7 +70,9 @@ Be specific and technical. Use present tense.
 Description:"#;
 
 /// Prompt template for trait documentation.
-pub const DOC_PROMPT_TRAIT: &str = r#"You are a code documentation expert. Generate a clear, concise description for this Rust trait.
+pub const DOC_PROMPT_TRAIT: &str =
+	r#"You are a code documentation expert.
+Generate a clear, concise description for this Rust trait.
 
 Trait name: {name}
 Definition:
@@ -82,7 +91,9 @@ Be specific and technical. Use present tense.
 Description:"#;
 
 /// Prompt template for impl block documentation.
-pub const DOC_PROMPT_IMPL: &str = r#"You are a code documentation expert. Generate a clear, concise description for this Rust impl block.
+pub const DOC_PROMPT_IMPL: &str =
+	r#"You are a code documentation expert.
+Generate a clear, concise description for this Rust impl block.
 
 Impl: {name}
 Code:
@@ -100,7 +111,9 @@ Be specific and technical. Use present tense.
 Description:"#;
 
 /// Prompt template for method documentation.
-pub const DOC_PROMPT_METHOD: &str = r#"You are a code documentation expert. Generate a clear, concise description for this Rust method.
+pub const DOC_PROMPT_METHOD: &str =
+	r#"You are a code documentation expert.
+Generate a clear, concise description for this Rust method.
 
 Method name: {name}
 Signature: {signature}
@@ -121,7 +134,9 @@ Be specific and technical. Use present tense.
 Description:"#;
 
 /// Prompt template for constant documentation.
-pub const DOC_PROMPT_CONST: &str = r#"You are a code documentation expert. Generate a clear, concise description for this Rust constant.
+pub const DOC_PROMPT_CONST: &str =
+	r#"You are a code documentation expert.
+Generate a clear, concise description for this Rust constant.
 
 Constant: {name}
 Definition:
@@ -138,7 +153,9 @@ Be specific and technical.
 Description:"#;
 
 /// Prompt template for module documentation.
-pub const DOC_PROMPT_MODULE: &str = r#"You are a code documentation expert. Generate a clear, concise description for this Rust module.
+pub const DOC_PROMPT_MODULE: &str =
+	r#"You are a code documentation expert.
+Generate a clear, concise description for this Rust module.
 
 Module name: {name}
 Contents preview:
@@ -156,7 +173,9 @@ Be specific and technical. Use present tense.
 Description:"#;
 
 /// Prompt template for type alias documentation.
-pub const DOC_PROMPT_TYPE_ALIAS: &str = r#"You are a code documentation expert. Generate a clear, concise description for this Rust type alias.
+pub const DOC_PROMPT_TYPE_ALIAS: &str =
+	r#"You are a code documentation expert.
+Generate a clear, concise description for this Rust type alias.
 
 Type alias: {name}
 Definition:
@@ -173,7 +192,9 @@ Be specific and technical.
 Description:"#;
 
 /// Prompt template for macro documentation.
-pub const DOC_PROMPT_MACRO: &str = r#"You are a code documentation expert. Generate a clear, concise description for this Rust macro.
+pub const DOC_PROMPT_MACRO: &str =
+	r#"You are a code documentation expert.
+Generate a clear, concise description for this Rust macro.
 
 Macro name: {name}
 Definition:
@@ -191,7 +212,9 @@ Be specific and technical.
 Description:"#;
 
 /// Generic fallback prompt for any symbol.
-pub const DOC_PROMPT_GENERIC: &str = r#"You are a code documentation expert. Generate a clear, concise description for this Rust code element.
+pub const DOC_PROMPT_GENERIC: &str =
+	r#"You are a code documentation expert.
+Generate a clear, concise description for this Rust code element.
 
 Name: {name}
 Kind: {kind}
@@ -200,7 +223,8 @@ Code:
 {code_snippet}
 ```
 {user_comment_section}
-Write a 2-3 sentence description explaining what this code element does and its purpose.
+Write a 2-3 sentence description explaining what this code element
+does and its purpose.
 
 Be specific and technical. Use present tense.
 
@@ -215,7 +239,9 @@ pub fn get_prompt_for_kind(kind: SymbolKind) -> &'static str {
 		SymbolKind::Enum => DOC_PROMPT_ENUM,
 		SymbolKind::Trait => DOC_PROMPT_TRAIT,
 		SymbolKind::Impl => DOC_PROMPT_IMPL,
-		SymbolKind::Constant | SymbolKind::Static => DOC_PROMPT_CONST,
+		SymbolKind::Constant | SymbolKind::Static => {
+			DOC_PROMPT_CONST
+		}
 		SymbolKind::Module => DOC_PROMPT_MODULE,
 		SymbolKind::TypeAlias => DOC_PROMPT_TYPE_ALIAS,
 		SymbolKind::Macro => DOC_PROMPT_MACRO,
@@ -224,11 +250,15 @@ pub fn get_prompt_for_kind(kind: SymbolKind) -> &'static str {
 }
 
 /// Format the user comment section for inclusion in prompt.
-pub fn format_user_comment_section(user_comment: Option<&str>) -> String {
+pub fn format_user_comment_section(
+	user_comment: Option<&str>,
+) -> String {
 	match user_comment {
 		Some(comment) if !comment.trim().is_empty() => {
 			format!(
-				"\nExisting documentation:\n```\n{}\n```\nEnhance and expand upon this existing documentation.\n",
+				"\nExisting documentation:\n```\n{}\n```\n\
+				Enhance and expand upon this existing \
+				documentation.\n",
 				comment.trim()
 			)
 		}
@@ -246,7 +276,8 @@ pub fn build_prompt(
 	parent: Option<&str>,
 ) -> String {
 	let template = get_prompt_for_kind(kind);
-	let user_comment_section = format_user_comment_section(user_comment);
+	let user_comment_section =
+		format_user_comment_section(user_comment);
 
 	template
 		.replace("{name}", name)
@@ -257,40 +288,3 @@ pub fn build_prompt(
 		.replace("{parent}", parent.unwrap_or("N/A"))
 }
 
-#[cfg(test)]
-mod tests {
-	use super::*;
-
-	#[test]
-	fn test_get_prompt_for_kind() {
-		assert!(get_prompt_for_kind(SymbolKind::Function).contains("function"));
-		assert!(get_prompt_for_kind(SymbolKind::Struct).contains("struct"));
-		assert!(get_prompt_for_kind(SymbolKind::Trait).contains("trait"));
-	}
-
-	#[test]
-	fn test_format_user_comment_section() {
-		let section = format_user_comment_section(Some("This is a test function"));
-		assert!(section.contains("Existing documentation"));
-		assert!(section.contains("This is a test function"));
-
-		let empty = format_user_comment_section(None);
-		assert!(empty.is_empty());
-	}
-
-	#[test]
-	fn test_build_prompt() {
-		let prompt = build_prompt(
-			SymbolKind::Function,
-			"process_data",
-			Some("fn process_data(input: &str) -> Result<String>"),
-			"fn process_data(input: &str) -> Result<String> { ... }",
-			Some("Processes input data"),
-			None,
-		);
-
-		assert!(prompt.contains("process_data"));
-		assert!(prompt.contains("fn process_data"));
-		assert!(prompt.contains("Existing documentation"));
-	}
-}

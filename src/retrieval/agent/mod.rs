@@ -8,11 +8,22 @@
 //! 5. Output Formatting (XML for LLM consumption)
 
 pub mod feedback;
+mod feedback_accessors;
+pub mod feedback_actions;
+mod feedback_handlers;
+mod feedback_internal;
+mod feedback_parsers;
+pub mod feedback_scoring;
 pub mod output;
+mod output_json;
+pub mod output_structured;
+pub mod output_xml;
 pub mod pipeline;
 
-pub use feedback::{FeedbackAction, FeedbackLoop};
-pub use output::{CodeResult, DocResult, NotesResult, StructuredOutput};
+pub use feedback::FeedbackLoop;
+pub use feedback_actions::{FeedbackAction, parse_feedback_action};
+pub use output::StructuredOutput;
+pub use output_structured::{CodeResult, DocResult, NotesResult};
 pub use pipeline::{PipelineConfig, PipelineResult, RetrievalPipeline};
 
 use crate::retrieval::daemon::protocol::SearchSpec;
@@ -43,12 +54,14 @@ impl RetrievalOutput {
 	/// Get a summary of the retrieval
 	pub fn summary(&self) -> String {
 		format!(
-			"Query: '{}'\nIntent: {:?}\nSymbols: {:?}\nResults: {} ({} tokens)",
+			"Query: '{}'\nIntent: {:?}\n\
+			Symbols: {:?}\nResults: {} ({} tokens)",
 			self.query,
 			self.search_spec.intent,
 			self.search_spec.symbol_names,
 			self.result_count,
-			self.token_count
+			self.token_count,
 		)
 	}
 }
+

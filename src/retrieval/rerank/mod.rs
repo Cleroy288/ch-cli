@@ -2,9 +2,10 @@
 //!
 //! Reranks search results using a cross-encoder model.
 //! The cross-encoder scores (query, document) pairs directly,
-//! providing more accurate relevance scores than bi-encoder similarity.
+//! providing more accurate relevance scores than bi-encoder.
 
 pub mod cross_encoder;
+mod reranker_builder;
 
 pub use cross_encoder::BgeReranker;
 
@@ -20,8 +21,14 @@ pub struct RerankedItem<T> {
 }
 
 /// Rerank a list of items by their scores
-pub fn rerank_by_score<T>(items: Vec<RerankedItem<T>>) -> Vec<RerankedItem<T>> {
+pub fn rerank_by_score<T>(
+	items: Vec<RerankedItem<T>>,
+) -> Vec<RerankedItem<T>> {
 	let mut sorted = items;
-	sorted.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+	let ordering = std::cmp::Ordering::Equal;
+	sorted.sort_by(|a, b| {
+		b.score.partial_cmp(&a.score).unwrap_or(ordering)
+	});
 	sorted
 }
+

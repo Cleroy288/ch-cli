@@ -54,7 +54,8 @@ pub fn folder_reference_style() -> Style {
         .add_modifier(Modifier::BOLD)
 }
 
-/// Create a style for selected picker items (black text on cyan background, bold)
+/// Create a style for selected picker items.
+/// Black text on cyan background, bold.
 pub fn picker_selected_style() -> Style {
     Style::default()
         .fg(Color::Black)
@@ -62,7 +63,8 @@ pub fn picker_selected_style() -> Style {
         .add_modifier(Modifier::BOLD)
 }
 
-/// Create a style for selected file list items (black text on green background, bold)
+/// Create a style for selected file list items.
+/// Black text on green background, bold.
 pub fn file_list_selected_style() -> Style {
     Style::default()
         .fg(Color::Black)
@@ -85,3 +87,4 @@ pub fn show_goodbye_message() {
     println!("╚═══════════════════════════════════════════╝");
     println!("\n");
 }
+
