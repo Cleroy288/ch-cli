@@ -21,19 +21,18 @@ pub(super) fn rerank_results(
 
 	let scores = client
 		.rerank(query.to_string(), documents)
-		.map_err(super::semantic_impl::map_retrieval_err)?;
+		.map_err(
+			super::semantic_impl::map_retrieval_err,
+		)?;
 
 	if scores.len() != results.len() {
-		return Err(SearchError::Io(
-			std::io::Error::new(
-				std::io::ErrorKind::Other,
-				format!(
-					"Rerank mismatch: {} scores, \
-					{} results",
-					scores.len(),
-					results.len()
-				),
-			),
+		return Err(SearchError::IoError(
+			std::io::Error::other(format!(
+				"Rerank mismatch: {} scores, \
+				{} results",
+				scores.len(),
+				results.len()
+			)),
 		));
 	}
 
@@ -48,12 +47,13 @@ fn build_rerank_docs(
 ) -> Vec<String> {
 	results
 		.iter()
-		.map(|r| {
+		.map(|result| {
 			format!(
 				"{} {} {}",
-				r.symbol.kind,
-				r.symbol.name,
-				r.symbol
+				result.symbol.kind,
+				result.symbol.name,
+				result
+					.symbol
 					.signature
 					.as_deref()
 					.unwrap_or("")
@@ -72,29 +72,32 @@ fn assign_and_sort(
 	{
 		result.rerank_score = Some(*score);
 	}
-	results.sort_by(|a, b| {
-		b.rerank_score
-			.partial_cmp(&a.rerank_score)
+	results.sort_by(|lhs, rhs| {
+		rhs.rerank_score
+			.partial_cmp(&lhs.rerank_score)
 			.unwrap_or(std::cmp::Ordering::Equal)
 	});
 }
 
 /// Build context XML if context expansion requested
 pub(super) fn build_context_xml(
-	query: &str,
+	_query: &str,
 	results: &[HybridSearchResult],
-	graph: &Option<SemanticGraph>,
+	graph: &Option<std::sync::Arc<SemanticGraph>>,
 	context: bool,
 ) -> Option<String> {
 	if !context {
 		return None;
 	}
-	let graph = graph.as_ref()?;
-	let symbols: Vec<_> =
-		results.iter().map(|r| r.symbol.clone()).collect();
+	let graph = graph.as_deref()?;
+	let symbols: Vec<_> = results
+		.iter()
+		.map(|result| (*result.symbol).clone())
+		.collect();
 	let config = ContextConfig::default();
-	let expander =
-		ContextExpander::with_config(graph, config, 8000);
+	let expander = ContextExpander::with_config(
+		graph, config, 8000,
+	);
 	Some(expander.expand_to_xml(&symbols))
 }
 
@@ -104,14 +107,14 @@ pub(super) fn convert_to_hits(
 ) -> Vec<SearchResultHit> {
 	results
 		.into_iter()
-		.map(|r| SearchResultHit {
-			symbol: r.symbol,
-			score: r.rrf_score as f64,
-			keyword_rank: r.keyword_rank,
-			semantic_rank: r.semantic_rank,
-			rerank_score: r.rerank_score.map(|s| {
-				s as f64
-			}),
+		.map(|result| SearchResultHit {
+			symbol: (*result.symbol).clone(),
+			score: result.score as f64,
+			keyword_rank: result.keyword_rank,
+			semantic_rank: result.semantic_rank,
+			rerank_score: result
+				.rerank_score
+				.map(|score| score as f64),
 		})
 		.collect()
 }

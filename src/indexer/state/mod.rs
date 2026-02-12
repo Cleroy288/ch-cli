@@ -10,6 +10,8 @@ mod change_detection;
 mod file_state;
 mod paths;
 mod persistence;
+pub mod ref_persistence;
+pub(crate) mod ref_persistence_helpers;
 mod types;
 mod types_default;
 

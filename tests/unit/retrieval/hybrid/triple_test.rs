@@ -1,8 +1,11 @@
 use std::path::PathBuf;
+use std::sync::Arc;
 
-use ch_cli::indexer::{CodeLocation, Symbol, SymbolKind};
-use ch_cli::retrieval::hybrid::result::HybridSearchResult;
-use ch_cli::retrieval::hybrid::triple::{
+use rustean::indexer::{
+	ByteSpan, CodeLocation, Symbol, SymbolKind,
+};
+use rustean::retrieval::hybrid::result::HybridSearchResult;
+use rustean::retrieval::hybrid::triple::{
 	TripleHybridResults, TripleHybridStats,
 };
 
@@ -39,21 +42,19 @@ fn test_default_stats_zero() {
 	assert_eq!(stats.total(), 0);
 }
 
-/// Helper for mock HybridSearchResult with RRF score
-fn mock_result(rrf_score: f32) -> HybridSearchResult {
+/// Helper for mock HybridSearchResult with fusion score
+fn mock_result(score: f32) -> HybridSearchResult {
 	HybridSearchResult {
-		symbol: Symbol::new(
-			format!(
-				"test_{}",
-				(rrf_score * 1000.0) as i32
-			),
+		symbol: Arc::new(Symbol::new(
+			format!("test_{}", (score * 1000.0) as i32),
 			SymbolKind::Function,
 			CodeLocation::new(
 				PathBuf::from("test.rs"),
-				1, 0, 0, 10,
+				1, 0,
+				ByteSpan { offset: 0, length: 10 },
 			),
-		),
-		rrf_score,
+		)),
+		score,
 		keyword_rank: None,
 		semantic_rank: None,
 		keyword_score: None,
@@ -66,13 +67,13 @@ fn mock_result(rrf_score: f32) -> HybridSearchResult {
 #[test]
 fn test_filter_keeps_high_scores() {
 	let results = vec![
-		mock_result(0.025),
-		mock_result(0.020),
-		mock_result(0.010),
-		mock_result(0.005),
+		mock_result(0.25),
+		mock_result(0.20),
+		mock_result(0.03),
+		mock_result(0.01),
 	];
 
-	let threshold = 0.015_f32;
+	let threshold = 0.05_f32;
 	let min_results = 1_usize;
 
 	let mut filtered: Vec<HybridSearchResult> =
@@ -85,11 +86,11 @@ fn test_filter_keeps_high_scores() {
 		if filtered.len() >= 10 {
 			break;
 		}
-		if result.rrf_score >= threshold {
+		if result.score >= threshold {
 			filtered.push(result);
 		}
 	}
 
-	// Should keep 2 (scores 0.025 and 0.020)
+	// Should keep 2 (scores 0.25 and 0.20)
 	assert_eq!(filtered.len(), 2);
 }

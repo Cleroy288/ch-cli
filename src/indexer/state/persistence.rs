@@ -1,7 +1,5 @@
 //! Persistence methods for saving and loading index state.
 
-use std::fs;
-use std::io;
 use std::path::Path;
 
 use crate::indexer::semantic::SymbolReference;
@@ -11,21 +9,20 @@ use super::types::IndexState;
 
 impl IndexState {
 	/// Load index state from disk
-	pub fn load(root: &Path) -> io::Result<Self> {
-		// state_file: path to the state JSON file
+	pub fn load(root: &Path) -> std::io::Result<Self> {
 		let state_file = Self::state_file(root);
+		let content = std::fs::read_to_string(&state_file)?;
 
-		// content: raw JSON content from the file
-		let content = fs::read_to_string(&state_file)?;
+		let state: IndexState =
+			serde_json::from_str(&content).map_err(|err| {
+				std::io::Error::new(
+					std::io::ErrorKind::InvalidData, err,
+				)
+			})?;
 
-		// state: deserialized IndexState from JSON
-		let state: IndexState = serde_json::from_str(&content)
-			.map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-
-		// Check version compatibility
 		if state.version != INDEX_VERSION {
-			return Err(io::Error::new(
-				io::ErrorKind::InvalidData,
+			return Err(std::io::Error::new(
+				std::io::ErrorKind::InvalidData,
 				format!(
 					"Index version mismatch: expected {}, found {}",
 					INDEX_VERSION, state.version
@@ -37,58 +34,49 @@ impl IndexState {
 	}
 
 	/// Save index state to disk
-	pub fn save(&self) -> io::Result<()> {
-		// index_dir: directory where index files are stored
+	pub fn save(&self) -> std::io::Result<()> {
 		let index_dir = Self::index_dir(&self.root);
-		fs::create_dir_all(&index_dir)?;
+		std::fs::create_dir_all(&index_dir)?;
 
-		// state_file: path to the state JSON file
 		let state_file = Self::state_file(&self.root);
+		let content =
+			serde_json::to_string_pretty(self).map_err(
+				|err| {
+					std::io::Error::new(
+						std::io::ErrorKind::InvalidData,
+						err,
+					)
+				},
+			)?;
 
-		// content: serialized JSON content
-		let content = serde_json::to_string_pretty(self)
-			.map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-
-		fs::write(&state_file, content)?;
-
-		Ok(())
+		std::fs::write(&state_file, content)
 	}
 
-	/// Save references to disk (separate from state for performance)
-	pub fn save_references(&self) -> io::Result<()> {
-		// index_dir: directory where index files are stored
-		let index_dir = Self::index_dir(&self.root);
-		fs::create_dir_all(&index_dir)?;
+	/// Save references to per-file refs/ directory
+	pub fn save_references(&self) -> std::io::Result<()> {
+		let refs_dir = Self::refs_dir(&self.root);
+		std::fs::create_dir_all(&refs_dir)?;
 
-		// refs_file: path to the references JSON file
-		let refs_file = Self::refs_file(&self.root);
-
-		// content: serialized JSON content for references
-		let content = serde_json::to_string(&self.references)
-			.map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-
-		fs::write(&refs_file, content)?;
-
-		Ok(())
+		super::ref_persistence_helpers::save_grouped_refs(
+			&refs_dir,
+			&self.references,
+			&self.root,
+		)
 	}
 
-	/// Load references from disk
-	pub fn load_references(root: &Path) -> io::Result<Vec<SymbolReference>> {
-		// refs_file: path to the references JSON file
-		let refs_file = Self::refs_file(root);
+	/// Load references from per-file refs/ directory
+	pub fn load_references(
+		root: &Path,
+	) -> std::io::Result<Vec<SymbolReference>> {
+		let refs_dir = Self::refs_dir(root);
 
-		if !refs_file.exists() {
-			return Ok(Vec::new());
-		}
+		super::ref_persistence_helpers::migrate_if_needed(
+			root, &refs_dir,
+		)?;
 
-		// content: raw JSON content from the file
-		let content = fs::read_to_string(&refs_file)?;
-
-		// refs: deserialized references vector
-		let refs: Vec<SymbolReference> = serde_json::from_str(&content)
-			.map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-
-		Ok(refs)
+		super::ref_persistence_helpers::load_all_refs(
+			&refs_dir,
+		)
 	}
 
 	/// Check if an index exists for the given root

@@ -1,5 +1,6 @@
 //! Result formatting utilities.
 
+use crate::indexer::Symbol;
 use crate::retrieval::context::{ContextConfig, ContextExpander};
 use crate::retrieval::hybrid::HybridSearchResult;
 use crate::retrieval::{RetrievalError, RetrievalResult};
@@ -14,7 +15,7 @@ impl RetrievalPipeline {
 	) -> RetrievalResult<String> {
 		let symbols: Vec<_> = results
 			.iter()
-			.map(|r| r.symbol.clone())
+			.map(|res| (*res.symbol).clone())
 			.collect();
 
 		if let Some(ref graph) = self.graph {
@@ -55,37 +56,57 @@ impl RetrievalPipeline {
 		&self,
 		symbol_names: &[String],
 	) -> RetrievalResult<String> {
+		let matching =
+			self.find_matching_symbols(symbol_names)?;
+
+		let graph = self.graph.as_ref().ok_or_else(|| {
+			RetrievalError::Embedding(
+				"No semantic graph".to_string(),
+			)
+		})?;
+
+		Ok(expand_deep_context(
+			graph,
+			&matching,
+			self.config.max_tokens * 2,
+		))
+	}
+
+	/// Find symbols matching the given names
+	fn find_matching_symbols(
+		&self,
+		symbol_names: &[String],
+	) -> RetrievalResult<Vec<Symbol>> {
 		let symbols = self.symbols.as_ref().ok_or_else(|| {
 			RetrievalError::Embedding(
 				"Pipeline not initialized".to_string(),
 			)
 		})?;
 
-		// Find matching symbols
-		let matching: Vec<_> = symbols
+		Ok(symbols
 			.iter()
-			.filter(|s| symbol_names.contains(&s.name))
+			.filter(|sym| symbol_names.contains(&sym.name))
 			.cloned()
-			.collect();
-
-		if let Some(ref graph) = self.graph {
-			let config = ContextConfig {
-				max_callers: 10,
-				max_callees: 10,
-				max_usages_per_symbol: 30,
-				context_lines_before: 5,
-				context_lines_after: 20,
-				include_parent: true,
-				include_related_types: true,
-			};
-			let max_tokens = self.config.max_tokens * 2;
-			let expander =
-				ContextExpander::with_config(graph, config, max_tokens);
-			Ok(expander.expand_to_xml(&matching))
-		} else {
-			Err(RetrievalError::Embedding(
-				"No semantic graph".to_string(),
-			))
-		}
+			.collect())
 	}
+}
+
+/// Build deep context expansion for matched symbols
+fn expand_deep_context(
+	graph: &crate::indexer::SemanticGraph,
+	matching: &[Symbol],
+	max_tokens: usize,
+) -> String {
+	let config = ContextConfig {
+		max_callers: 10,
+		max_callees: 10,
+		max_usages_per_symbol: 30,
+		context_lines_before: 5,
+		context_lines_after: 20,
+		include_parent: true,
+		include_related_types: true,
+	};
+	let expander =
+		ContextExpander::with_config(graph, config, max_tokens);
+	expander.expand_to_xml(matching)
 }

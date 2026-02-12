@@ -23,7 +23,12 @@ impl IndexState {
 		Self::index_dir(root).join("tantivy")
 	}
 
-	/// Get the references cache file path
+	/// Get the per-file references directory
+	pub fn refs_dir(root: &Path) -> PathBuf {
+		Self::index_dir(root).join("refs")
+	}
+
+	/// Get the legacy monolithic refs file (migration)
 	pub fn refs_file(root: &Path) -> PathBuf {
 		Self::index_dir(root).join("refs.json")
 	}

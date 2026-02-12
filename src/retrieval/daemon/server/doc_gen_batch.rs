@@ -3,87 +3,103 @@
 //! Parallel code extraction and serial LLM inference
 //! for documentation entries.
 
-use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use rayon::prelude::*;
 
+use super::doc_gen_helpers::{
+	generate_single, periodic_save,
+	update_progress, write_entry_back,
+};
+use super::types::{
+	PreparedEntry, SharedDocGenerator,
+	SharedDocStores,
+};
 use super::DocGenProgress;
 use crate::retrieval::docgen::generator_utils::extract_code_snippet;
-use crate::retrieval::docgen::prompts::build_prompt;
-use crate::retrieval::docgen::{DocGenerator, DocStore};
+use crate::retrieval::docgen::prompts::{
+	build_prompt, PromptInput,
+};
+use crate::retrieval::docgen::DocEntry;
+
+/// Read entries from store for a chunk of IDs
+fn read_entries_from_store(
+	stores: &SharedDocStores,
+	canonical: &PathBuf,
+	chunk: &[String],
+) -> Vec<(String, DocEntry)> {
+	let lock = stores.lock().unwrap();
+	let Some(store) = lock.get(canonical) else {
+		return Vec::new();
+	};
+	chunk
+		.iter()
+		.filter_map(|entry_id| {
+			store
+				.get(entry_id)
+				.map(|entry| {
+					(entry_id.clone(), entry.clone())
+				})
+		})
+		.collect()
+}
+
+/// Build prompt for a single doc entry
+fn build_entry_prompt(
+	entry: &DocEntry,
+) -> String {
+	build_prompt(PromptInput {
+		kind: entry.kind,
+		name: &entry.name,
+		signature: entry.signature.as_deref(),
+		code_snippet: &entry.code_snippet,
+		user_comment: entry.user_comment.as_deref(),
+		parent: entry.links.parent.as_deref(),
+	})
+}
 
 /// Extract code snippets + build prompts in parallel
 pub(crate) fn extract_batch(
-	stores: &Arc<Mutex<HashMap<PathBuf, DocStore>>>,
+	stores: &SharedDocStores,
 	canonical: &PathBuf,
 	chunk: &[String],
-) -> Vec<(
-	String,
-	crate::retrieval::docgen::DocEntry,
-	String,
-)> {
-	// extract entries from store (brief lock)
-	let entries: Vec<(
-		String,
-		crate::retrieval::docgen::DocEntry,
-	)> = {
-		let lock = stores.lock().unwrap();
-		let store = match lock.get(canonical) {
-			Some(s) => s,
-			None => return Vec::new(),
-		};
-		chunk
-			.iter()
-			.filter_map(|id| {
-				store
-					.get(id)
-					.map(|e| (id.clone(), e.clone()))
-			})
-			.collect()
-	};
-
-	// parallel: extract code + build prompts
+) -> Vec<PreparedEntry> {
+	let entries =
+		read_entries_from_store(stores, canonical, chunk);
 	entries
 		.into_par_iter()
-		.filter_map(|(id, mut entry)| {
-			if entry.code_snippet.is_empty() {
-				if let Ok(snippet) =
-					extract_code_snippet(
-						&entry.file_path,
-						entry.line,
-					)
-				{
-					entry.code_snippet = snippet;
-				}
-			}
-			let prompt = build_prompt(
-				entry.kind,
-				&entry.name,
-				entry.signature.as_deref(),
-				&entry.code_snippet,
-				entry.user_comment.as_deref(),
-				entry.links.parent.as_deref(),
-			);
-			Some((id, entry, prompt))
+		.filter_map(|(entry_id, mut entry)| {
+			fill_code_snippet(&mut entry);
+			let prompt = build_entry_prompt(&entry);
+			Some((entry_id, entry, prompt))
 		})
 		.collect()
+}
+
+/// Fill in code snippet if empty
+fn fill_code_snippet(entry: &mut DocEntry) {
+	if !entry.code_snippet.is_empty() {
+		return;
+	}
+	if let Ok(snippet) = extract_code_snippet(
+		&entry.file_path,
+		entry.line,
+	) {
+		entry.code_snippet = snippet;
+	}
 }
 
 /// Run LLM inference serially on prepared entries
 ///
 /// Returns true if cancelled during this batch.
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::print_stderr)]
 pub(crate) fn run_llm_batch(
-	prepared: &[(
-		String,
-		crate::retrieval::docgen::DocEntry,
-		String,
-	)],
-	stores: &Arc<Mutex<HashMap<PathBuf, DocStore>>>,
-	generator: &Arc<Mutex<Option<DocGenerator>>>,
+	prepared: Vec<PreparedEntry>,
+	stores: &SharedDocStores,
+	generator: &SharedDocGenerator,
 	progress: &Arc<Mutex<DocGenProgress>>,
 	cancel: &Arc<AtomicBool>,
 	canonical: &PathBuf,
@@ -91,68 +107,30 @@ pub(crate) fn run_llm_batch(
 	total_processed: &mut usize,
 	generated: &mut usize,
 ) -> bool {
-	for (_id, entry, prompt) in prepared {
+	for (_entry_id, mut entry, prompt) in prepared {
 		if cancel.load(Ordering::Relaxed) {
 			eprintln!("[daemon] Doc gen cancelled");
 			return true;
 		}
 
-		let mut entry = entry.clone();
-		let success = {
-			let mut gen = generator.lock().unwrap();
-			if let Some(ref mut g) = *gen {
-				match g.generate_from_prompt(
-					&mut entry, prompt,
-				) {
-					Ok(()) => true,
-					Err(e) => {
-						eprintln!(
-							"[daemon] Doc gen error \
-							 for {}: {}",
-							entry.name, e
-						);
-						false
-					}
-				}
-			} else {
-				return true; // generator gone
-			}
+		let Some(success) = generate_single(
+			generator, &mut entry, &prompt,
+		) else {
+			return true;
 		};
 
-		// write result back (brief lock)
-		{
-			let mut lock = stores.lock().unwrap();
-			if let Some(store) =
-				lock.get_mut(canonical)
-			{
-				store.upsert(entry);
-			}
-		}
+		write_entry_back(stores, canonical, entry);
 
-		// update progress
 		if success {
 			*generated += 1;
 		}
 		*total_processed += 1;
-		{
-			let mut prog = progress.lock().unwrap();
-			prog.completed += 1;
-			if !success {
-				prog.failed += 1;
-			}
-		}
+		update_progress(progress, success);
 
-		// save periodically
-		if *total_processed % save_interval == 0 {
-			let lock = stores.lock().unwrap();
-			if let Some(store) = lock.get(canonical) {
-				if let Err(e) = store.save() {
-					eprintln!(
-						"[daemon] Failed to save: {}",
-						e
-					);
-				}
-			}
+		if (*total_processed)
+			.is_multiple_of(save_interval)
+		{
+			periodic_save(stores, canonical);
 		}
 	}
 	false

@@ -3,97 +3,108 @@
 //! Runs doc generation in a background thread using
 //! parallel code extraction and serial LLM inference.
 
-use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use super::doc_gen_batch::{extract_batch, run_llm_batch};
-use super::DocGenProgress;
-use crate::retrieval::docgen::{
-	DocGenerator, DocLinker, DocStore,
+use super::types::{
+	GraphAndSymbols, SharedDocGenerator, SharedDocStores,
 };
+use super::DocGenProgress;
+use crate::retrieval::docgen::{DocGenerator, DocLinker};
+
+/// Shared state for background doc generation
+pub(crate) struct DocGenContext {
+	/// doc stores shared with daemon
+	pub stores: SharedDocStores,
+	/// shared doc generator (lazy-loaded)
+	pub generator: SharedDocGenerator,
+	/// progress tracking
+	pub progress: Arc<Mutex<DocGenProgress>>,
+	/// cancellation flag
+	pub cancel: Arc<AtomicBool>,
+}
+
+/// Handle cancellation: mark done and cleanup
+#[allow(clippy::print_stderr)]
+fn handle_cancellation(
+	progress: &Arc<Mutex<DocGenProgress>>,
+	canonical: &Path,
+) {
+	let mut prog = progress.lock().unwrap();
+	prog.is_running = false;
+	let docs = canonical.join(".ch-index/docs.json");
+	let _ = std::fs::remove_file(&docs);
+	eprintln!(
+		"[daemon] Cancelled: removed partial docs.json"
+	);
+}
 
 /// Run doc generation in background thread
 ///
 /// Locks are held briefly: extract entry -> unlock ->
-/// LLM inference -> lock -> write back. This lets the
-/// main thread serve status/query requests.
+/// LLM inference -> lock -> write back.
+/// Model is unloaded after completion to free GPU.
+#[allow(clippy::print_stderr)]
 pub(crate) fn run_doc_gen_background(
-	stores: Arc<Mutex<HashMap<PathBuf, DocStore>>>,
-	generator: Arc<Mutex<Option<DocGenerator>>>,
-	progress: Arc<Mutex<DocGenProgress>>,
-	cancel: Arc<AtomicBool>,
+	ctx: DocGenContext,
 	canonical: PathBuf,
 	pending_ids: Vec<String>,
-	graph_and_symbols: Option<(
-		crate::indexer::SemanticGraph,
-		Vec<crate::indexer::Symbol>,
-	)>,
+	graph_and_symbols: GraphAndSymbols,
 ) {
-	// initialize doc generator if needed (~30s)
-	if !init_generator(&generator, &progress) {
+	if !init_generator(&ctx.generator, &ctx.progress) {
 		return;
 	}
-
 	let result = process_pending_entries(
-		&stores,
-		&generator,
-		&progress,
-		&cancel,
+		&ctx,
 		&canonical,
 		&pending_ids,
 	);
-
-	// on cancel: mark done and delete partial docs
 	if result.cancelled {
-		let mut prog = progress.lock().unwrap();
-		prog.is_running = false;
-		let docs = canonical.join(".ch-index/docs.json");
-		let _ = std::fs::remove_file(&docs);
+		handle_cancellation(&ctx.progress, &canonical);
+	} else {
 		eprintln!(
-			"[daemon] Cancelled: removed partial docs.json"
+			"[daemon] Generated {} docs for {}",
+			result.generated,
+			canonical.display()
 		);
-		return;
+		finalize_docs(
+			&ctx.stores,
+			&ctx.progress,
+			&canonical,
+			graph_and_symbols,
+		);
 	}
-
-	eprintln!(
-		"[daemon] Generated {} docs for {}",
-		result.generated,
-		canonical.display()
-	);
-
-	finalize_docs(
-		&stores,
-		&progress,
-		&canonical,
-		graph_and_symbols,
+	// Free ~500MB GPU: unload model after doc gen
+	super::doc_gen_helpers::unload_generator(
+		&ctx.generator,
 	);
 }
 
 /// Initialize the doc generator if not yet loaded
 ///
 /// Returns true if ready, false on failure.
+#[allow(clippy::print_stderr)]
 fn init_generator(
-	generator: &Arc<Mutex<Option<DocGenerator>>>,
+	generator: &SharedDocGenerator,
 	progress: &Arc<Mutex<DocGenProgress>>,
 ) -> bool {
 	let mut gen_lock = generator.lock().unwrap();
 	if gen_lock.is_some() {
 		return true;
 	}
-
 	eprintln!("[daemon] Initializing doc generator...");
 	match DocGenerator::with_default_model() {
-		Ok(gen) => {
+		Ok(doc_gen) => {
 			eprintln!("[daemon] Doc generator ready");
-			*gen_lock = Some(gen);
+			*gen_lock = Some(doc_gen);
 			true
 		}
-		Err(e) => {
+		Err(err) => {
 			eprintln!(
 				"[daemon] Failed to load doc generator: {}",
-				e
+				err
 			);
 			let mut prog = progress.lock().unwrap();
 			prog.is_running = false;
@@ -110,65 +121,76 @@ struct ProcessResult {
 	cancelled: bool,
 }
 
+/// Process a single batch chunk through extraction + LLM
+#[allow(clippy::too_many_arguments)]
+fn process_chunk(
+	ctx: &DocGenContext,
+	canonical: &PathBuf,
+	chunk: &[String],
+	save_interval: usize,
+	total_processed: &mut usize,
+	generated: &mut usize,
+) -> bool {
+	let prepared =
+		extract_batch(&ctx.stores, canonical, chunk);
+	run_llm_batch(
+		prepared,
+		&ctx.stores,
+		&ctx.generator,
+		&ctx.progress,
+		&ctx.cancel,
+		canonical,
+		save_interval,
+		total_processed,
+		generated,
+	)
+}
+
 /// Process pending doc entries in batches
 ///
 /// Parallel code extraction + serial LLM inference.
+#[allow(clippy::print_stderr)]
 fn process_pending_entries(
-	stores: &Arc<Mutex<HashMap<PathBuf, DocStore>>>,
-	generator: &Arc<Mutex<Option<DocGenerator>>>,
-	progress: &Arc<Mutex<DocGenProgress>>,
-	cancel: &Arc<AtomicBool>,
+	ctx: &DocGenContext,
 	canonical: &PathBuf,
 	pending_ids: &[String],
 ) -> ProcessResult {
-	let mut generated = 0; // success count
-	let save_interval = 10; // save every N entries
-	let batch_size = 20; // parallel batch size
-	let mut cancelled = false;
+	let mut generated = 0;
+	let save_interval = 10;
 	let mut total_processed = 0;
 
-	for chunk in pending_ids.chunks(batch_size) {
-		if cancel.load(Ordering::Relaxed) {
+	for chunk in pending_ids.chunks(20) {
+		if ctx.cancel.load(Ordering::Relaxed) {
 			eprintln!("[daemon] Doc gen cancelled");
-			cancelled = true;
-			break;
+			return ProcessResult {
+				generated,
+				cancelled: true,
+			};
 		}
-
-		let prepared =
-			extract_batch(stores, canonical, chunk);
-
-		let batch_result = run_llm_batch(
-			&prepared,
-			stores,
-			generator,
-			progress,
-			cancel,
-			canonical,
-			save_interval,
-			&mut total_processed,
-			&mut generated,
-		);
-
-		if batch_result {
-			cancelled = true;
-			break;
+		if process_chunk(
+			ctx, canonical, chunk, save_interval,
+			&mut total_processed, &mut generated,
+		) {
+			return ProcessResult {
+				generated,
+				cancelled: true,
+			};
 		}
 	}
-
-	ProcessResult { generated, cancelled }
+	ProcessResult {
+		generated,
+		cancelled: false,
+	}
 }
 
 /// Build cross-references and do final save
+#[allow(clippy::print_stderr)]
 fn finalize_docs(
-	stores: &Arc<Mutex<HashMap<PathBuf, DocStore>>>,
+	stores: &SharedDocStores,
 	progress: &Arc<Mutex<DocGenProgress>>,
 	canonical: &PathBuf,
-	graph_and_symbols: Option<(
-		crate::indexer::SemanticGraph,
-		Vec<crate::indexer::Symbol>,
-	)>,
+	graph_and_symbols: GraphAndSymbols,
 ) {
-	// build cross-references if we have graph
 	if let Some((graph, syms)) = graph_and_symbols {
 		let mut lock = stores.lock().unwrap();
 		if let Some(store) = lock.get_mut(canonical) {
@@ -176,23 +198,17 @@ fn finalize_docs(
 			linker.build_links(store, &graph, &syms);
 		}
 	}
-
-	// final save
 	{
 		let lock = stores.lock().unwrap();
 		if let Some(store) = lock.get(canonical) {
-			if let Err(e) = store.save() {
+			if let Err(err) = store.save() {
 				eprintln!(
-					"[daemon] Failed to save doc store: {}",
-					e
+					"[daemon] Failed to save: {}",
+					err
 				);
 			}
 		}
 	}
-
-	// mark as done
-	{
-		let mut prog = progress.lock().unwrap();
-		prog.is_running = false;
-	}
+	let mut prog = progress.lock().unwrap();
+	prog.is_running = false;
 }

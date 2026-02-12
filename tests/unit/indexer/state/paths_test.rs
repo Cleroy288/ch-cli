@@ -2,7 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
-use ch_cli::indexer::state::IndexState;
+use rustean::indexer::state::IndexState;
 
 /// Test index_dir returns root joined with index directory name
 #[test]
@@ -36,6 +36,17 @@ fn test_tantivy_dir() {
 	);
 
 	assert_eq!(IndexState::tantivy_dir(root), expected);
+}
+
+/// Test refs_dir returns refs subdir in index dir
+#[test]
+fn test_refs_dir() {
+	let root = Path::new("/home/user/project");
+	let expected = PathBuf::from(
+		"/home/user/project/.ch-index/refs",
+	);
+
+	assert_eq!(IndexState::refs_dir(root), expected);
 }
 
 /// Test refs_file returns refs.json path in index dir
