@@ -14,7 +14,7 @@ Without the daemon, each command would need to load models (~5-10 seconds). With
 ## Syntax
 
 ```bash
-ch-cli daemon <COMMAND>
+rustean daemon <COMMAND>
 ```
 
 ## Subcommands
@@ -34,13 +34,13 @@ ch-cli daemon <COMMAND>
 Start the daemon in background mode.
 
 ```bash
-ch-cli daemon start
+rustean daemon start
 ```
 
 **Behavior:**
 - Loads all ML models into memory
-- Creates Unix socket for IPC at `~/.ch-cli/ml.sock`
-- Writes PID file at `~/.ch-cli/daemon.pid`
+- Creates Unix socket for IPC at `~/.rustean/ml.sock`
+- Writes PID file at `~/.rustean/daemon.pid`
 - Returns immediately (daemon runs in background)
 
 **Startup time:** ~5-10 seconds for model loading
@@ -50,7 +50,7 @@ ch-cli daemon start
 Gracefully stop the running daemon.
 
 ```bash
-ch-cli daemon stop
+rustean daemon stop
 ```
 
 **Behavior:**
@@ -64,7 +64,7 @@ ch-cli daemon stop
 Show current daemon status.
 
 ```bash
-ch-cli daemon status
+rustean daemon status
 ```
 
 **Output includes:**
@@ -80,7 +80,7 @@ Daemon Status: Running
 
 Process ID: 12345
 Uptime: 2h 15m 30s
-Socket: ~/.ch-cli/ml.sock
+Socket: ~/.rustean/ml.sock
 
 Loaded Models:
   - bge-small-en-v1.5 (embeddings): 130MB
@@ -95,7 +95,7 @@ Total Memory: ~6GB
 Stop and start the daemon.
 
 ```bash
-ch-cli daemon restart
+rustean daemon restart
 ```
 
 **Use cases:**
@@ -108,7 +108,7 @@ ch-cli daemon restart
 Run the daemon in foreground (internal use).
 
 ```bash
-ch-cli daemon run
+rustean daemon run
 ```
 
 **Note:** This is used internally by `start`. Not intended for direct use.
@@ -119,48 +119,48 @@ ch-cli daemon run
 
 ```bash
 # Start the daemon
-ch-cli daemon start
+rustean daemon start
 
 # Check if running
-ch-cli daemon status
+rustean daemon status
 
 # Stop when done
-ch-cli daemon stop
+rustean daemon stop
 ```
 
 ### Before Semantic Search
 
 ```bash
 # Start daemon first
-ch-cli daemon start
+rustean daemon start
 
 # Wait for models to load (~5-10 seconds)
 # Then run semantic search
-ch-cli retrieve "how does authentication work"
+rustean retrieve "how does authentication work"
 
 # Or use semantic embed
-ch-cli embed --text "authentication handler"
+rustean embed --text "authentication handler"
 ```
 
 ### Quick Status Check
 
 ```bash
 # Check if daemon is running
-ch-cli daemon status
+rustean daemon status
 
 # If not running, start it
-ch-cli daemon start
+rustean daemon start
 ```
 
 ### Restart After Issues
 
 ```bash
 # If daemon becomes unresponsive
-ch-cli daemon restart
+rustean daemon restart
 
 # Or stop and start manually
-ch-cli daemon stop
-ch-cli daemon start
+rustean daemon stop
+rustean daemon start
 ```
 
 ## When Daemon is Required
@@ -169,17 +169,18 @@ The daemon must be running for these commands:
 
 | Command | Requires Daemon | Feature |
 |---------|-----------------|---------|
-| `ch-cli retrieve` | Yes | Semantic code retrieval |
-| `ch-cli embed` | Yes | Text embedding generation |
-| `ch-cli search --semantic` | Yes | Semantic symbol search |
+| `rustean retrieve` | Yes | Semantic code retrieval |
+| `rustean embed` | Yes | Text embedding generation |
+| `rustean search --semantic` | Yes | Semantic symbol search |
 
 **Commands that work without daemon:**
-- `ch-cli index` - Basic indexing
-- `ch-cli search` - Symbol name search (non-semantic)
-- `ch-cli goto` - Go to definition
-- `ch-cli refs` - Find references
-- `ch-cli symbols` - List symbols
-- `ch-cli stats` - Index statistics
+- `rustean index` - Basic indexing
+- `rustean search` - Symbol name search (non-semantic)
+- `rustean goto` - Go to definition
+- `rustean refs` - Find references
+- `rustean info` - Detailed symbol info (code, callers, refs)
+- `rustean symbols` - List symbols
+- `rustean stats` - Index statistics
 
 ## Auto-Start Behavior
 
@@ -210,32 +211,32 @@ The daemon stays running until explicitly stopped.
 
 | File | Purpose |
 |------|---------|
-| `~/.ch-cli/ml.sock` | Unix socket for IPC |
-| `~/.ch-cli/daemon.pid` | Process ID file |
-| `~/.ch-cli/models/` | Cached model weights |
+| `~/.rustean/ml.sock` | Unix socket for IPC |
+| `~/.rustean/daemon.pid` | Process ID file |
+| `~/.rustean/models/` | Cached model weights |
 
 ## Troubleshooting
 
 ### Daemon Won't Start
 
-**Symptom:** `ch-cli daemon start` fails or hangs
+**Symptom:** `rustean daemon start` fails or hangs
 
 **Solutions:**
 
 1. Check for stale files:
 ```bash
-ls -la ~/.ch-cli/ml.sock ~/.ch-cli/daemon.pid
+ls -la ~/.rustean/ml.sock ~/.rustean/daemon.pid
 ```
 
 2. Remove stale files and retry:
 ```bash
-rm -f ~/.ch-cli/ml.sock ~/.ch-cli/daemon.pid
-ch-cli daemon start
+rm -f ~/.rustean/ml.sock ~/.rustean/daemon.pid
+rustean daemon start
 ```
 
 3. Check if port/socket is in use:
 ```bash
-lsof ~/.ch-cli/ml.sock
+lsof ~/.rustean/ml.sock
 ```
 
 ### Daemon Not Responding
@@ -246,19 +247,19 @@ lsof ~/.ch-cli/ml.sock
 
 1. Check daemon status:
 ```bash
-ch-cli daemon status
+rustean daemon status
 ```
 
 2. If status shows running but commands fail, restart:
 ```bash
-ch-cli daemon restart
+rustean daemon restart
 ```
 
 3. Force cleanup and restart:
 ```bash
-ch-cli daemon stop
-rm -f ~/.ch-cli/ml.sock ~/.ch-cli/daemon.pid
-ch-cli daemon start
+rustean daemon stop
+rm -f ~/.rustean/ml.sock ~/.rustean/daemon.pid
+rustean daemon start
 ```
 
 ### High Memory Usage
@@ -269,12 +270,12 @@ ch-cli daemon start
 
 1. Stop daemon when not needed:
 ```bash
-ch-cli daemon stop
+rustean daemon stop
 ```
 
 2. Check current memory usage:
 ```bash
-ch-cli daemon status
+rustean daemon status
 ```
 
 3. The daemon uses ~6GB. Ensure sufficient RAM available.
@@ -288,10 +289,10 @@ ch-cli daemon status
 **Optimization:**
 ```bash
 # Pre-start daemon before working
-ch-cli daemon start
+rustean daemon start
 
 # Wait for status to show "Running" with all models loaded
-ch-cli daemon status
+rustean daemon status
 ```
 
 ### Models Not Downloading
@@ -301,11 +302,11 @@ ch-cli daemon status
 **Solutions:**
 
 1. Check internet connection
-2. Check disk space in `~/.ch-cli/models/`
+2. Check disk space in `~/.rustean/models/`
 3. Remove partial downloads:
 ```bash
-rm -rf ~/.ch-cli/models/*
-ch-cli daemon restart
+rm -rf ~/.rustean/models/*
+rustean daemon restart
 ```
 
 ## Common Workflows
@@ -314,28 +315,28 @@ ch-cli daemon restart
 
 ```bash
 # 1. Start daemon
-ch-cli daemon start
+rustean daemon start
 
 # 2. Verify it's running
-ch-cli daemon status
+rustean daemon status
 
 # 3. Run semantic searches
-ch-cli retrieve "how does the parser work"
-ch-cli retrieve "error handling patterns"
+rustean retrieve "how does the parser work"
+rustean retrieve "error handling patterns"
 
 # 4. Stop when done (optional)
-ch-cli daemon stop
+rustean daemon stop
 ```
 
 ### Workflow 2: Checking if Daemon is Running
 
 ```bash
 # Quick check
-ch-cli daemon status
+rustean daemon status
 
 # If not running:
 # - Status shows "Daemon Status: Stopped"
-# - Start it: ch-cli daemon start
+# - Start it: rustean daemon start
 
 # If running:
 # - Status shows "Daemon Status: Running"
@@ -346,34 +347,34 @@ ch-cli daemon status
 
 ```bash
 # 1. Try restart first
-ch-cli daemon restart
+rustean daemon restart
 
 # 2. If restart fails, force cleanup
-ch-cli daemon stop
-rm -f ~/.ch-cli/ml.sock ~/.ch-cli/daemon.pid
+rustean daemon stop
+rm -f ~/.rustean/ml.sock ~/.rustean/daemon.pid
 
 # 3. Start fresh
-ch-cli daemon start
+rustean daemon start
 
 # 4. Verify recovery
-ch-cli daemon status
+rustean daemon status
 ```
 
 ### Workflow 4: Minimal Memory Mode
 
 ```bash
 # When not using semantic features, stop daemon to free memory
-ch-cli daemon stop
+rustean daemon stop
 
 # Use non-semantic commands
-ch-cli search MyStruct
-ch-cli goto MyStruct
-ch-cli refs my_function
+rustean search MyStruct
+rustean goto MyStruct
+rustean refs my_function
 
 # Start daemon only when needed
-ch-cli daemon start
-ch-cli retrieve "authentication flow"
-ch-cli daemon stop
+rustean daemon start
+rustean retrieve "authentication flow"
+rustean daemon stop
 ```
 
 ## Architecture
@@ -392,7 +393,7 @@ The daemon uses a client-server architecture with Unix sockets:
 |              |                   |
 |     +--------+--------+          |
 |     |  Unix Socket    |          |
-|     | ~/.ch-cli/ml.sock          |
+|     | ~/.rustean/ml.sock          |
 +-----|----------------+-----------+
       |
       +---------------------------+

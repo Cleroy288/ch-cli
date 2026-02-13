@@ -2,7 +2,7 @@
 
 ## Summary
 
-Manual testing of ch-cli retrieval revealed an issue with result ranking: planning documents are returned instead of actual source code implementations.
+Manual testing of rustean retrieval revealed an issue with result ranking: planning documents are returned instead of actual source code implementations.
 
 ## Test Case
 
@@ -54,7 +54,7 @@ Tokens: ~3939
 
 ## Comparison with Augment MCP
 
-| Aspect | ch-cli | Augment MCP |
+| Aspect | rustean | Augment MCP |
 |--------|--------|-------------|
 | Availability | Requires daemon startup | Always available |
 | Speed (cold) | ~139s first query | ~1-2s |

@@ -53,7 +53,7 @@
 
 ## Benchmark Comparison Update
 
-| Query | ch-cli (Before) | ch-cli (After) | Augment MCP |
+| Query | rustean (Before) | rustean (After) | Augment MCP |
 |-------|-----------------|----------------|-------------|
 | "where is SemanticGraph used" | Definition only | Definition + 20 usages with snippets | Definition + 8+ files |
 | Cross-file context | ❌ None | ✅ 3-line snippets per usage | ✅ Full context |
@@ -83,7 +83,7 @@ Not yet implemented - would reduce false positives.
 
 ### Phase 5: Usage Graph Persistence (Caching)
 **Issue:** Current cache doesn't persist references, so each query without cache triggers full re-indexing.
-**Fix needed:** Persist references to `.ch-index/refs.json`
+**Fix needed:** Persist references to `.rustean-index/refs.json`
 
 ---
 
@@ -101,11 +101,11 @@ Not yet implemented - would reduce false positives.
 
 ```bash
 # Clear cache for fresh index with references
-rm -rf .ch-index
+rm -rf .rustean-index
 
 # Query with cross-file usages
-./target/release/ch-cli retrieve "semantic_graph" --limit 5
+./target/release/rustean retrieve "semantic_graph" --limit 5
 
 # Verify reference counts
-./target/release/ch-cli stats
+./target/release/rustean stats
 ```

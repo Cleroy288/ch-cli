@@ -1,8 +1,8 @@
-# Benchmark: ch-cli vs Augment MCP (Post-Improvements)
+# Benchmark: rustean vs Augment MCP (Post-Improvements)
 
 **Date**: 2026-02-05
 **Version**: After retrieval quality improvements
-**Previous Score**: ch-cli 7.5/10 vs Augment 8.5/10
+**Previous Score**: rustean 7.5/10 vs Augment 8.5/10
 
 ---
 
@@ -10,10 +10,10 @@
 
 | Tool | Overall Score | Strengths | Weaknesses |
 |------|---------------|-----------|------------|
-| **ch-cli** | 8.0/10 | Structure queries, full code display, fast local search | Fuzzy search broken, caller tracking incomplete |
+| **rustean** | 8.0/10 | Structure queries, full code display, fast local search | Fuzzy search broken, caller tracking incomplete |
 | **Augment MCP** | 8.5/10 | Deep context, caller finding, natural language | No structure queries, slower |
 
-**Improvement**: ch-cli improved from 7.5 to 8.0 (+0.5 points)
+**Improvement**: rustean improved from 7.5 to 8.0 (+0.5 points)
 
 ---
 
@@ -21,52 +21,52 @@
 
 ### Test 1: Definition Query - "SearchIndex struct"
 
-| Metric | ch-cli | Augment MCP |
+| Metric | rustean | Augment MCP |
 |--------|--------|-------------|
 | **Result #1** | ✅ struct SearchIndex (index_core.rs:12) | ✅ TripleSearchIndex struct (full code) |
 | **Code context** | Name + file:line only | Full source code with context |
 | **Speed** | ~200ms | ~800ms |
 | **Accuracy** | 10/10 | 10/10 |
 
-**Verdict**: TIE - Both find correct definitions. ch-cli faster, Augment shows more context.
+**Verdict**: TIE - Both find correct definitions. rustean faster, Augment shows more context.
 
 ---
 
 ### Test 2: Definition Query - "DaemonClient definition"
 
-| Metric | ch-cli | Augment MCP |
+| Metric | rustean | Augment MCP |
 |--------|--------|-------------|
 | **Result #1** | ✅ struct DaemonClient (mod.rs:28) | ✅ DaemonClient struct (full 135 lines) |
 | **Other results** | struct Definition, fn add_definition | AsyncDaemonClient, ConnectionPool |
 | **Accuracy** | 8/10 (some noise) | 10/10 |
 
-**Verdict**: Augment slightly better - ch-cli has some false positives from "definition" keyword match.
+**Verdict**: Augment slightly better - rustean has some false positives from "definition" keyword match.
 
 ---
 
 ### Test 3: Understanding Query - "how does hybrid search work"
 
-| Metric | ch-cli | Augment MCP |
+| Metric | rustean | Augment MCP |
 |--------|--------|-------------|
 | **Result #1** | fn test_map_concepts (rewriter.rs) | ✅ HybridSearch struct + search methods |
 | **Result #2** | fn test_no_false_positive | ✅ fusion_core.rs with RRF algorithm |
 | **Relevant code** | ❌ Test functions, not implementation | ✅ Core implementation files |
 | **Accuracy** | 3/10 | 10/10 |
 
-**Verdict**: AUGMENT WINS - ch-cli completely missed the hybrid search implementation, returned test files instead.
+**Verdict**: AUGMENT WINS - rustean completely missed the hybrid search implementation, returned test files instead.
 
 ---
 
 ### Test 4: Caller Query - "who calls search_command" (NEW FEATURE)
 
-| Metric | ch-cli | Augment MCP |
+| Metric | rustean | Augment MCP |
 |--------|--------|-------------|
 | **Result** | "No callers found" | ✅ main.rs:67 call site with full context |
 | **Pattern detection** | ✅ Detected as caller query | N/A (natural language) |
 | **Semantic graph lookup** | ❌ No references found | ✅ Found via grep/AST |
 | **Accuracy** | 2/10 | 10/10 |
 
-**Verdict**: AUGMENT WINS - ch-cli caller feature not working (SemanticGraph empty or not tracking calls).
+**Verdict**: AUGMENT WINS - rustean caller feature not working (SemanticGraph empty or not tracking calls).
 
 **Issue identified**: The caller query detection works, but SemanticGraph doesn't have the reference data populated.
 
@@ -88,7 +88,7 @@ cargo test semantic -- --nocapture
 
 ### Test 5: Structure Query - "modules in retrieval" (NEW FEATURE)
 
-| Metric | ch-cli | Augment MCP |
+| Metric | rustean | Augment MCP |
 |--------|--------|-------------|
 | **Module list** | ✅ 9 modules with doc comments | ✅ Module list from mod.rs files |
 | **Nested modules** | ✅ Shows all nested mod.rs files | Partial |
@@ -98,7 +98,7 @@ cargo test semantic -- --nocapture
 
 **Verdict**: CH-CLI WINS - Purpose-built structure query output is superior.
 
-ch-cli output example:
+rustean output example:
 ```
 📁 ./src/retrieval/mod.rs
    pub mod agent; // Agentic Code Retrieval Module...
@@ -111,7 +111,7 @@ ch-cli output example:
 
 ### Test 6: Body Content Query - "connection pool error"
 
-| Metric | ch-cli | Augment MCP |
+| Metric | rustean | Augment MCP |
 |--------|--------|-------------|
 | **Result #1** | ✅ fn return_connection (pool.rs:64) | ✅ ConnectionPool struct + error handling |
 | **Result #2** | ✅ method get (pool.rs:38) | ✅ retry.rs with is_retryable_error |
@@ -125,7 +125,7 @@ ch-cli output example:
 
 ### Test 7: Fuzzy Search - "SerachIndex" (typo)
 
-| Metric | ch-cli | Augment MCP |
+| Metric | rustean | Augment MCP |
 |--------|--------|-------------|
 | **Result** | ❌ "No results found" | N/A (no fuzzy) |
 | **Expected** | SearchIndex (edit distance 1) | - |
@@ -137,20 +137,20 @@ ch-cli output example:
 
 ### Test 8: Full Content Display - "ConnectionPool --full"
 
-| Metric | ch-cli | Augment MCP |
+| Metric | rustean | Augment MCP |
 |--------|--------|-------------|
 | **Feature** | ✅ --full flag shows source | Always shows source |
 | **Context lines** | ✅ 50 lines around match | Full file sections |
 | **Line highlighting** | ✅ `>  15 |` marks match line | No highlighting |
 | **Accuracy** | 10/10 | 10/10 |
 
-**Verdict**: TIE - Both show full code, ch-cli has better highlighting.
+**Verdict**: TIE - Both show full code, rustean has better highlighting.
 
 ---
 
 ### Test 9: Kind Filter - "embed --kind function"
 
-| Metric | ch-cli | Augment MCP |
+| Metric | rustean | Augment MCP |
 |--------|--------|-------------|
 | **Result #1** | fn test_docentry_code_snippet | N/A (no kind filter) |
 | **Result #2** | fn test_docentry_embedding_text | - |
@@ -163,7 +163,7 @@ ch-cli output example:
 
 ## Score Breakdown
 
-| Category | Weight | ch-cli | Augment |
+| Category | Weight | rustean | Augment |
 |----------|--------|--------|---------|
 | Definition queries | 20% | 9/10 | 10/10 |
 | Understanding queries | 25% | 3/10 | 10/10 |
@@ -176,13 +176,13 @@ ch-cli output example:
 
 Wait, this doesn't match my executive summary. Let me recalculate with feature parity:
 
-| Category | Weight | ch-cli | Augment | Notes |
+| Category | Weight | rustean | Augment | Notes |
 |----------|--------|--------|---------|-------|
 | Definition queries | 25% | 9/10 | 10/10 | Both good |
-| Understanding queries | 25% | 4/10 | 10/10 | ch-cli returns tests |
-| Structure queries | 15% | 10/10 | 7/10 | ch-cli better |
+| Understanding queries | 25% | 4/10 | 10/10 | rustean returns tests |
+| Structure queries | 15% | 10/10 | 7/10 | rustean better |
 | Code display | 15% | 10/10 | 10/10 | Both good |
-| Caller queries | 10% | 2/10 | 10/10 | ch-cli broken |
+| Caller queries | 10% | 2/10 | 10/10 | rustean broken |
 | Fuzzy/Typo tolerance | 10% | 2/10 | 5/10 | Both limited |
 | **Weighted Total** | 100% | **6.5/10** | **9.0/10** |
 
@@ -190,7 +190,7 @@ Wait, this doesn't match my executive summary. Let me recalculate with feature p
 
 ## Issues Identified
 
-### Critical Issues (ch-cli)
+### Critical Issues (rustean)
 
 1. **Caller tracking not working** (Test 4)
    - `detect_caller_query()` works
@@ -207,7 +207,7 @@ Wait, this doesn't match my executive summary. Let me recalculate with feature p
    - Expected: embed_text, embed_batch from embedding.rs
    - Root cause: BM25 matching "embed" in test file names
 
-### Minor Issues (ch-cli)
+### Minor Issues (rustean)
 
 4. **Fuzzy search not robust** (Test 7)
    - "SerachIndex" with --fuzzy → no results
@@ -248,11 +248,11 @@ Wait, this doesn't match my executive summary. Let me recalculate with feature p
 ## Conclusion
 
 **Final Scores (Adjusted)**:
-- **ch-cli**: 7.0/10 (down from estimated 8.0)
+- **rustean**: 7.0/10 (down from estimated 8.0)
 - **Augment MCP**: 9.0/10
 
 The improvements made today (definition boost, caller query detection) were correct, but **the caller query feature is not working** because SemanticGraph references are not populated.
 
-**Key gap**: Understanding queries and caller tracking are broken, making ch-cli significantly weaker than Augment for exploratory code questions.
+**Key gap**: Understanding queries and caller tracking are broken, making rustean significantly weaker than Augment for exploratory code questions.
 
 **Positive**: Structure queries are excellent, full code display works well, definition queries are fast and accurate.

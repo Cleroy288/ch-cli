@@ -2,13 +2,13 @@
 
 **Date:** 2026-02-04
 **Status:** Complete
-**Goal:** Identify what Augment MCP does better than ch-cli
+**Goal:** Identify what Augment MCP does better than rustean
 
 ---
 
 ## Executive Summary
 
-After testing 6 comparison queries, Augment MCP significantly outperforms ch-cli in **5 key areas**:
+After testing 6 comparison queries, Augment MCP significantly outperforms rustean in **5 key areas**:
 
 1. **Full File Context** - Returns complete files, not truncated snippets
 2. **Definition Accuracy** - Finds actual definitions, not usages
@@ -22,73 +22,73 @@ After testing 6 comparison queries, Augment MCP significantly outperforms ch-cli
 
 ### Query 1: "BgeEmbedder struct"
 
-| Aspect | ch-cli | Augment MCP |
+| Aspect | rustean | Augment MCP |
 |--------|--------|-------------|
 | Result | Partial struct + impl (truncated) | **Full file (228 lines)** |
 | Methods shown | 0 | All 6 methods |
 | Implementation details | None | Complete |
 
-**Gap:** ch-cli truncates at ~50 lines, Augment returns full file context.
+**Gap:** rustean truncates at ~50 lines, Augment returns full file context.
 
 ---
 
 ### Query 2: "RetrievalError definition"
 
-| Aspect | ch-cli | Augment MCP |
+| Aspect | rustean | Augment MCP |
 |--------|--------|-------------|
 | Result | Error usage in commands.rs | **Enum definition in mod.rs** |
 | Variants shown | 0 | All 5 variants |
 | Location accuracy | Wrong file | Correct file |
 
-**Gap:** ch-cli returns where error is *used*, not where it's *defined*.
+**Gap:** rustean returns where error is *used*, not where it's *defined*.
 
 ---
 
 ### Query 3: "Module overview"
 
-| Aspect | ch-cli | Augment MCP |
+| Aspect | rustean | Augment MCP |
 |--------|--------|-------------|
 | Result | notes/implementation files | **mod.rs files with structure** |
 | Module list | Documentation prose | Actual pub mod declarations |
 | Exports shown | None | All re-exports |
 
-**Gap:** ch-cli returns documentation about modules, Augment returns actual module source.
+**Gap:** rustean returns documentation about modules, Augment returns actual module source.
 
 ---
 
 ### Query 4: "Callers of embed function"
 
-| Aspect | ch-cli | Augment MCP |
+| Aspect | rustean | Augment MCP |
 |--------|--------|-------------|
 | Result | find_callers function definition | **Actual call sites** |
 | Locations shown | Function that *finds* callers | Code that *calls* embed |
 | Practical use | Low | High |
 
-**Gap:** ch-cli misinterprets "callers" as conceptually related code.
+**Gap:** rustean misinterprets "callers" as conceptually related code.
 
 ---
 
 ### Query 5: "How is daemon client implemented"
 
-| Aspect | ch-cli | Augment MCP |
+| Aspect | rustean | Augment MCP |
 |--------|--------|-------------|
 | Result | Doc headers about daemon | **Full client.rs (400+ lines)** |
 | Code shown | 0 lines | RetryConfig, DaemonClient, ConnectionPool |
 | Implementation details | None | All methods with retry logic |
 
-**Gap:** ch-cli returns documentation, Augment returns actual implementation.
+**Gap:** rustean returns documentation, Augment returns actual implementation.
 
 ---
 
 ### Query 6: "What modules are in retrieval directory"
 
-| Aspect | ch-cli | Augment MCP |
+| Aspect | rustean | Augment MCP |
 |--------|--------|-------------|
 | Result | Doc headers mentioning retrieval | **All mod.rs files** |
 | Modules listed | 0 | 8 submodules with purposes |
 | File structure | None | Complete hierarchy |
 
-**Gap:** ch-cli doesn't understand structural queries about code organization.
+**Gap:** rustean doesn't understand structural queries about code organization.
 
 ---
 
@@ -98,27 +98,27 @@ After testing 6 comparison queries, Augment MCP significantly outperforms ch-cli
 
 1. **Full File Retrieval**
    - Augment returns complete files (200-400+ lines)
-   - ch-cli truncates at ~50 lines per symbol
+   - rustean truncates at ~50 lines per symbol
    - *Impact:* User sees full context vs fragments
 
 2. **Definition vs Usage**
    - Augment prioritizes definition sites
-   - ch-cli ranks by keyword match strength
+   - rustean ranks by keyword match strength
    - *Impact:* Wrong file returned for "definition" queries
 
 3. **Structural Understanding**
    - Augment understands "module", "structure", "what's in"
-   - ch-cli treats these as keyword queries
+   - rustean treats these as keyword queries
    - *Impact:* Returns mod.rs vs random mentions
 
 4. **Call Graph Awareness**
    - Augment has reference tracking
-   - ch-cli has SemanticGraph but doesn't use it for retrieval
+   - rustean has SemanticGraph but doesn't use it for retrieval
    - *Impact:* Can't answer "who calls X" queries
 
 5. **Multi-File Synthesis**
    - Augment returns multiple related files per query
-   - ch-cli returns ranked list of single symbols
+   - rustean returns ranked list of single symbols
    - *Impact:* Augment gives complete picture
 
 ---
@@ -164,7 +164,7 @@ Effort:  Medium (post-process results by file)
 
 ## Comparison Matrix
 
-| Capability | ch-cli | Augment MCP | Gap |
+| Capability | rustean | Augment MCP | Gap |
 |------------|--------|-------------|-----|
 | Keyword search | ✅ | ✅ | - |
 | Semantic search | ✅ | ✅ | - |

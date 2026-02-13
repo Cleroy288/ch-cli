@@ -5,15 +5,15 @@ Generate semantic embeddings for indexed code symbols to enable semantic search.
 ## Syntax
 
 ```bash
-ch-cli embed [OPTIONS]
+rustean embed [OPTIONS]
 ```
 
 ## Options
 
 | Option | Description |
 |--------|-------------|
-| `--path <PATH>` | Path to project root (default: `.`) |
-| `--force` | Force re-embedding all symbols (removes existing index) |
+| `-p, --path <PATH>` | Path to project root (default: `.`) |
+| `-f, --force` | Force re-embedding all symbols (removes existing index) |
 | `-h, --help` | Print help information |
 
 ## Description
@@ -45,19 +45,19 @@ Code Symbol           Tokenizer          BERT Model         Final Vector
 ### Basic Embedding
 ```bash
 # Generate embeddings for current project
-ch-cli embed
+rustean embed
 
 # Embed a specific project directory
-ch-cli embed --path /path/to/project
+rustean embed --path /path/to/project
 ```
 
 ### Force Re-Embedding
 ```bash
 # Force complete re-embedding (removes existing index first)
-ch-cli embed --force
+rustean embed --force
 
 # Force re-embed a specific path
-ch-cli embed --path /path/to/project --force
+rustean embed --path /path/to/project --force
 ```
 
 ## What Gets Embedded
@@ -87,18 +87,18 @@ Before running `embed`, ensure:
 ### 1. Index Must Exist
 The project must be indexed first. The embed command automatically runs indexing, but you can also run it separately:
 ```bash
-ch-cli index --semantic
+rustean index --semantic
 ```
 
 ### 2. Daemon Must Be Running
 The embedding model runs in a background daemon process. The embed command auto-starts the daemon if needed, but you can start it manually:
 ```bash
-ch-cli daemon start
+rustean daemon start
 ```
 
 To verify daemon status:
 ```bash
-ch-cli daemon status
+rustean daemon status
 ```
 
 ## When to Use --force
@@ -108,25 +108,25 @@ Use the `--force` flag to completely re-generate all embeddings:
 ### Model Updates
 ```bash
 # After upgrading to a new embedding model version
-ch-cli embed --force
+rustean embed --force
 ```
 
 ### Index Corruption
 ```bash
 # If semantic search returns unexpected results
-ch-cli embed --force
+rustean embed --force
 ```
 
 ### Configuration Changes
 ```bash
 # After changing embedding-related settings
-ch-cli embed --force
+rustean embed --force
 ```
 
 ### Full Cleanup
 ```bash
-# Force removes the .ch-index/ directory and rebuilds everything
-ch-cli embed --force
+# Force removes the .rustean-index/ directory and rebuilds everything
+rustean embed --force
 ```
 
 ## Performance
@@ -162,7 +162,7 @@ ch-cli embed --force
 
 On first use, the model is automatically downloaded from HuggingFace Hub:
 ```
-$ ch-cli embed
+$ rustean embed
 Indexing project at: .
 Found 150 symbols
 Connecting to daemon...
@@ -180,36 +180,36 @@ The recommended workflow for semantic code search:
 
 ### 1. Index the Project
 ```bash
-ch-cli index --semantic
+rustean index --semantic
 ```
 
 ### 2. Start the Daemon
 ```bash
-ch-cli daemon start
+rustean daemon start
 ```
 
 ### 3. Generate Embeddings
 ```bash
-ch-cli embed
+rustean embed
 ```
 
 ### 4. Search Semantically
 ```bash
-ch-cli search --semantic "parse user input"
+rustean search --semantic "parse user input"
 ```
 
 ### One-Shot Workflow
 The embed command can do steps 1-3 automatically:
 ```bash
 # This indexes, starts daemon (if needed), and embeds
-ch-cli embed
+rustean embed
 ```
 
 ## Storage
 
-Embeddings are stored in the `.ch-index/` directory:
+Embeddings are stored in the `.rustean-index/` directory:
 ```
-.ch-index/
+.rustean-index/
 ├── index.state        # Index metadata
 ├── tantivy/           # Keyword search index
 └── vectors.json       # Embedded vectors (HNSW index)
@@ -236,14 +236,14 @@ cargo build --release --features cuda
 ### Daemon Not Running
 ```
 Error: Could not connect to daemon
-Run 'ch-cli daemon start' first and wait for models to load
+Run 'rustean daemon start' first and wait for models to load
 ```
 
 **Solution:**
 ```bash
-ch-cli daemon start
+rustean daemon start
 # Wait a few seconds for model to load
-ch-cli embed
+rustean embed
 ```
 
 ### Slow First Embedding
@@ -257,7 +257,7 @@ Subsequent requests are much faster.
 If semantic search returns poor results:
 ```bash
 # Force re-embed to rebuild the vector index
-ch-cli embed --force
+rustean embed --force
 ```
 
 ## See Also

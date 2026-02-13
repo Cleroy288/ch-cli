@@ -1,6 +1,6 @@
 # Terminal UI (TUI) Documentation
 
-Documentation for the Terminal User Interface and UI components of ch-cli.
+Documentation for the Terminal User Interface and UI components of rustean.
 
 ## Contents
 
@@ -8,7 +8,7 @@ Documentation for the Terminal User Interface and UI components of ch-cli.
 
 ## Overview
 
-The ch-cli TUI is built with Ratatui and provides:
+The rustean TUI is built with Ratatui and provides:
 - Beautiful ASCII art title display
 - Interactive text input box with cursor control
 - File and folder picker with real-time search

@@ -156,7 +156,7 @@ For caller queries, we filter references by `ReferenceContext::Call` to only sho
 ### Finding Callers
 
 ```bash
-$ ch-cli search "who calls search_command"
+$ rustean search "who calls search_command"
 
 Callers of 'search_command':
 
@@ -170,7 +170,7 @@ Total: 3 call site(s)
 ### Finding Callees (Limited)
 
 ```bash
-$ ch-cli search "what does main call"
+$ rustean search "what does main call"
 
 Callees of 'main' (functions it calls):
 

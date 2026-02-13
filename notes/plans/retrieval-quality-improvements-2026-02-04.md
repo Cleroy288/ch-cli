@@ -2,25 +2,25 @@
 
 **Date:** 2026-02-04
 **Status:** Planned
-**Goal:** Close the gap between ch-cli and Augment MCP retrieval quality
+**Goal:** Close the gap between rustean and Augment MCP retrieval quality
 
 ---
 
 ## Summary
 
-Manual benchmark testing revealed 5 key gaps where Augment MCP outperforms ch-cli:
+Manual benchmark testing revealed 5 key gaps where Augment MCP outperforms rustean:
 
-1. **Full file content** - Augment returns complete files, ch-cli returns location pointers
-2. **Definition accuracy** - Augment prioritizes definitions, ch-cli returns usages/docs first
-3. **Conceptual queries** - Augment returns source code, ch-cli returns documentation
-4. **Module structure queries** - Augment understands "modules in X", ch-cli treats as keyword search
-5. **Caller/callee tracking** - Augment shows actual call sites, ch-cli returns docs about callers
+1. **Full file content** - Augment returns complete files, rustean returns location pointers
+2. **Definition accuracy** - Augment prioritizes definitions, rustean returns usages/docs first
+3. **Conceptual queries** - Augment returns source code, rustean returns documentation
+4. **Module structure queries** - Augment understands "modules in X", rustean treats as keyword search
+5. **Caller/callee tracking** - Augment shows actual call sites, rustean returns docs about callers
 
 ---
 
 ## Benchmark Results (2026-02-04)
 
-| Query | ch-cli Result | Augment MCP Result |
+| Query | rustean Result | Augment MCP Result |
 |-------|---------------|-------------------|
 | "BgeEmbedder struct" | Location pointers | Full 228-line file |
 | "how does pipeline work" | 10 doc headers | Full pipeline.rs source |
@@ -296,16 +296,16 @@ After each improvement, test with these queries:
 
 ```bash
 # Test intent detection (should return code, not docs)
-ch-cli search "how does retrieval pipeline work"
+rustean search "how does retrieval pipeline work"
 
 # Test full file content
-ch-cli search "BgeEmbedder struct" --full
+rustean search "BgeEmbedder struct" --full
 
 # Test definition boosting
-ch-cli search "RetrievalError definition"
+rustean search "RetrievalError definition"
 
 # Test module structure
-ch-cli search "modules in retrieval"
+rustean search "modules in retrieval"
 ```
 
 **Expected Results:**

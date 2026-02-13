@@ -2,7 +2,7 @@
 
 ## Summary
 
-The ch-cli uses BGE (BAAI General Embedding) models to generate semantic embeddings for code symbols. These embeddings enable semantic search - finding code by meaning rather than just keywords.
+The rustean uses BGE (BAAI General Embedding) models to generate semantic embeddings for code symbols. These embeddings enable semantic search - finding code by meaning rather than just keywords.
 
 ## How It Works
 
@@ -43,19 +43,19 @@ The ch-cli uses BGE (BAAI General Embedding) models to generate semantic embeddi
 ### Generate Embeddings
 ```bash
 # Index project and generate embeddings
-ch-cli embed
+rustean embed
 
 # Force re-embedding all symbols
-ch-cli embed --force
+rustean embed --force
 
 # Embed a specific path
-ch-cli embed --path /path/to/project
+rustean embed --path /path/to/project
 ```
 
 ### Semantic Search (coming in Phase 2)
 ```bash
 # Search using semantic similarity
-ch-cli search --semantic "parse user input"
+rustean search --semantic "parse user input"
 ```
 
 ## Model Details
@@ -74,7 +74,7 @@ Embeddings are stored in an HNSW (Hierarchical Navigable Small World) index for 
 
 ### Storage Location
 ```
-.ch-index/
+.rustean-index/
 ├── vectors.json      # Serialized vector points
 └── vectors/          # (future) Binary format
 ```
@@ -122,7 +122,7 @@ Default model configuration in `RetrievalConfig`:
 ```rust
 RetrievalConfig {
     embedding_model: "BAAI/bge-small-en-v1.5",
-    model_cache: "~/.ch-cli/models",
+    model_cache: "~/.rustean/models",
     // ...
 }
 ```
@@ -132,7 +132,7 @@ RetrievalConfig {
 On first use, the embedding model is automatically downloaded from HuggingFace Hub:
 
 ```
-$ ch-cli embed
+$ rustean embed
 Indexing project at: .
 Found 150 symbols
 Connecting to daemon...

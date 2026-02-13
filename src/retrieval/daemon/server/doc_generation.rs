@@ -34,7 +34,7 @@ fn handle_cancellation(
 ) {
 	let mut prog = progress.lock().unwrap();
 	prog.is_running = false;
-	let docs = canonical.join(".ch-index/docs.json");
+	let docs = canonical.join(".rustean-index/docs.json");
 	let _ = std::fs::remove_file(&docs);
 	eprintln!(
 		"[daemon] Cancelled: removed partial docs.json"

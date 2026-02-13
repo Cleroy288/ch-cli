@@ -7,7 +7,7 @@
 //!
 //! ## Features
 //!
-//! - **Doc Generation**: Uses Phi-3 LLM to generate descriptions
+//! - **Doc Generation**: Uses Qwen2.5-0.5B to generate descriptions
 //! - **User Comments**: Preserves existing /// and //! comments
 //! - **Cross-References**: Tracks where each symbol is used
 //! - **Symbol Links**: Maps dependencies between symbols
@@ -16,7 +16,7 @@
 //! ## Architecture
 //!
 //! ```text
-//! DocGenerator (LLM) --> DocEntry --> DocStore --> .ch-index/docs.json
+//! DocGenerator (LLM) --> DocEntry --> DocStore --> .rustean-index/docs.json
 //!                           |
 //!                           +-- user_comment
 //!                           +-- llm_doc
@@ -24,6 +24,7 @@
 //!                           +-- links (depends_on, depended_by)
 //! ```
 
+pub mod doc_llm;
 pub mod entry;
 pub mod entry_builders;
 pub mod entry_construct;

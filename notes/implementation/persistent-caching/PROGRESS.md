@@ -4,7 +4,7 @@
 
 ## Objective
 
-Reduce ch-cli retrieval time from ~4.5s to <500ms by implementing persistent index caching.
+Reduce rustean retrieval time from ~4.5s to <500ms by implementing persistent index caching.
 
 ## Implementation Status
 
@@ -17,7 +17,7 @@ Reduce ch-cli retrieval time from ~4.5s to <500ms by implementing persistent ind
 1. Added `enable_persistence: bool` field to `PipelineConfig` (default: `true`)
 2. Modified `initialize()` to use `IndexManager.with_persistence()`
 3. Added `initialize_hybrid_search()` helper method that:
-   - Tries to load cached Tantivy/vector indices from `.ch-index/`
+   - Tries to load cached Tantivy/vector indices from `.rustean-index/`
    - Falls back to building fresh indices if cache doesn't exist
    - Persists newly built indices for future warm starts
 
@@ -106,7 +106,7 @@ The 500ms target was not achieved. The remaining bottleneck is:
 | Tool | Query Latency |
 |------|---------------|
 | Augment MCP codebase-retrieval | **<200ms** |
-| ch-cli warm start | ~2.5s |
+| rustean warm start | ~2.5s |
 
 See `notes/benchmarks/persistent-cache-vs-augment-mcp.md` for full analysis.
 

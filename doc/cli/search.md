@@ -5,7 +5,7 @@ Search for symbols in your indexed codebase by name, with support for keyword, s
 ## Syntax
 
 ```bash
-ch-cli search <QUERY> [OPTIONS]
+rustean search <QUERY> [OPTIONS]
 ```
 
 ## Arguments
@@ -38,7 +38,7 @@ Search for symbols by name in your indexed codebase. Supports multiple search mo
 Standard BM25-based text search. Fast and precise for exact symbol names.
 
 ```bash
-ch-cli search handle_input
+rustean search handle_input
 ```
 
 **When to use:**
@@ -51,7 +51,7 @@ ch-cli search handle_input
 Tolerates typos and partial matches using edit distance (up to 2 character differences).
 
 ```bash
-ch-cli search MyStructt --fuzzy
+rustean search MyStructt --fuzzy
 ```
 
 **When to use:**
@@ -64,7 +64,7 @@ ch-cli search MyStructt --fuzzy
 Combines keyword matching (BM25) with neural embeddings for natural language queries. Uses Reciprocal Rank Fusion (RRF) to merge results from both methods.
 
 ```bash
-ch-cli search "function that handles user input" --semantic
+rustean search "function that handles user input" --semantic
 ```
 
 **When to use:**
@@ -85,33 +85,33 @@ ch-cli search "function that handles user input" --semantic
 
 ```bash
 # Search for exact symbol name
-ch-cli search MyStruct
+rustean search MyStruct
 
 # Search with more results
-ch-cli search my_function --limit 20
+rustean search my_function --limit 20
 ```
 
 ### Fuzzy Search
 
 ```bash
 # Fuzzy search (handles typos)
-ch-cli search MyStructt --fuzzy
+rustean search MyStructt --fuzzy
 
 # Fuzzy search with limited results
-ch-cli search processs --fuzzy --limit 5
+rustean search processs --fuzzy --limit 5
 ```
 
 ### Semantic Search
 
 ```bash
 # Natural language query
-ch-cli search "error handling logic" --semantic
+rustean search "error handling logic" --semantic
 
 # Find related code by concept
-ch-cli search "database connection pooling" --semantic
+rustean search "database connection pooling" --semantic
 
 # Combine with limit for top results
-ch-cli search "authentication middleware" --semantic --limit 5
+rustean search "authentication middleware" --semantic --limit 5
 ```
 
 ### Context Expansion
@@ -120,10 +120,10 @@ The `-c, --context` flag expands results with related code: parent modules, func
 
 ```bash
 # Get full context for symbol matches
-ch-cli search handle_request --semantic --context
+rustean search handle_request --semantic --context
 
 # Understand call chains
-ch-cli search process_data --context
+rustean search process_data --context
 ```
 
 **Output includes:**
@@ -132,7 +132,7 @@ ch-cli search process_data --context
 - Functions this symbol calls (callees)
 - Formatted as XML for LLM consumption
 
-**Note:** Context expansion requires semantic analysis. Run `ch-cli index --semantic` first.
+**Note:** Context expansion requires semantic analysis. Run `rustean index --semantic` first.
 
 ### Reranking
 
@@ -140,10 +140,10 @@ The `-r, --rerank` flag uses a cross-encoder model to re-score results for bette
 
 ```bash
 # Rerank for better precision
-ch-cli search "parse configuration" --semantic --rerank
+rustean search "parse configuration" --semantic --rerank
 
 # Combine reranking with context
-ch-cli search validate_input --semantic --rerank --context
+rustean search validate_input --semantic --rerank --context
 ```
 
 **How it works:**
@@ -163,10 +163,10 @@ The `--full` flag shows the actual file content around each result.
 
 ```bash
 # View code context for matches
-ch-cli search my_function --full
+rustean search my_function --full
 
 # Combine with semantic search
-ch-cli search "error handler" --semantic --full
+rustean search "error handler" --semantic --full
 ```
 
 **Output shows:**
@@ -179,26 +179,26 @@ ch-cli search "error handler" --semantic --full
 
 ```bash
 # Find all structs named "Config"
-ch-cli search Config --kind struct
+rustean search Config --kind struct
 
 # Find all functions with "handle" in the name
-ch-cli search handle --kind function
+rustean search handle --kind function
 
 # Find all traits
-ch-cli search Trait --kind trait
+rustean search Trait --kind trait
 ```
 
 ### Combined Options
 
 ```bash
 # Full semantic pipeline: hybrid search + rerank + context
-ch-cli search "user authentication" --semantic --rerank --context
+rustean search "user authentication" --semantic --rerank --context
 
 # Fuzzy search for functions with full content
-ch-cli search handl --fuzzy --kind function --full
+rustean search handl --fuzzy --kind function --full
 
 # Semantic search with type filter
-ch-cli search "data validation" --semantic --kind function --limit 20
+rustean search "data validation" --semantic --kind function --limit 20
 ```
 
 ## Symbol Types
@@ -293,66 +293,66 @@ With `--context`, output is formatted as XML for LLM consumption:
 
 ```bash
 # Find all handler functions
-ch-cli search handle --fuzzy --kind function
+rustean search handle --fuzzy --kind function
 
 # Find all Config structs
-ch-cli search Config --kind struct
+rustean search Config --kind struct
 ```
 
 ### Understanding Code Flow
 
 ```bash
 # See what calls a function and what it calls
-ch-cli search process_request --semantic --context
+rustean search process_request --semantic --context
 
 # Full investigation: semantic + rerank + context
-ch-cli search "main entry point" --semantic --rerank --context
+rustean search "main entry point" --semantic --rerank --context
 ```
 
 ### Natural Language Exploration
 
 ```bash
 # Describe what you're looking for
-ch-cli search "functions that validate user input" --semantic
+rustean search "functions that validate user input" --semantic
 
 # Find error handling patterns
-ch-cli search "error handling and recovery" --semantic --kind function
+rustean search "error handling and recovery" --semantic --kind function
 
 # Locate configuration-related code
-ch-cli search "parse configuration from file" --semantic
+rustean search "parse configuration from file" --semantic
 ```
 
 ### Debugging and Investigation
 
 ```bash
 # Quick lookup with full code context
-ch-cli search suspicious_function --full
+rustean search suspicious_function --full
 
 # Deep investigation with all flags
-ch-cli search my_function --semantic --rerank --context --full
+rustean search my_function --semantic --rerank --context --full
 ```
 
 ### Performance Optimization
 
 ```bash
 # Fast exact search when you know the name
-ch-cli search exact_symbol_name
+rustean search exact_symbol_name
 
 # Limit results for faster response
-ch-cli search "complex query" --semantic --limit 5
+rustean search "complex query" --semantic --limit 5
 
 # Skip reranking for speed
-ch-cli search "quick lookup" --semantic
+rustean search "quick lookup" --semantic
 ```
 
 ### LLM Integration
 
 ```bash
 # Generate context for LLM prompts
-ch-cli search "relevant code" --semantic --context > context.xml
+rustean search "relevant code" --semantic --context > context.xml
 
 # Structured output for parsing
-ch-cli search authenticate --semantic --context
+rustean search authenticate --semantic --context
 ```
 
 ## Performance Notes
@@ -377,31 +377,31 @@ ch-cli search authenticate --semantic --context
 
 Build the index:
 ```bash
-ch-cli index
+rustean index
 ```
 
 ### For Semantic Search
 
 1. Build index with semantic analysis:
 ```bash
-ch-cli index --semantic
+rustean index --semantic
 ```
 
 2. Generate embeddings:
 ```bash
-ch-cli embed
+rustean embed
 ```
 
 3. Start the ML daemon (if not running):
 ```bash
-ch-cli daemon start
+rustean daemon start
 ```
 
 ### For Context Expansion
 
 Requires semantic analysis enabled:
 ```bash
-ch-cli index --semantic
+rustean index --semantic
 ```
 
 ## Common Workflows
@@ -410,38 +410,38 @@ ch-cli index --semantic
 
 ```bash
 # Fast exact search
-ch-cli search my_function
+rustean search my_function
 ```
 
 ### 2. Explore Unknown Code
 
 ```bash
 # Describe what you need
-ch-cli search "file parsing utilities" --semantic --limit 10
+rustean search "file parsing utilities" --semantic --limit 10
 
 # View promising results
-ch-cli search parse_file --full
+rustean search parse_file --full
 ```
 
 ### 3. Understand Call Relationships
 
 ```bash
 # See callers and callees
-ch-cli search handle_request --semantic --context
+rustean search handle_request --semantic --context
 ```
 
 ### 4. Find Best Matches
 
 ```bash
 # Full pipeline for best results
-ch-cli search "authentication logic" --semantic --rerank --context
+rustean search "authentication logic" --semantic --rerank --context
 ```
 
 ### 5. Code Review Preparation
 
 ```bash
 # Get all context around a change
-ch-cli search modified_function --semantic --context --full
+rustean search modified_function --semantic --context --full
 ```
 
 ## See Also

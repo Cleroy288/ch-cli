@@ -1,4 +1,4 @@
-# Benchmark: ch-cli Post-P0 Fixes
+# Benchmark: rustean Post-P0 Fixes
 
 **Date**: 2026-02-06
 **Fixes Applied**: 3 critical bugs fixed
@@ -74,13 +74,13 @@ Total references:  37155
 | Understanding queries | 4/10 | 9/10 | +5 |
 | Definition queries | 9/10 | 9/10 | 0 |
 
-**Overall ch-cli Score**: 6.5/10 -> 8.5/10 (+2.0 points)
+**Overall rustean Score**: 6.5/10 -> 8.5/10 (+2.0 points)
 
 ---
 
 ## Remaining Gaps vs Augment MCP
 
-1. **Natural language understanding**: ch-cli uses keyword matching; Augment uses semantic embeddings
+1. **Natural language understanding**: rustean uses keyword matching; Augment uses semantic embeddings
 2. **Cross-file context**: Augment shows related files automatically
 3. **Error context**: Augment finds retry logic and error handling across files
 
@@ -93,4 +93,4 @@ All P0 bugs have been fixed:
 2. Understanding queries return implementation code, not tests
 3. The semantic graph is populated with 37,155 references
 
-ch-cli is now competitive with Augment MCP for most code search tasks.
+rustean is now competitive with Augment MCP for most code search tasks.

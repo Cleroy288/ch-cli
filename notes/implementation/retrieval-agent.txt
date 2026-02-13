@@ -100,9 +100,9 @@ Retrieve {
 
 Usage:
 ```bash
-ch-cli retrieve "natural language query"
-ch-cli retrieve "query" --limit 5 --no-rerank
-ch-cli retrieve "query" --xml
+rustean retrieve "natural language query"
+rustean retrieve "query" --limit 5 --no-rerank
+rustean retrieve "query" --xml
 ```
 
 ================================================================================
@@ -148,9 +148,9 @@ Unit tests:
 - test_parse_feedback_action - action parsing
 
 Manual testing:
-1. Start daemon: ch-cli daemon start
-2. Wait for models: ch-cli daemon status
-3. Run pipeline: ch-cli retrieve "authentication"
+1. Start daemon: rustean daemon start
+2. Wait for models: rustean daemon status
+3. Run pipeline: rustean retrieve "authentication"
 4. Check output includes:
    - Query info
    - Search spec (symbols, intent)
@@ -235,23 +235,23 @@ CLI COMMANDS SUMMARY
 ================================================================================
 
 Daemon management:
-- ch-cli daemon start
-- ch-cli daemon stop
-- ch-cli daemon status
-- ch-cli daemon restart
+- rustean daemon start
+- rustean daemon stop
+- rustean daemon status
+- rustean daemon restart
 
 Indexing:
-- ch-cli index [--semantic] [--verbose]
-- ch-cli embed
+- rustean index [--semantic] [--verbose]
+- rustean embed
 
 Search:
-- ch-cli search "query" [--semantic] [--rerank] [--context]
-- ch-cli goto <symbol>
-- ch-cli refs <symbol>
-- ch-cli symbols
+- rustean search "query" [--semantic] [--rerank] [--context]
+- rustean goto <symbol>
+- rustean refs <symbol>
+- rustean symbols
 
 Full pipeline:
-- ch-cli retrieve "query" [--limit N] [--max-tokens N] [--xml]
+- rustean retrieve "query" [--limit N] [--max-tokens N] [--xml]
 
 ================================================================================
 FUTURE WORK

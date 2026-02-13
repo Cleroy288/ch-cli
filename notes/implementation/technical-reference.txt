@@ -96,7 +96,7 @@ let schema = schema_builder.build();
 Creating Index:
 ```rust
 // Create index directory
-let index_path = Path::new(".ch-cli-index");
+let index_path = Path::new(".rustean-index");
 std::fs::create_dir_all(index_path)?;
 
 // Create index
@@ -485,7 +485,7 @@ pub type Result<T> = std::result::Result<T, IndexerError>;
 7. CONFIGURATION
 ================================================================================
 
-Example .ch-cli-config.toml:
+Example .rustean-config.toml:
 
 ```toml
 [indexer]
@@ -493,7 +493,7 @@ Example .ch-cli-config.toml:
 languages = ["rust", "javascript", "python"]
 
 # Index location (relative to project root)
-index_path = ".ch-cli-index"
+index_path = ".rustean-index"
 
 # Files to exclude
 exclude = [

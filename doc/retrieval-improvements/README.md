@@ -2,7 +2,7 @@
 
 ## Summary
 
-This document describes the retrieval quality improvements implemented to close the gap between ch-cli (7.5/10) and Augment MCP (8.5/10) based on benchmark analysis.
+This document describes the retrieval quality improvements implemented to close the gap between rustean (7.5/10) and Augment MCP (8.5/10) based on benchmark analysis.
 
 ## Table of Contents
 
@@ -42,8 +42,8 @@ Enhanced boost factors in `src/indexer/symbols/kind_boost.rs` for `FindDefinitio
 The boost is applied automatically when the query intent is detected as `FindDefinition`:
 
 ```bash
-ch-cli search "SearchIndex definition"
-ch-cli search "where is DaemonClient defined"
+rustean search "SearchIndex definition"
+rustean search "where is DaemonClient defined"
 ```
 
 ---
@@ -95,7 +95,7 @@ Query: "who calls search_command"
 ### API
 
 ```rust
-use ch_cli::retrieval::query::{detect_caller_query, CallerQuery, CallerDirection};
+use rustean::retrieval::query::{detect_caller_query, CallerQuery, CallerDirection};
 
 let query = "who calls process_data";
 if let Some(caller_query) = detect_caller_query(query) {
@@ -164,7 +164,7 @@ if let Some(caller_query) = detect_caller_query(query) {
 ### Usage
 
 ```bash
-ch-cli search "who calls process_data"
+rustean search "who calls process_data"
 # Output:
 # Callers of 'process_data':
 #

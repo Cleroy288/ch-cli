@@ -5,16 +5,16 @@ Build, update, and manage semantic code indexes for your project.
 ## Syntax
 
 ```bash
-ch-cli index [OPTIONS]
+rustean index [OPTIONS]
 ```
 
 ## Options
 
 | Option | Description |
 |--------|-------------|
-| `--path <PATH>` | Path to project root (default: `.`) |
-| `--semantic` | Enable semantic analysis for definitions and references |
-| `--verbose` | Show detailed progress output |
+| `-p, --path <PATH>` | Path to project root (default: `.`) |
+| `-s, --semantic` | Enable semantic analysis for definitions and references |
+| `-v, --verbose` | Show detailed progress output |
 | `-h, --help` | Print help information |
 
 ## Description
@@ -30,28 +30,28 @@ The `index` command builds a semantic code index of your project. This enables:
 ### Basic Indexing
 ```bash
 # Index current project
-ch-cli index
+rustean index
 
 # Index specific directory
-ch-cli index --path /path/to/project
+rustean index -p /path/to/project
 ```
 
 ### Semantic Analysis
 ```bash
 # Index with semantic analysis (recommended)
-ch-cli index --semantic
+rustean index -s
 
 # Full semantic analysis with verbose output
-ch-cli index --semantic --verbose
+rustean index -s -v
 ```
 
 ### Monitoring Progress
 ```bash
 # See detailed progress of indexing
-ch-cli index --verbose
+rustean index -v
 
 # With semantic analysis and progress
-ch-cli index --semantic --verbose
+rustean index -s -v
 ```
 
 ## What Gets Indexed
@@ -74,7 +74,7 @@ See [Supported Languages](../semantic-indexer/supported-languages.md) for detail
 
 ## Language Detection
 
-When you run `ch-cli index`:
+When you run `rustean index`:
 1. The system automatically detects your project's primary language
 2. If your language isn't supported, a message will be shown
 3. Mixed-language projects will index only supported files
@@ -83,17 +83,19 @@ See [Language Detection](../semantic-indexer/supported-languages.md) for more de
 
 ## Index Storage
 
-Indexes are stored in `.ch-index/` directory at your project root:
+Indexes are stored in `.rustean-index/` directory at your project root:
 ```
-.ch-index/
-├── index.state        # Index metadata and file tracking
-└── tantivy/           # Full-text search index
+.rustean-index/
+├── state.json         # Index metadata and file tracking
+├── refs.json          # Persisted symbol references (per-file invalidation)
+├── trigrams.json      # Trigram index for fuzzy search
+└── tantivy/           # Full-text search index (BM25)
 ```
 
 ### .gitignore
 Add to `.gitignore` to exclude from version control:
 ```
-.ch-index/
+.rustean-index/
 ```
 
 ## Incremental Indexing
@@ -133,13 +135,13 @@ Recommended for most use cases.
 ### Index is out of date
 ```bash
 # Rebuild the entire index
-ch-cli index --semantic
+rustean index --semantic
 ```
 
 ### Slow indexing
 ```bash
 # Check if problem files exist
-ch-cli index --verbose
+rustean index --verbose
 
 # The verbose output shows what's being processed
 ```

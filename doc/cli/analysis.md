@@ -8,14 +8,14 @@ List and filter symbols in your indexed codebase.
 
 ### Syntax
 ```bash
-ch-cli symbols [OPTIONS]
+rustean symbols [OPTIONS]
 ```
 
 ### Options
 | Option | Description |
 |--------|-------------|
-| `--kind <TYPE>` | Filter by symbol type (function, struct, etc.) |
-| `--limit <N>` | Maximum results to show (default: all) |
+| `-f, --file <PATH>` | List symbols in a specific file only |
+| `-k, --kind <TYPE>` | Filter by symbol type (function, struct, etc.) |
 | `-h, --help` | Print help information |
 
 ### Description
@@ -25,19 +25,22 @@ Lists all symbols extracted from your codebase with optional filtering by symbol
 
 ```bash
 # List all symbols
-ch-cli symbols
+rustean symbols
 
 # List only functions
-ch-cli symbols --kind function
+rustean symbols -k function
 
 # List only struct definitions
-ch-cli symbols --kind struct
+rustean symbols -k struct
 
-# List first 20 traits
-ch-cli symbols --kind trait --limit 20
+# List symbols in a specific file
+rustean symbols -f src/main.rs
+
+# List functions in a specific file
+rustean symbols -f src/lib.rs -k function
 
 # List enum variants
-ch-cli symbols --kind variant
+rustean symbols -k variant
 ```
 
 ### Available Symbol Types
@@ -93,22 +96,22 @@ Functions in codebase:
 
 #### Find all public APIs
 ```bash
-ch-cli symbols --kind function | grep "Visibility: pub"
+rustean symbols --kind function | grep "Visibility: pub"
 ```
 
 #### Count different symbol types
 ```bash
-ch-cli symbols | grep "^  " | head -15
+rustean symbols | grep "^  " | head -15
 ```
 
 #### List large types
 ```bash
-ch-cli symbols --kind struct
+rustean symbols --kind struct
 ```
 
 #### Find macros
 ```bash
-ch-cli symbols --kind macro
+rustean symbols --kind macro
 ```
 
 ---
@@ -119,7 +122,7 @@ Display statistics about your code index.
 
 ### Syntax
 ```bash
-ch-cli stats
+rustean stats
 ```
 
 ### Description
@@ -133,7 +136,7 @@ Index Statistics for '.':
 📊 Index Status:
   Status: Up to date
   Last updated: 2026-01-29 21:43:15 UTC
-  Index directory: .ch-index/
+  Index directory: .rustean-index/
 
 📁 Files:
   Total files indexed: 45
@@ -210,16 +213,16 @@ Index Statistics for '.':
 
 ```bash
 # Check index status
-ch-cli stats
+rustean stats
 
 # See how many files indexed
-ch-cli stats | grep "Total files"
+rustean stats | grep "Total files"
 
 # Monitor project growth
-ch-cli stats  # Run periodically to track growth
+rustean stats  # Run periodically to track growth
 
 # Verify semantic analysis
-ch-cli stats | grep "Semantic Analysis"
+rustean stats | grep "Semantic Analysis"
 ```
 
 ---
@@ -229,29 +232,29 @@ ch-cli stats | grep "Semantic Analysis"
 ### Exploring Codebase Size
 ```bash
 # Check overall statistics
-ch-cli stats
+rustean stats
 
 # Identify dominant symbol types
-ch-cli symbols --kind function --limit 50
-ch-cli symbols --kind struct --limit 50
+rustean symbols --kind function --limit 50
+rustean symbols --kind struct --limit 50
 ```
 
 ### Finding Code Hotspots
 ```bash
 # List all public functions
-ch-cli symbols --kind function
+rustean symbols --kind function
 
 # Check which are most referenced
-ch-cli refs each_symbol  # manual review
+rustean refs each_symbol  # manual review
 ```
 
 ### API Inventory
 ```bash
 # List all public modules
-ch-cli symbols --kind module
+rustean symbols --kind module
 
 # List all public traits
-ch-cli symbols --kind trait
+rustean symbols --kind trait
 
 # Understand public API surface
 ```
@@ -259,7 +262,7 @@ ch-cli symbols --kind trait
 ### Code Metrics
 ```bash
 # Run stats to see current metrics
-ch-cli stats
+rustean stats
 
 # Track over time
 # (Run periodically and compare)
@@ -268,13 +271,13 @@ ch-cli stats
 ### Refactoring Planning
 ```bash
 # Understand code structure before refactoring
-ch-cli stats
+rustean stats
 
 # List symbols that will be affected
-ch-cli symbols --kind function
+rustean symbols --kind function
 
 # Find specific areas
-ch-cli symbols --kind struct --kind enum
+rustean symbols --kind struct --kind enum
 ```
 
 ---
@@ -282,8 +285,8 @@ ch-cli symbols --kind struct --kind enum
 ## Prerequisites
 
 Both commands require:
-- A built index: `ch-cli index`
-- For semantic stats, use: `ch-cli index --semantic`
+- A built index: `rustean index`
+- For semantic stats, use: `rustean index --semantic`
 
 ## See Also
 

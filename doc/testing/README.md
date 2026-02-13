@@ -1,6 +1,6 @@
 # Testing Documentation
 
-Documentation for testing ch-cli.
+Documentation for testing rustean.
 
 ## Contents
 

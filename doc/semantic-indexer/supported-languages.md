@@ -1,6 +1,6 @@
 # Supported Languages
 
-Documentation for language support in the ch-cli semantic code indexer.
+Documentation for language support in the rustean semantic code indexer.
 
 ## Currently Supported
 
@@ -17,7 +17,7 @@ The indexer includes an intelligent language detection system that:
 
 ### Detection Process
 
-When you start ch-cli:
+When you start rustean:
 - Analyzes file extensions in your project
 - Checks for project configuration files
 - Identifies the primary language
@@ -57,7 +57,7 @@ The language detection system automatically adapts to support new languages with
 
 ### Unsupported Language Project
 ```
-  ch-cli - Semantic Code Indexer
+  rustean - Semantic Code Indexer
 
   Language Not Supported
 
@@ -74,7 +74,7 @@ The language detection system automatically adapts to support new languages with
 
 ### Mixed Language Project (Partial Support)
 ```
-  ch-cli - Semantic Code Indexer
+  rustean - Semantic Code Indexer
 
   No code index found for this project.
 
@@ -87,7 +87,7 @@ The language detection system automatically adapts to support new languages with
 
 ### Supported Language Project
 ```
-  ch-cli - Semantic Code Indexer
+  rustean - Semantic Code Indexer
 
   No code index found for this project.
 

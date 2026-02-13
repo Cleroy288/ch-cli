@@ -1,10 +1,10 @@
 # Startup Flow
 
-Complete documentation of the ch-cli startup sequence and user interactions.
+Complete documentation of the rustean startup sequence and user interactions.
 
 ## Overview
 
-When you run `ch-cli` without arguments (or `ch-cli tui`), the startup flow:
+When you run `rustean` without arguments (or `rustean tui`), the startup flow:
 1. **Analyzes your codebase** to detect programming languages
 2. **Checks for an existing index** and detects changes
 3. **Prompts you for actions** (build, update, skip)
@@ -14,7 +14,7 @@ When you run `ch-cli` without arguments (or `ch-cli tui`), the startup flow:
 
 ```
 ┌─────────────────────────────────────┐
-│  User runs: ch-cli                  │
+│  User runs: rustean                  │
 └─────────────────────────────────────┘
            ↓
 ┌─────────────────────────────────────┐
@@ -39,7 +39,7 @@ When you run `ch-cli` without arguments (or `ch-cli tui`), the startup flow:
    ↓     └──────────────┬────────────────┐
 ┌──────────────────────┘                │
 │  3. Check Index Status                │
-│     Does .ch-index/ exist?            │
+│     Does .rustean-index/ exist?            │
 └──────────────────────┬────────────────┘
            ┌───────────┴──────────┐
            │                      │
@@ -121,7 +121,7 @@ When you run `ch-cli` without arguments (or `ch-cli tui`), the startup flow:
 
 #### Supported Language (Rust)
 ```
-  ch-cli - Semantic Code Indexer
+  rustean - Semantic Code Indexer
 
   No code index found for this project.
 
@@ -145,7 +145,7 @@ User chooses:
 
 #### Unsupported Language (JavaScript)
 ```
-  ch-cli - Semantic Code Indexer
+  rustean - Semantic Code Indexer
 
   Language Not Supported
 
@@ -167,7 +167,7 @@ Then:
 
 #### Mixed Languages (Python + Rust)
 ```
-  ch-cli - Semantic Code Indexer
+  rustean - Semantic Code Indexer
 
   No code index found for this project.
 
@@ -205,7 +205,7 @@ Action: Skip prompting, proceed to TUI
 
 #### Index Exists + Changes Detected
 ```
-  ch-cli - Semantic Code Indexer
+  rustean - Semantic Code Indexer
 
   Changes detected in your codebase!
 
@@ -251,7 +251,7 @@ When user selects `Y` to index/update:
 - Extracts symbols using tree-sitter
 - Builds search index with tantivy
 - Performs semantic analysis (if enabled)
-- Saves to `.ch-index/`
+- Saves to `.rustean-index/`
 
 ### Step 5: TUI Launch
 
@@ -259,7 +259,7 @@ After indexing (or skip), launches interactive interface:
 
 ```
   ╔═══════════════════════════════════════════════════╗
-  ║  ch-cli                                           ║
+  ║  rustean                                           ║
   ║  A semantic code indexer and TUI assistant       ║
   ╚═══════════════════════════════════════════════════╝
 
@@ -274,7 +274,7 @@ After indexing (or skip), launches interactive interface:
 
 ### Is Index Needed?
 ```
-Does .ch-index/ exist?
+Does .rustean-index/ exist?
 ├─ NO → Prompt to build (NEEDS DECISION)
 └─ YES → Has changes?
          ├─ NO → Skip, continue to TUI

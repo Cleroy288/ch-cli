@@ -1,6 +1,6 @@
 # Features Detailed Documentation
 
-**Complete breakdown of all features in the tcah CLI tool**
+**Complete breakdown of all features in the rustean CLI tool**
 
 ---
 
@@ -36,7 +36,7 @@
 - Color: Cyan
 - Weight: Bold
 - Border: Box drawing characters
-- Title: " tcah "
+- Title: " rustean "
 - Alignment: Centered
 
 **Purpose:**
@@ -844,7 +844,7 @@ Show updated file/folder list
 
 ## Summary
 
-The tcah CLI tool provides:
+The rustean CLI tool provides:
 
 ✅ **Complete TUI** - Professional terminal interface
 ✅ **File Explorer** - Smart picker with search

@@ -56,10 +56,10 @@ Query → Query Expansion → Parallel Hybrid Search
 
 ```bash
 # JSON output (default)
-ch-cli retrieve "how does auth work" --structured
+rustean retrieve "how does auth work" --structured
 
 # XML output
-ch-cli retrieve "database connection" --structured --xml
+rustean retrieve "database connection" --structured --xml
 ```
 
 ## Output Format
@@ -123,7 +123,7 @@ RRF score threshold filtering with min/max guarantees:
 ### CLI Flags Added
 
 ```bash
-ch-cli retrieve "query" --structured --threshold 0.02 --min-results 2
+rustean retrieve "query" --structured --threshold 0.02 --min-results 2
 ```
 
 ### Files Modified

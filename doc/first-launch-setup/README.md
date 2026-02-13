@@ -2,7 +2,7 @@
 
 ## Summary
 
-On first launch, ch-cli guides the user through a 3-step setup (index, daemon, doc gen) with progress bars. On subsequent launches, changes are detected and docs are updated in the background without blocking the user. The daemon no longer blocks during doc generation.
+On first launch, rustean guides the user through a 3-step setup (index, daemon, doc gen) with progress bars. On subsequent launches, changes are detected and docs are updated in the background without blocking the user. The daemon no longer blocks during doc generation.
 
 ---
 
@@ -61,7 +61,7 @@ prompt (mentions doc gen + estimated time)
   -> TUI
 ```
 
-**Not manually tested** because testing requires deleting `.ch-index/` and running the TUI interactively. The code compiles, the individual pieces (daemon polling, doc gen, progress display) are tested separately.
+**Not manually tested** because testing requires deleting `.rustean-index/` and running the TUI interactively. The code compiles, the individual pieces (daemon polling, doc gen, progress display) are tested separately.
 
 **Files**:
 - `src/startup/mod.rs` - `handle_first_launch()` orchestration
@@ -132,7 +132,7 @@ If `StartDocGen` is called while a previous generation is already running, it re
 ## Architecture
 
 ```
-First launch (no .ch-index/):
+First launch (no .rustean-index/):
   prompt -> [1/3] Index -> [2/3] Daemon Ready -> [3/3] Doc Gen Progress -> TUI
 
 Subsequent launch (index exists, changes detected):

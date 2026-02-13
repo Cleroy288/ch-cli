@@ -1,11 +1,11 @@
 # Info Command
 
-The `ch-cli info` command retrieves detailed documentation and references for any symbol in your codebase. It works **instantly** without requiring LLM generation or a running daemon.
+The `rustean info` command retrieves detailed documentation and references for any symbol in your codebase. It works **instantly** without requiring LLM generation or a running daemon.
 
 ## Usage
 
 ```bash
-ch-cli info <SYMBOL> [OPTIONS]
+rustean info <SYMBOL> [OPTIONS]
 ```
 
 ## Options
@@ -52,7 +52,7 @@ Shows all references grouped by type:
 
 ### Basic lookup
 ```bash
-ch-cli info search_command
+rustean info search_command
 ```
 Output:
 ```
@@ -66,12 +66,12 @@ Output:
 
 ### Show source code
 ```bash
-ch-cli info IndexManager --code
+rustean info IndexManager --code
 ```
 
 ### Find who calls a function
 ```bash
-ch-cli info search_command --callers
+rustean info search_command --callers
 ```
 Output:
 ```
@@ -81,7 +81,7 @@ Output:
 
 ### Full analysis
 ```bash
-ch-cli info search_command --all
+rustean info search_command --all
 ```
 Shows everything: code, callers, callees, and all references.
 
@@ -109,7 +109,7 @@ Use `docs show` for rich LLM-generated documentation.
 
 ## Related Commands
 
-- `ch-cli search <query>` - Find symbols by name
-- `ch-cli refs <symbol>` - Find all references (simpler output)
-- `ch-cli goto <symbol>` - Jump to definition
-- `ch-cli docs show <symbol>` - LLM-generated documentation
+- `rustean search <query>` - Find symbols by name
+- `rustean refs <symbol>` - Find all references (simpler output)
+- `rustean goto <symbol>` - Jump to definition
+- `rustean docs show <symbol>` - LLM-generated documentation

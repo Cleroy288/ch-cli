@@ -1,13 +1,13 @@
-# ch-cli vs Augment MCP: Comprehensive Analysis
+# rustean vs Augment MCP: Comprehensive Analysis
 
 **Date:** 2026-02-01
-**Objective:** Identify gaps and improvements to make ch-cli as good as Augment MCP for code retrieval
+**Objective:** Identify gaps and improvements to make rustean as good as Augment MCP for code retrieval
 
 ---
 
 ## Summary of Findings
 
-| Aspect | ch-cli | Augment MCP | Gap |
+| Aspect | rustean | Augment MCP | Gap |
 |--------|--------|-------------|-----|
 | **Response Time** | ~3-10s | <1s | 10x slower |
 | **Code Retrieval Quality** | Variable | High | Major |
@@ -21,7 +21,7 @@
 
 ### Query 1: "BgeEmbedder" (Explicit Symbol)
 
-| Metric | ch-cli | Augment MCP |
+| Metric | rustean | Augment MCP |
 |--------|--------|-------------|
 | Time | 10.6s | <1s |
 | Found struct | ✅ | ✅ |
@@ -34,7 +34,7 @@
 
 ### Query 2: "How does the retrieval pipeline work?" (Conceptual)
 
-| Metric | ch-cli | Augment MCP |
+| Metric | rustean | Augment MCP |
 |--------|--------|-------------|
 | Time | 3.1s | <1s |
 | Extracted symbols | "How" (WRONG) | N/A |
@@ -46,7 +46,7 @@
 
 ### Query 3: "RRF fusion algorithm" (Technical)
 
-| Metric | ch-cli | Augment MCP |
+| Metric | rustean | Augment MCP |
 |--------|--------|-------------|
 | Time | 3.0s | <1s |
 | Found fusion.rs | ✅ | ✅ |
@@ -63,7 +63,7 @@
 ### Gap 1: No Documentation Indexing (CRITICAL)
 
 **Current State:**
-- ch-cli only indexes Rust source files (72 files, 1817 symbols)
+- rustean only indexes Rust source files (72 files, 1817 symbols)
 - Documentation in `doc/` (34 files) is NOT indexed
 - Implementation notes in `notes/` (25 files) are NOT indexed
 
@@ -97,7 +97,7 @@
 ### Gap 3: No Full-Text Content Search
 
 **Current State:**
-- ch-cli searches symbol names only
+- rustean searches symbol names only
 - Cannot find code by content (e.g., "mean pooling")
 - Cannot search comments or documentation strings
 
@@ -118,7 +118,7 @@
 - Persistent index maintained by service
 
 **Root Cause:**
-- ch-cli re-initializes pipeline each CLI invocation
+- rustean re-initializes pipeline each CLI invocation
 - Daemon caches ML models but not project index
 - No daemon-side project caching despite implementation
 
@@ -238,7 +238,7 @@ fn filter_stop_words(symbols: Vec<String>) -> Vec<String> {
 
 ## Success Metrics
 
-After implementation, ch-cli should achieve:
+After implementation, rustean should achieve:
 
 | Metric | Current | Target | Augment MCP |
 |--------|---------|--------|-------------|
@@ -259,4 +259,4 @@ The main gaps are:
 3. **No content search** - Can't find code by content
 4. **Speed** - Daemon caching not utilized
 
-With the proposed improvements, ch-cli can match Augment MCP's quality while maintaining the advantage of local execution with full privacy.
+With the proposed improvements, rustean can match Augment MCP's quality while maintaining the advantage of local execution with full privacy.

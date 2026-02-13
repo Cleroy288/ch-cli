@@ -1,18 +1,18 @@
-# Benchmark: ch-cli vs Augment MCP Code Retrieval
+# Benchmark: rustean vs Augment MCP Code Retrieval
 
 **Date:** 2026-01-31
-**Codebase:** ch-cli (1622 symbols, ~15k LOC)
+**Codebase:** rustean (1622 symbols, ~15k LOC)
 **Daemon Status:** Running with all 3 models loaded (~5.3GB)
 
 ---
 
 ## Summary
 
-| Metric | ch-cli | Augment MCP | Winner |
+| Metric | rustean | Augment MCP | Winner |
 |--------|--------|-------------|--------|
 | **Speed** | ~9s per query | <1s per query | Augment MCP |
 | **Code Accuracy** | Variable (LLM-dependent) | High | Augment MCP |
-| **Context Quality** | Structured XML with code | Raw code + docs | ch-cli |
+| **Context Quality** | Structured XML with code | Raw code + docs | rustean |
 | **Documentation** | Includes docs if found | Strong doc retrieval | Augment MCP |
 | **First Query** | Fast (daemon pre-loaded) | Fast | Tie |
 
@@ -20,7 +20,7 @@
 
 ## Speed Benchmark
 
-| Query | ch-cli Time | Augment MCP Time |
+| Query | rustean Time | Augment MCP Time |
 |-------|-------------|------------------|
 | "Where is BgeEmbedder defined?" | 9.091s | <1s |
 | "How does RRF fusion combine scores?" | 9.230s | <1s |
@@ -29,9 +29,9 @@
 | **Average** | **9.17s** | **<1s** |
 
 **Analysis:**
-- ch-cli spends ~8s on ML inference (query expansion, embedding, reranking)
+- rustean spends ~8s on ML inference (query expansion, embedding, reranking)
 - Augment MCP uses proprietary retrieval without per-query ML inference
-- ch-cli would be faster with GPU acceleration (Metal/CUDA)
+- rustean would be faster with GPU acceleration (Metal/CUDA)
 
 ---
 
@@ -39,7 +39,7 @@
 
 ### Query 1: "Where is BgeEmbedder defined?"
 
-**ch-cli Results:**
+**rustean Results:**
 - ✅ Found `hybrid/embedding.rs:25` - struct definition
 - ✅ Found `hybrid/embedding.rs:36` - impl block
 - ❌ Also returned unrelated results (BgeReranker, location fields)
@@ -56,7 +56,7 @@
 
 ### Query 2: "How does RRF fusion combine keyword and semantic search scores?"
 
-**ch-cli Results:**
+**rustean Results:**
 - ✅ Found `hybrid/mod.rs:50` - rrf_score field
 - ❌ Missed the actual RRF algorithm in fusion.rs
 
@@ -72,7 +72,7 @@
 
 ### Query 3: "How does the daemon load and serve ML models?"
 
-**ch-cli Results:**
+**rustean Results:**
 - ❌ Found `query/llm.rs:26` - Phi3Model field (not the daemon)
 - ❌ Found `mod.rs:41` - ModelLoading error variant (tangential)
 
@@ -87,7 +87,7 @@
 
 ### Query 4: "What is the architecture of the retrieval pipeline?"
 
-**ch-cli Results:**
+**rustean Results:**
 - ❌ Found `watcher.rs:52` - unrelated file watcher code
 - ❌ Did not find pipeline.rs or architecture docs
 
@@ -104,7 +104,7 @@
 
 ## Context Quality Comparison
 
-### ch-cli Context Format
+### rustean Context Format
 ```xml
 <context>
 <context-block>
@@ -153,7 +153,7 @@ Path: src/retrieval/hybrid/fusion.rs
 
 ---
 
-## Root Cause Analysis: Why ch-cli Underperforms
+## Root Cause Analysis: Why rustean Underperforms
 
 ### 1. Query Expansion Issues
 The Phi-3 LLM extracts poor symbol names from queries:
@@ -170,11 +170,11 @@ The cross-encoder scores (query, document) pairs, but documents are short:
 This lacks semantic richness for accurate relevance scoring.
 
 ### 3. Index Granularity
-ch-cli indexes symbols (functions, structs, methods), while Augment MCP appears to index file chunks and documentation, providing broader context.
+rustean indexes symbols (functions, structs, methods), while Augment MCP appears to index file chunks and documentation, providing broader context.
 
 ---
 
-## Recommendations for ch-cli Improvement
+## Recommendations for rustean Improvement
 
 1. **Fix Query Expansion**
    - Filter common words ("How", "Where", "What") from symbol extraction
@@ -200,14 +200,14 @@ ch-cli indexes symbols (functions, structs, methods), while Augment MCP appears 
 
 ## Conclusion
 
-**Augment MCP** significantly outperforms **ch-cli** in:
+**Augment MCP** significantly outperforms **rustean** in:
 - Speed: 9x faster
 - Accuracy: Finds correct files more consistently
 - Coverage: Includes documentation alongside code
 
-**ch-cli** has advantages in:
+**rustean** has advantages in:
 - Structured XML output (better for LLM consumption)
 - Local execution (no external service dependency)
 - Customizable pipeline (can tune for specific use cases)
 
-**Recommendation:** For production use, Augment MCP is superior. However, ch-cli's pipeline provides a solid foundation that can be improved with the fixes outlined above.
+**Recommendation:** For production use, Augment MCP is superior. However, rustean's pipeline provides a solid foundation that can be improved with the fixes outlined above.

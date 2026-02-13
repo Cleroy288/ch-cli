@@ -1,13 +1,13 @@
-# ch-cli vs Augment MCP: Detailed Analysis
+# rustean vs Augment MCP: Detailed Analysis
 
 ## Summary
 
-This document provides a comprehensive comparison between ch-cli (local semantic code indexer) and Augment MCP (cloud-based codebase retrieval) based on manual benchmark testing performed on 2026-02-05.
+This document provides a comprehensive comparison between rustean (local semantic code indexer) and Augment MCP (cloud-based codebase retrieval) based on manual benchmark testing performed on 2026-02-05.
 
 ## Test Environment
 
-- **Codebase**: ch-cli itself (~24,000 lines of Rust)
-- **ch-cli version**: Post-improvement (definition boost, caller detection)
+- **Codebase**: rustean itself (~24,000 lines of Rust)
+- **rustean version**: Post-improvement (definition boost, caller detection)
 - **Augment MCP**: Context7 codebase-retrieval tool
 - **Test queries**: 9 distinct query types
 
@@ -15,17 +15,17 @@ This document provides a comprehensive comparison between ch-cli (local semantic
 
 ## Feature Comparison Matrix
 
-| Feature | ch-cli | Augment MCP | Winner |
+| Feature | rustean | Augment MCP | Winner |
 |---------|--------|-------------|--------|
 | **Symbol definition lookup** | ✅ Fast, accurate | ✅ With full context | Tie |
 | **Natural language understanding** | ⚠️ Limited | ✅ Excellent | Augment |
-| **Module structure queries** | ✅ Purpose-built | ⚠️ Raw code | ch-cli |
+| **Module structure queries** | ✅ Purpose-built | ⚠️ Raw code | rustean |
 | **Caller/callee tracking** | ❌ Not working | ✅ Works | Augment |
 | **Full code display** | ✅ --full flag | ✅ Always | Tie |
 | **Fuzzy search** | ❌ Broken | ❌ Not available | Neither |
-| **Offline operation** | ✅ Yes | ❌ Requires API | ch-cli |
-| **Speed** | ✅ ~200ms | ⚠️ ~800ms | ch-cli |
-| **Privacy** | ✅ Local only | ❌ Cloud processing | ch-cli |
+| **Offline operation** | ✅ Yes | ❌ Requires API | rustean |
+| **Speed** | ✅ ~200ms | ⚠️ ~800ms | rustean |
+| **Privacy** | ✅ Local only | ❌ Cloud processing | rustean |
 
 ---
 
@@ -37,12 +37,12 @@ This document provides a comprehensive comparison between ch-cli (local semantic
 
 | Tool | Accuracy | Speed | Context |
 |------|----------|-------|---------|
-| ch-cli | 9/10 | 200ms | Name + location |
+| rustean | 9/10 | 200ms | Name + location |
 | Augment | 10/10 | 800ms | Full source code |
 
-**Analysis**: Both tools correctly identify definitions. ch-cli is faster but shows less context by default. The `--full` flag in ch-cli provides equivalent context.
+**Analysis**: Both tools correctly identify definitions. rustean is faster but shows less context by default. The `--full` flag in rustean provides equivalent context.
 
-**ch-cli advantage**: 4x faster
+**rustean advantage**: 4x faster
 **Augment advantage**: Always shows implementation details
 
 ---
@@ -53,10 +53,10 @@ This document provides a comprehensive comparison between ch-cli (local semantic
 
 | Tool | Result | Relevance |
 |------|--------|-----------|
-| ch-cli | Test functions (rewriter.rs, structure.rs) | ❌ Wrong |
+| rustean | Test functions (rewriter.rs, structure.rs) | ❌ Wrong |
 | Augment | HybridSearch struct, fusion_core.rs, adaptive.rs | ✅ Correct |
 
-**Analysis**: This is ch-cli's biggest weakness. The query returns test files instead of the actual implementation because:
+**Analysis**: This is rustean's biggest weakness. The query returns test files instead of the actual implementation because:
 1. Test file names contain relevant keywords ("test_map_concepts")
 2. DocumentType boost for tests may not be aggressive enough
 3. No semantic understanding of "how does X work"
@@ -75,10 +75,10 @@ This document provides a comprehensive comparison between ch-cli (local semantic
 
 | Tool | Output Quality | Nested Modules | Doc Comments |
 |------|----------------|----------------|--------------|
-| ch-cli | ✅ Clean tree format | ✅ All 9 | ✅ Full docs |
+| rustean | ✅ Clean tree format | ✅ All 9 | ✅ Full docs |
 | Augment | ⚠️ Raw code blocks | ⚠️ Partial | ⚠️ Code only |
 
-**ch-cli output**:
+**rustean output**:
 ```
 📁 ./src/retrieval/mod.rs
    pub mod agent; // Agentic Code Retrieval Module...
@@ -86,9 +86,9 @@ This document provides a comprehensive comparison between ch-cli (local semantic
    pub mod daemon;
 ```
 
-**Analysis**: ch-cli's purpose-built structure query handling is superior. The output is formatted for quick comprehension, shows doc comments inline, and discovers all nested modules.
+**Analysis**: rustean's purpose-built structure query handling is superior. The output is formatted for quick comprehension, shows doc comments inline, and discovers all nested modules.
 
-**Winner**: ch-cli by a significant margin
+**Winner**: rustean by a significant margin
 
 ---
 
@@ -98,7 +98,7 @@ This document provides a comprehensive comparison between ch-cli (local semantic
 
 | Tool | Detection | Execution | Result |
 |------|-----------|-----------|--------|
-| ch-cli | ✅ CallerQuery detected | ❌ SemanticGraph empty | "No callers found" |
+| rustean | ✅ CallerQuery detected | ❌ SemanticGraph empty | "No callers found" |
 | Augment | N/A | ✅ Found via search | main.rs:67 |
 
 **Analysis**: The caller query detection we implemented today works correctly. However, the SemanticGraph that should contain function call references is empty.
@@ -131,12 +131,12 @@ The issue is that during indexing:
 
 | Tool | Files Found | Error Handling Coverage |
 |------|-------------|------------------------|
-| ch-cli | pool.rs (2 functions) | Partial |
+| rustean | pool.rs (2 functions) | Partial |
 | Augment | pool.rs, connection.rs, retry.rs | Complete |
 
-**Analysis**: ch-cli found relevant pool methods but missed the retry logic and error classification in other files. Augment's semantic search found the complete error handling story.
+**Analysis**: rustean found relevant pool methods but missed the retry logic and error classification in other files. Augment's semantic search found the complete error handling story.
 
-**Issue**: ch-cli's body content is limited to 500 chars. The error handling code in connection.rs spans multiple functions that don't mention "pool".
+**Issue**: rustean's body content is limited to 500 chars. The error handling code in connection.rs spans multiple functions that don't mention "pool".
 
 **Recommendation**:
 - Increase MAX_BODY_CONTENT_LEN from 500 to 1500
@@ -150,7 +150,7 @@ The issue is that during indexing:
 
 | Tool | Expected | Actual |
 |------|----------|--------|
-| ch-cli | embed_text, embed_batch | test_docentry_code_snippet |
+| rustean | embed_text, embed_batch | test_docentry_code_snippet |
 | Augment | N/A | N/A |
 
 **Analysis**: The kind filter correctly filters for functions, but BM25 ranks test functions higher because "embed" appears in test file paths.
@@ -165,7 +165,7 @@ The issue is that during indexing:
 
 ### Weighted Scoring
 
-| Category | Weight | ch-cli | Augment |
+| Category | Weight | rustean | Augment |
 |----------|--------|--------|---------|
 | Definition queries | 25% | 9/10 | 10/10 |
 | Understanding queries | 25% | 4/10 | 10/10 |
@@ -174,7 +174,7 @@ The issue is that during indexing:
 | Caller queries | 10% | 2/10 | 10/10 |
 | Fuzzy search | 10% | 2/10 | 5/10 |
 
-**ch-cli**: 6.5/10
+**rustean**: 6.5/10
 **Augment**: 9.0/10
 **Gap**: 2.5 points
 
@@ -218,7 +218,7 @@ The issue is that during indexing:
 
 ## Conclusion
 
-ch-cli has improved since the initial benchmark but still trails Augment MCP significantly in natural language understanding and caller tracking. The structure query feature is a clear win for ch-cli.
+rustean has improved since the initial benchmark but still trails Augment MCP significantly in natural language understanding and caller tracking. The structure query feature is a clear win for rustean.
 
 **Key insight**: The retrieval quality improvements made today (definition boost, caller detection) were correctly designed but revealed a deeper issue - the SemanticGraph is not populated with call references.
 

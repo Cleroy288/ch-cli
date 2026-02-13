@@ -2,14 +2,14 @@
 
 ## Summary
 
-This document explains how to test and benchmark the ch-cli code retrieval system, including comparisons with Augment MCP.
+This document explains how to test and benchmark the rustean code retrieval system, including comparisons with Augment MCP.
 
 ---
 
 ## Prerequisites
 
 - Rust toolchain installed
-- ch-cli project cloned
+- rustean project cloned
 - (Optional) Augment MCP server configured in Claude Code
 
 ---
@@ -33,7 +33,7 @@ cargo build --release
 
 ### Verify Metal is Linked (macOS)
 ```bash
-otool -L ./target/release/ch-cli | grep -i metal
+otool -L ./target/release/rustean | grep -i metal
 # Should show: /System/Library/Frameworks/Metal.framework/...
 ```
 
@@ -43,7 +43,7 @@ otool -L ./target/release/ch-cli | grep -i metal
 
 ### Start Daemon
 ```bash
-./target/release/ch-cli daemon start
+./target/release/rustean daemon start
 ```
 
 Expected output with Metal:
@@ -58,7 +58,7 @@ Daemon started (PID: 12345)
 
 ### Check Status
 ```bash
-./target/release/ch-cli daemon status
+./target/release/rustean daemon status
 ```
 
 Expected output:
@@ -77,17 +77,17 @@ Loaded Models:
 
 ### Stop Daemon
 ```bash
-./target/release/ch-cli daemon stop
+./target/release/rustean daemon stop
 ```
 
 ### Restart Daemon
 ```bash
-./target/release/ch-cli daemon stop && sleep 2 && ./target/release/ch-cli daemon start
+./target/release/rustean daemon stop && sleep 2 && ./target/release/rustean daemon start
 ```
 
 ### Force CPU Mode (for comparison)
 ```bash
-CH_FORCE_CPU=1 ./target/release/ch-cli daemon start
+CH_FORCE_CPU=1 ./target/release/rustean daemon start
 ```
 
 ---
@@ -96,17 +96,17 @@ CH_FORCE_CPU=1 ./target/release/ch-cli daemon start
 
 ### Basic Query
 ```bash
-./target/release/ch-cli retrieve "your query here"
+./target/release/rustean retrieve "your query here"
 ```
 
 ### Timed Query
 ```bash
-time ./target/release/ch-cli retrieve "Where is BgeEmbedder defined?"
+time ./target/release/rustean retrieve "Where is BgeEmbedder defined?"
 ```
 
 ### Query with More Results
 ```bash
-./target/release/ch-cli retrieve "your query" --limit 20
+./target/release/rustean retrieve "your query" --limit 20
 ```
 
 ### Example Output
@@ -141,16 +141,16 @@ Use these standard queries for consistent benchmarking:
 
 ```bash
 # Query 1: Symbol location
-time ./target/release/ch-cli retrieve "Where is BgeEmbedder defined?"
+time ./target/release/rustean retrieve "Where is BgeEmbedder defined?"
 
 # Query 2: Algorithm understanding
-time ./target/release/ch-cli retrieve "How does RRF fusion combine keyword and semantic search scores?"
+time ./target/release/rustean retrieve "How does RRF fusion combine keyword and semantic search scores?"
 
 # Query 3: System behavior
-time ./target/release/ch-cli retrieve "How does the daemon load and serve ML models?"
+time ./target/release/rustean retrieve "How does the daemon load and serve ML models?"
 
 # Query 4: Architecture
-time ./target/release/ch-cli retrieve "What is the architecture of the retrieval pipeline?"
+time ./target/release/rustean retrieve "What is the architecture of the retrieval pipeline?"
 ```
 
 ### Run All Benchmarks (Script)
@@ -165,7 +165,7 @@ queries=(
 
 for query in "${queries[@]}"; do
     echo "=== Query: $query ==="
-    time (./target/release/ch-cli retrieve "$query" 2>&1 | head -20)
+    time (./target/release/rustean retrieve "$query" 2>&1 | head -20)
     echo ""
 done
 ```
@@ -180,12 +180,12 @@ In Claude Code, use the Augment MCP codebase-retrieval tool:
 
 ```
 Use codebase-retrieval to find: "Where is BgeEmbedder defined?"
-Directory: /path/to/ch-cli
+Directory: /path/to/rustean
 ```
 
 ### Expected Behavior
 
-| Metric | ch-cli (Metal) | Augment MCP |
+| Metric | rustean (Metal) | Augment MCP |
 |--------|----------------|-------------|
 | Speed | ~4-5s | <1s |
 | Results | Structured XML | Raw code blocks |
@@ -214,18 +214,18 @@ The first query after daemon restart may be slower (~10-12s) due to GPU warmup. 
 ### Daemon Not Responding
 ```bash
 # Check if daemon is running
-./target/release/ch-cli daemon status
+./target/release/rustean daemon status
 
 # Force restart
-./target/release/ch-cli daemon stop
+./target/release/rustean daemon stop
 sleep 2
-./target/release/ch-cli daemon start
+./target/release/rustean daemon start
 ```
 
 ### Metal Not Detected
 ```bash
 # Check if binary has Metal linked
-otool -L ./target/release/ch-cli | grep metal
+otool -L ./target/release/rustean | grep metal
 
 # If not, rebuild with metal feature
 cargo build --release --features metal
@@ -234,14 +234,14 @@ cargo build --release --features metal
 ### Out of GPU Memory
 ```bash
 # Force CPU mode
-CH_FORCE_CPU=1 ./target/release/ch-cli daemon start
+CH_FORCE_CPU=1 ./target/release/rustean daemon start
 ```
 
 ### Socket Error
 ```bash
 # Remove stale socket
-rm -f ~/Library/Application\ Support/com.ch-cli.ch-cli/ml.sock
-./target/release/ch-cli daemon start
+rm -f ~/Library/Application\ Support/com.rustean.rustean/ml.sock
+./target/release/rustean daemon start
 ```
 
 ---
@@ -268,12 +268,12 @@ Include:
 ```bash
 # Full benchmark workflow
 cargo build --release --features metal
-./target/release/ch-cli daemon stop 2>/dev/null
-./target/release/ch-cli daemon start
+./target/release/rustean daemon stop 2>/dev/null
+./target/release/rustean daemon start
 sleep 5
-./target/release/ch-cli daemon status
-time ./target/release/ch-cli retrieve "Where is BgeEmbedder defined?"
-time ./target/release/ch-cli retrieve "How does RRF fusion combine scores?"
-time ./target/release/ch-cli retrieve "How does daemon load ML models?"
-time ./target/release/ch-cli retrieve "What is the retrieval pipeline architecture?"
+./target/release/rustean daemon status
+time ./target/release/rustean retrieve "Where is BgeEmbedder defined?"
+time ./target/release/rustean retrieve "How does RRF fusion combine scores?"
+time ./target/release/rustean retrieve "How does daemon load ML models?"
+time ./target/release/rustean retrieve "What is the retrieval pipeline architecture?"
 ```

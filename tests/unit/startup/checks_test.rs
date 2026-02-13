@@ -2,7 +2,7 @@
 
 use std::fs;
 
-use ch_cli::startup::{
+use rustean::startup::{
     analyze_codebase, check_index_exists,
     detect_codebase_changes,
 };
@@ -39,7 +39,7 @@ fn test_check_index_exists_with_index() {
     let _ = fs::remove_dir_all(&temp_dir);
     fs::create_dir_all(&temp_dir)
         .expect("Failed to create temp dir");
-    let index_dir = temp_dir.join(".ch-index");
+    let index_dir = temp_dir.join(".rustean-index");
     fs::create_dir_all(&index_dir)
         .expect("Failed to create index dir");
 

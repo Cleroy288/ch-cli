@@ -73,7 +73,7 @@ ModelCache (models/cache.rs)
 ----------------------------
 - Tracks downloaded models in cache.json
 - Stores metadata: paths, size, timestamp
-- Located at ~/.ch-cli/models/
+- Located at ~/.rustean/models/
 
 ================================================================================
 DAEMON INTEGRATION
@@ -88,17 +88,17 @@ The daemon server loads BgeEmbedder on startup:
 Error handling:
 - If model fails to load, daemon runs in "degraded mode"
 - Embedding requests return error response
-- User can check with `ch-cli daemon status`
+- User can check with `rustean daemon status`
 
 ================================================================================
 CLI COMMANDS
 ================================================================================
 
-ch-cli daemon start/stop/status/restart
+rustean daemon start/stop/status/restart
 - Manages model daemon lifecycle
 - Auto-starts on first embed request
 
-ch-cli embed [--path .] [--force]
+rustean embed [--path .] [--force]
 - Indexes project, generates embeddings
 - Batches by 32 symbols
 - Shows progress

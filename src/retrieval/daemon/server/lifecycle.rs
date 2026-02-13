@@ -3,7 +3,6 @@
 //! Handles daemon creation, startup, and the main
 //! accept loop for client connections.
 
-use std::fs;
 use std::os::unix::net::UnixListener;
 use std::path::Path;
 use std::sync::atomic::Ordering;
@@ -39,6 +38,9 @@ pub fn write_pid_file(
 }
 
 /// Get list of loaded models
+///
+/// Shows expansion model as "lazy, not loaded" when
+/// it has not been triggered yet.
 pub fn loaded_models(
 	daemon: &ModelDaemon,
 ) -> Vec<String> {
@@ -55,31 +57,34 @@ pub fn loaded_models(
 			daemon.config.reranker_model
 		));
 	}
-	if daemon.interpreter.has_llm() {
-		models.push(format!(
-			"{} (query expansion)",
-			daemon.config.expansion_model
-		));
-	}
+	let expansion_label =
+		expansion_status_label(daemon);
+	models.push(expansion_label);
 	models
 }
 
-/// Run the daemon main loop (blocking)
-pub fn run(
-	daemon: &mut ModelDaemon,
-) -> RetrievalResult<()> {
-	// ensure parent directory exists
-	if let Some(parent) = daemon.socket_path.parent() {
-		fs::create_dir_all(parent)?;
+/// Build status label for the expansion model
+fn expansion_status_label(
+	daemon: &ModelDaemon,
+) -> String {
+	let name = &daemon.config.expansion_model;
+	if daemon.interpreter.has_llm() {
+		format!("{} (query expansion)", name)
+	} else {
+		format!("{} (query expansion, lazy)", name)
 	}
+}
 
-	// remove stale socket
-	let _ = fs::remove_file(&daemon.socket_path);
-
-	// write PID file
+/// Prepare socket and bind listener
+#[allow(clippy::print_stderr)]
+fn bind_listener(
+	daemon: &mut ModelDaemon,
+) -> RetrievalResult<UnixListener> {
+	if let Some(parent) = daemon.socket_path.parent() {
+		std::fs::create_dir_all(parent)?;
+	}
+	let _ = std::fs::remove_file(&daemon.socket_path);
 	write_pid_file(daemon)?;
-
-	// create listener BEFORE loading models
 	let listener =
 		UnixListener::bind(&daemon.socket_path)?;
 	eprintln!(
@@ -89,82 +94,85 @@ pub fn run(
 	eprintln!(
 		"[daemon] Loading models (socket ready)..."
 	);
+	Ok(listener)
+}
 
-	// non-blocking for model loading phase
-	listener.set_nonblocking(true)?;
-
-	// load models while accepting ping/status
-	super::model_loader::load_models_with_listener(
-		daemon, &listener,
-	)?;
-
-	// switch to blocking mode
-	listener.set_nonblocking(false)?;
-
-	// accept connections (models loaded)
-	run_main_loop(daemon, &listener)?;
-
-	// signal background doc gen to stop
+/// Cleanup on shutdown: join threads, remove files
+#[allow(clippy::print_stderr)]
+fn cleanup_on_shutdown(daemon: &mut ModelDaemon) {
 	daemon
 		.doc_gen_cancel
 		.store(true, Ordering::SeqCst);
-
-	// wait for doc gen thread to finish
 	if let Some(handle) = daemon.doc_gen_thread.take() {
 		eprintln!(
 			"[daemon] Waiting for doc gen thread..."
 		);
 		let _ = handle.join();
 	}
-
-	// delete partial docs for cached projects
 	for project_path in daemon.project_cache.keys() {
 		let docs =
-			project_path.join(".ch-index/docs.json");
-		let _ = fs::remove_file(&docs);
+			project_path.join(".rustean-index/docs.json");
+		let _ = std::fs::remove_file(&docs);
 	}
-
-	// cleanup socket and pid files
-	let _ = fs::remove_file(&daemon.socket_path);
-	let _ = fs::remove_file(
+	let _ = std::fs::remove_file(&daemon.socket_path);
+	let _ = std::fs::remove_file(
 		daemon.socket_path.with_extension("pid"),
 	);
+}
 
+/// Run the daemon main loop (blocking)
+pub fn run(
+	daemon: &mut ModelDaemon,
+) -> RetrievalResult<()> {
+	let listener = bind_listener(daemon)?;
+	listener.set_nonblocking(true)?;
+	super::model_loader::load_models_with_listener(
+		daemon, &listener,
+	)?;
+	listener.set_nonblocking(false)?;
+	run_main_loop(daemon, &listener)?;
+	cleanup_on_shutdown(daemon);
 	Ok(())
 }
 
+/// Accept and handle a single client connection
+#[allow(clippy::print_stderr)]
+fn accept_one_client(
+	daemon: &mut ModelDaemon,
+	listener: &UnixListener,
+) {
+	match listener.accept() {
+		Ok((stream, _)) => {
+			if let Err(err) =
+				super::client_handler::handle_client(
+					daemon, stream,
+				)
+			{
+				eprintln!(
+					"[daemon] client error: {}", err
+				);
+			}
+		}
+		Err(err) => {
+			eprintln!(
+				"[daemon] accept error: {}", err
+			);
+		}
+	}
+}
+
 /// Main accept loop for client connections
+#[allow(clippy::print_stderr)]
 fn run_main_loop(
 	daemon: &mut ModelDaemon,
 	listener: &UnixListener,
 ) -> RetrievalResult<()> {
 	loop {
-		// check shutdown before blocking accept
 		if daemon.shutdown.load(Ordering::SeqCst) {
 			eprintln!("[daemon] Shutting down...");
 			break;
 		}
-
-		match listener.accept() {
-			Ok((stream, _)) => {
-				if let Err(e) =
-					super::client_handler::handle_client(
-						daemon, stream,
-					)
-				{
-					eprintln!(
-						"[daemon] client error: {}",
-						e
-					);
-				}
-			}
-			Err(e) => {
-				eprintln!(
-					"[daemon] accept error: {}",
-					e
-				);
-			}
-		}
+		accept_one_client(daemon, listener);
 	}
 	Ok(())
 }

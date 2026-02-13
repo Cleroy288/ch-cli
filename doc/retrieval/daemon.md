@@ -16,7 +16,7 @@ The model daemon is a background process that keeps ML models loaded in memory t
 │                          │                               │
 │                   ┌──────┴──────┐                        │
 │                   │ Unix Socket │                        │
-│                   │ ~/.ch-cli/  │                        │
+│                   │ ~/.rustean/  │                        │
 │                   │  ml.sock    │                        │
 │                   └──────┬──────┘                        │
 └──────────────────────────┼──────────────────────────────┘
@@ -24,7 +24,7 @@ The model daemon is a background process that keeps ML models loaded in memory t
         ┌──────────────────┼──────────────────┐
         │                  │                  │
    ┌────┴────┐       ┌─────┴─────┐      ┌─────┴─────┐
-   │ch-cli   │       │ch-cli     │      │ch-cli     │
+   │rustean   │       │rustean     │      │rustean     │
    │embed    │       │search     │      │retrieve   │
    └─────────┘       └───────────┘      └───────────┘
 ```
@@ -33,19 +33,19 @@ The model daemon is a background process that keeps ML models loaded in memory t
 
 ### Start the daemon
 ```bash
-ch-cli daemon start
+rustean daemon start
 ```
 Starts the daemon in the background. Models are loaded on startup (~5-10 seconds).
 
 ### Stop the daemon
 ```bash
-ch-cli daemon stop
+rustean daemon stop
 ```
 Gracefully stops the daemon and unloads all models.
 
 ### Check status
 ```bash
-ch-cli daemon status
+rustean daemon status
 ```
 Shows:
 - Whether daemon is running
@@ -56,13 +56,13 @@ Shows:
 
 ### Restart the daemon
 ```bash
-ch-cli daemon restart
+rustean daemon restart
 ```
 Stops and starts the daemon to reload models.
 
 ## Auto-Start Behavior
 
-When you run commands like `ch-cli embed` or `ch-cli search --semantic`, the daemon is automatically started if it's not running. This means:
+When you run commands like `rustean embed` or `rustean search --semantic`, the daemon is automatically started if it's not running. This means:
 
 1. First command: ~5-10 seconds (daemon startup + model loading)
 2. Subsequent commands: ~10-100 milliseconds (instant)
@@ -71,9 +71,9 @@ When you run commands like `ch-cli embed` or `ch-cli search --semantic`, the dae
 
 | File | Purpose |
 |------|---------|
-| `~/.ch-cli/ml.sock` | Unix socket for IPC |
-| `~/.ch-cli/daemon.pid` | Process ID file |
-| `~/.ch-cli/models/` | Cached model weights |
+| `~/.rustean/ml.sock` | Unix socket for IPC |
+| `~/.rustean/daemon.pid` | Process ID file |
+| `~/.rustean/models/` | Cached model weights |
 
 ## IPC Protocol
 
@@ -111,9 +111,9 @@ Default configuration in `RetrievalConfig`:
 
 ```rust
 RetrievalConfig {
-    socket_path: "~/.ch-cli/ml.sock",
-    pid_file: "~/.ch-cli/daemon.pid",
-    model_cache: "~/.ch-cli/models",
+    socket_path: "~/.rustean/ml.sock",
+    pid_file: "~/.rustean/daemon.pid",
+    model_cache: "~/.rustean/models",
     embedding_model: "BAAI/bge-small-en-v1.5",
     reranker_model: "BAAI/bge-reranker-base",
     expansion_model: "microsoft/phi-3-mini-4k-instruct",
@@ -123,20 +123,20 @@ RetrievalConfig {
 ## Troubleshooting
 
 ### Daemon won't start
-1. Check if another process is using the socket: `ls -la ~/.ch-cli/ml.sock`
-2. Remove stale files: `rm ~/.ch-cli/ml.sock ~/.ch-cli/daemon.pid`
-3. Try starting again: `ch-cli daemon start`
+1. Check if another process is using the socket: `ls -la ~/.rustean/ml.sock`
+2. Remove stale files: `rm ~/.rustean/ml.sock ~/.rustean/daemon.pid`
+3. Try starting again: `rustean daemon start`
 
 ### High memory usage
 - The daemon loads all models on startup (~6GB total)
-- Stop the daemon when not needed: `ch-cli daemon stop`
+- Stop the daemon when not needed: `rustean daemon stop`
 
 ### Connection refused
-1. Check if daemon is running: `ch-cli daemon status`
+1. Check if daemon is running: `rustean daemon status`
 2. If stale PID file, clean up and restart:
    ```bash
-   ch-cli daemon stop
-   ch-cli daemon start
+   rustean daemon stop
+   rustean daemon start
    ```
 
 ## Architecture

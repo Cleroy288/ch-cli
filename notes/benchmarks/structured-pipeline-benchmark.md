@@ -4,13 +4,13 @@
 
 ## Summary
 
-Comparison of ch-cli structured pipeline (`--structured` flag) vs Augment MCP codebase-retrieval for the same queries.
+Comparison of rustean structured pipeline (`--structured` flag) vs Augment MCP codebase-retrieval for the same queries.
 
 ## Test Queries
 
 ### Query 1: "how does daemon work"
 
-| Metric | ch-cli (structured) | Augment MCP |
+| Metric | rustean (structured) | Augment MCP |
 |--------|---------------------|-------------|
 | Code results | 10 | 6 files |
 | Doc results | 5 | 0 (mixed with code) |
@@ -18,7 +18,7 @@ Comparison of ch-cli structured pipeline (`--structured` flag) vs Augment MCP co
 | Full file content | Yes (500 lines max) | No (snippets only) |
 | Content separation | Yes | No |
 
-**ch-cli results:**
+**rustean results:**
 - Code: `pipeline.rs`, `client.rs`, `server.rs`, `lifecycle.rs`, `protocol.rs`, etc.
 - Doc: `agentic-pipeline.md`, `daemon.md`, etc.
 - Notes: Implementation notes
@@ -30,7 +30,7 @@ Comparison of ch-cli structured pipeline (`--structured` flag) vs Augment MCP co
 
 ### Query 2: "HybridSearch struct"
 
-| Metric | ch-cli (structured) | Augment MCP |
+| Metric | rustean (structured) | Augment MCP |
 |--------|---------------------|-------------|
 | Code results | 5 | 6 files |
 | Doc results | 5 | 1 (hybrid-search.md) |
@@ -39,22 +39,22 @@ Comparison of ch-cli structured pipeline (`--structured` flag) vs Augment MCP co
 
 **Augment MCP advantage:** More focused on the actual HybridSearch struct definition and implementation.
 
-**ch-cli note:** Query expansion interpreted "struct" as SymbolKind::Struct, returning all structs.
+**rustean note:** Query expansion interpreted "struct" as SymbolKind::Struct, returning all structs.
 
 ### Query 3: "query expansion documentation"
 
-| Metric | ch-cli (structured) | Augment MCP |
+| Metric | rustean (structured) | Augment MCP |
 |--------|---------------------|-------------|
 | Doc results | 5 (guaranteed) | 3 docs + 3 code |
 | Content type | Separated | Mixed |
 
-**ch-cli advantage:** Guaranteed doc results won't be pushed out by code.
+**rustean advantage:** Guaranteed doc results won't be pushed out by code.
 
 **Augment MCP advantage:** More context from related code files.
 
 ## Key Observations
 
-### ch-cli Structured Pipeline Strengths
+### rustean Structured Pipeline Strengths
 
 1. **Guaranteed content type coverage**
    - Always 10 code + 5 doc + 3 notes results
@@ -76,7 +76,7 @@ Comparison of ch-cli structured pipeline (`--structured` flag) vs Augment MCP co
 
 2. **Better symbol matching**
    - "HybridSearch struct" → exact struct definition
-   - ch-cli expanded to all "Struct" symbols
+   - rustean expanded to all "Struct" symbols
 
 3. **Cross-type context**
    - Mixes code and docs when relevant
@@ -84,7 +84,7 @@ Comparison of ch-cli structured pipeline (`--structured` flag) vs Augment MCP co
 
 ## Recommendations
 
-### When to use ch-cli `--structured`
+### When to use rustean `--structured`
 
 - When you need guaranteed doc/notes coverage
 - When you want full file context for understanding

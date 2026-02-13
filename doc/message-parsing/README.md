@@ -1,6 +1,6 @@
 # Message Parsing Documentation
 
-Documentation for how ch-cli parses and stores user messages.
+Documentation for how rustean parses and stores user messages.
 
 ## Contents
 
@@ -20,4 +20,4 @@ Messages are parsed into segments:
 - **FileReference** - References to files in the picker
 - **FolderReference** - References to folders in the picker
 
-This allows ch-cli to maintain rich context about what files and folders the user is working with.
+This allows rustean to maintain rich context about what files and folders the user is working with.

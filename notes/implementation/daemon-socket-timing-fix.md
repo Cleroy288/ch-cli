@@ -6,7 +6,7 @@ Fixed a critical issue where daemon clients would get "connection refused" error
 
 ## Problem
 
-**Symptom**: `ch-cli daemon status` showed "Running but unreachable" during startup.
+**Symptom**: `rustean daemon status` showed "Running but unreachable" during startup.
 
 **Root Cause**: In `server.rs`, the `run()` method loaded all ML models before creating the Unix socket listener:
 

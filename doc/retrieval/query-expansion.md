@@ -70,7 +70,7 @@ Query expansion is automatic when using semantic search:
 
 ```bash
 # With LLM expansion
-ch-cli search --semantic "how does authentication work"
+rustean search --semantic "how does authentication work"
 
 # The LLM interprets this as:
 # - symbols: ["authenticate", "auth", "login"]
@@ -78,7 +78,7 @@ ch-cli search --semantic "how does authentication work"
 # - filters: ["*.rs"]
 
 # Without LLM (fallback heuristics)
-ch-cli search "authenticate"
+rustean search "authenticate"
 ```
 
 ## LLM Prompt Template

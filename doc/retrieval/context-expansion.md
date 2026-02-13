@@ -50,7 +50,7 @@ Context expansion transforms raw search results into rich contextual blocks by t
 
 ```bash
 # Semantic search with context expansion
-ch-cli search --semantic --context "authentication"
+rustean search --semantic --context "authentication"
 
 # The --context flag adds:
 # - Parent scope (class, module, impl block)
@@ -221,10 +221,10 @@ Context expansion integrates with hybrid search:
 
 ```bash
 # Without context - just symbol names and scores
-ch-cli search --semantic "authentication"
+rustean search --semantic "authentication"
 
 # With context - full contextual blocks
-ch-cli search --semantic --context "authentication"
+rustean search --semantic --context "authentication"
 ```
 
 ## Performance

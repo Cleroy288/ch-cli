@@ -1,6 +1,6 @@
 # Usage & Getting Started
 
-User guides and examples for using ch-cli.
+User guides and examples for using rustean.
 
 ## Contents
 

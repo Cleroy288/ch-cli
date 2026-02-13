@@ -42,16 +42,16 @@ With k=60 (default):
 
 ```bash
 # Default filtering (threshold=0.015, min=1)
-ch-cli retrieve "query" --structured
+rustean retrieve "query" --structured
 
 # Stricter filtering
-ch-cli retrieve "query" --structured --threshold 0.02
+rustean retrieve "query" --structured --threshold 0.02
 
 # Allow empty sections
-ch-cli retrieve "query" --structured --threshold 0.02 --min-results 0
+rustean retrieve "query" --structured --threshold 0.02 --min-results 0
 
 # More lenient filtering
-ch-cli retrieve "query" --structured --threshold 0.01
+rustean retrieve "query" --structured --threshold 0.01
 ```
 
 ## Debug Output

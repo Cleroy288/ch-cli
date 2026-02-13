@@ -2,7 +2,7 @@
 
 ## Summary
 
-ch-cli supports GPU acceleration for ML models via Metal (macOS) and CUDA (Linux).
+rustean supports GPU acceleration for ML models via Metal (macOS) and CUDA (Linux).
 Runtime detection automatically selects the best available device with fallback to CPU.
 
 ## Supported Backends
@@ -79,7 +79,7 @@ CPU
 ### Example: Force CPU Mode
 
 ```bash
-CH_FORCE_CPU=1 ./ch-cli daemon start
+CH_FORCE_CPU=1 ./rustean daemon start
 ```
 
 ## Daemon Status
@@ -87,7 +87,7 @@ CH_FORCE_CPU=1 ./ch-cli daemon start
 View current device in daemon status:
 
 ```bash
-./ch-cli daemon status
+./rustean daemon status
 ```
 
 Output:
@@ -162,7 +162,7 @@ pub struct DeviceInfo {
 ### Forcing CPU for Testing
 
 ```bash
-CH_FORCE_CPU=1 ./ch-cli daemon restart
+CH_FORCE_CPU=1 ./rustean daemon restart
 ```
 
 ## Implementation Details

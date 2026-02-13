@@ -1,6 +1,6 @@
 # Development Timeline
 
-**Complete chronological record of the tcah CLI tool development**
+**Complete chronological record of the rustean CLI tool development**
 
 ---
 
@@ -15,7 +15,7 @@
 ## Phase 1: Project Initialization (Start)
 
 ### Step 1.1: Project Setup
-- Created new Rust project `ch-cli`
+- Created new Rust project `rustean`
 - Set edition to 2021
 - Initial `Hello, world!` in `main.rs`
 
@@ -26,12 +26,12 @@ ratatui = "0.30.0"
 crossterm = "0.29"
 ```
 
-### Step 1.3: First UI - "tcah" Display
+### Step 1.3: First UI - "rustean" Display
 - Created ASCII art title using block characters (█)
 - Implemented basic ratatui window
 - Centered text display
 - Added bordered box with title
-- **Result:** Big "tcah" text displayed in cyan and bold
+- **Result:** Big "rustean" text displayed in cyan and bold
 
 **Files Created:** Basic `main.rs` with hardcoded UI
 
@@ -59,7 +59,7 @@ crossterm = "0.29"
 
 ```
 ╔═══════════════════════════════════════════╗
-║          Thanks for using tcah!           ║
+║          Thanks for using rustean!           ║
 ║            See you next time! 👋          ║
 ╚═══════════════════════════════════════════╝
 ```

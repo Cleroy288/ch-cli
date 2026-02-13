@@ -8,14 +8,14 @@
 
 ## Error Description
 
-When running `ch-cli docs generate`, the command fails with:
+When running `rustean docs generate`, the command fails with:
 
 ```
 [daemon-client] Retry 1/3 after 100ms
 [daemon-client] Retry 2/3 after 200ms
 [daemon-client] Retry 3/3 after 400ms
 Error starting doc generation: IO error: Resource temporarily unavailable (os error 35)
-Make sure the daemon is running: ch-cli daemon start
+Make sure the daemon is running: rustean daemon start
 ```
 
 ## Root Cause
@@ -29,7 +29,7 @@ This is a Unix socket error that occurs when:
 
 The daemon uses a Unix domain socket at:
 ```
-/Users/charlesleroy/Library/Application Support/com.ch-cli.ch-cli/ml.sock
+/Users/charlesleroy/Library/Application Support/com.rustean.rustean/ml.sock
 ```
 
 When the daemon is loading models (embeddings, reranker, Phi-3), it can't accept new connections fast enough, causing EAGAIN.
@@ -59,7 +59,7 @@ This is insufficient when the daemon is loading the Phi-3 model (~10+ seconds).
 
 ## Workaround
 
-Use `ch-cli info <symbol>` instead. It provides:
+Use `rustean info <symbol>` instead. It provides:
 - Doc comments from source
 - Source code snippets
 - Callers (who calls this symbol)
@@ -68,7 +68,7 @@ Use `ch-cli info <symbol>` instead. It provides:
 
 Example:
 ```bash
-ch-cli info search_command --all
+rustean info search_command --all
 ```
 
 ## Potential Fixes
@@ -114,13 +114,13 @@ struct ConnectionPool {
 
 ```bash
 # 1. Kill any existing daemon
-ch-cli daemon stop
+rustean daemon stop
 
 # 2. Start daemon (will load models in background)
-ch-cli daemon start
+rustean daemon start
 
 # 3. Immediately try docs generate (while models loading)
-ch-cli docs generate
+rustean docs generate
 
 # Expected: Error 35
 # This is because daemon socket is busy during model loading

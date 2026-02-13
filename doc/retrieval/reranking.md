@@ -36,13 +36,13 @@ Semantic reranking uses a cross-encoder model (BGE reranker) to rescore search r
 
 ```bash
 # Hybrid search without reranking
-ch-cli search --semantic "authentication"
+rustean search --semantic "authentication"
 
 # Hybrid search with reranking
-ch-cli search --semantic --rerank "authentication"
+rustean search --semantic --rerank "authentication"
 
 # Full pipeline: semantic + rerank + context
-ch-cli search --semantic --rerank --context "authentication"
+rustean search --semantic --rerank --context "authentication"
 ```
 
 ## Output Format

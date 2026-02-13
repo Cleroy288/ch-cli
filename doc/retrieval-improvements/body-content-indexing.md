@@ -117,7 +117,7 @@ After body indexing:
 - Also matches functions that USE ConnectionPool or handle errors internally
 
 ```bash
-$ ch-cli search "connection pool error"
+$ rustean search "connection pool error"
 
 Search results for 'connection pool error':
 

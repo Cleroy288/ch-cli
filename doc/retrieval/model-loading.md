@@ -2,7 +2,7 @@
 
 ## Summary
 
-The ch-cli retrieval system uses three ML models loaded via a background daemon. The model loading system supports both single-file and sharded model weights from HuggingFace Hub.
+The rustean retrieval system uses three ML models loaded via a background daemon. The model loading system supports both single-file and sharded model weights from HuggingFace Hub.
 
 ## Supported Models
 
@@ -72,13 +72,13 @@ The BGE reranker uses XLM-RoBERTa architecture (not BERT). Key differences:
 
 ```bash
 # Start daemon (loads all models)
-ch-cli daemon start
+rustean daemon start
 
 # Check loaded models
-ch-cli daemon status
+rustean daemon status
 
 # Stop daemon
-ch-cli daemon stop
+rustean daemon stop
 ```
 
 ## Configuration
@@ -110,7 +110,7 @@ RetrievalConfig {
 On first daemon start, models are downloaded from HuggingFace Hub:
 
 ```
-$ ch-cli daemon start
+$ rustean daemon start
 [daemon] Loading embedding model: BAAI/bge-small-en-v1.5
 [models] Found single model.safetensors
 [daemon] Embedding model loaded (dim=384)
@@ -146,7 +146,7 @@ The daemon runs in "degraded mode" if models fail to load:
 
 GPU acceleration (Metal on macOS, CUDA on Linux) significantly reduces inference time.
 
-See `notes/benchmarks/ch-cli-vs-augment-mcp.md` for detailed benchmark results.
+See `notes/benchmarks/rustean-vs-augment-mcp.md` for detailed benchmark results.
 
 ## Dependencies
 

@@ -114,8 +114,8 @@ Search {
 
 Usage:
 ```bash
-ch-cli search --semantic --rerank "query"
-ch-cli search --semantic --rerank --context "query"
+rustean search --semantic --rerank "query"
+rustean search --semantic --rerank --context "query"
 ```
 
 ================================================================================
@@ -127,9 +127,9 @@ Unit tests (cross_encoder.rs):
 - test_score_batch - batch scoring, relevance ordering
 
 Manual testing:
-1. Start daemon: ch-cli daemon start
+1. Start daemon: rustean daemon start
 2. Wait for reranker to load
-3. Run: ch-cli search --semantic --rerank "some function"
+3. Run: rustean search --semantic --rerank "some function"
 4. Verify R: scores appear in output
 5. Check ordering differs from non-reranked
 

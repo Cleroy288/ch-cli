@@ -6,7 +6,7 @@ Status: Implemented
 
 Overview
 --------
-Added runtime GPU detection and acceleration for ch-cli ML models.
+Added runtime GPU detection and acceleration for rustean ML models.
 Supports Metal on macOS and CUDA on Linux with auto-fallback to CPU.
 
 Files Changed
@@ -63,10 +63,10 @@ Unit tests in device.rs:
 
 Manual testing:
 1. cargo build --release --features metal
-2. ./target/release/ch-cli daemon start
-3. ./target/release/ch-cli daemon status (check Device field)
-4. CH_FORCE_CPU=1 ./target/release/ch-cli daemon restart
-5. ./target/release/ch-cli daemon status (should show CPU)
+2. ./target/release/rustean daemon start
+3. ./target/release/rustean daemon status (check Device field)
+4. CH_FORCE_CPU=1 ./target/release/rustean daemon restart
+5. ./target/release/rustean daemon status (should show CPU)
 
 Future Enhancements
 -------------------

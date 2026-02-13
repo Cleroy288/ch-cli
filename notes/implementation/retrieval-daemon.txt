@@ -64,9 +64,9 @@ Client (client.rs)
 FILE LOCATIONS
 ================================================================================
 
-Socket: ~/.ch-cli/ml.sock (or ProjectDirs fallback)
-PID: ~/.ch-cli/daemon.pid
-Models: ~/.ch-cli/models/
+Socket: ~/.rustean/ml.sock (or ProjectDirs fallback)
+PID: ~/.rustean/daemon.pid
+Models: ~/.rustean/models/
 
 Using `directories` crate for platform-specific paths.
 
@@ -80,7 +80,7 @@ NEXT STEPS (Phase 1B)
 
 2. Add model caching
    - Download from HuggingFace Hub
-   - Cache in ~/.ch-cli/models/
+   - Cache in ~/.rustean/models/
    - Memory-map weights for fast loading
 
 3. Add memory usage tracking
@@ -88,7 +88,7 @@ NEXT STEPS (Phase 1B)
    - Consider model unloading if memory pressure
 
 4. Add CLI commands
-   - `ch-cli daemon start/stop/status/restart`
+   - `rustean daemon start/stop/status/restart`
    - Integrate with clap in cli/mod.rs
 
 ================================================================================

@@ -153,10 +153,10 @@ cargo test -- fast_path validator tiered
 Manual testing:
 ```bash
 # Fast-path query (should be <500ms)
-time ./target/release/ch-cli retrieve "BgeEmbedder"
+time ./target/release/rustean retrieve "BgeEmbedder"
 
 # Conceptual query (should use LLM, ~4s)
-time ./target/release/ch-cli retrieve "Why does the daemon load models?"
+time ./target/release/rustean retrieve "Why does the daemon load models?"
 ```
 
 ## Files

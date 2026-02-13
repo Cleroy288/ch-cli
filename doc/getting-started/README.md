@@ -1,10 +1,10 @@
-# Getting Started with ch-cli
+# Getting Started with rustean
 
-A quick start guide to using ch-cli for the first time.
+A quick start guide to using rustean for the first time.
 
-## What is ch-cli?
+## What is rustean?
 
-**ch-cli** is a semantic code indexer and TUI assistant for Rust projects. It provides:
+**rustean** is a semantic code indexer and TUI assistant for Rust projects. It provides:
 
 - 🔍 **Fast symbol search** - Find functions, types, and symbols instantly
 - 🎯 **Go-to-definition** - Jump to where symbols are defined
@@ -18,35 +18,35 @@ A quick start guide to using ch-cli for the first time.
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourrepo/ch-cli.git
-cd ch-cli
+git clone https://github.com/yourrepo/rustean.git
+cd rustean
 
 # Build the project
 cargo build --release
 
-# The binary is at: target/release/ch-cli
+# The binary is at: target/release/rustean
 ```
 
 ### Add to PATH
 
 ```bash
 # Option 1: Copy to system bin
-sudo cp target/release/ch-cli /usr/local/bin/
+sudo cp target/release/rustean /usr/local/bin/
 
 # Option 2: Create symlink
-ln -s $(pwd)/target/release/ch-cli ~/.local/bin/ch-cli
+ln -s $(pwd)/target/release/rustean ~/.local/bin/rustean
 
 # Then run from anywhere
-ch-cli
+rustean
 ```
 
 ## First Run - Startup Flow
 
-When you run `ch-cli` for the first time:
+When you run `rustean` for the first time:
 
 ### 1. Language Detection
 ```
-  ch-cli - Semantic Code Indexer
+  rustean - Semantic Code Indexer
 
   No code index found for this project.
 
@@ -83,12 +83,12 @@ The indexer:
 - Extracts symbols (functions, structs, traits, etc.)
 - Builds search index
 - Analyzes definitions and references
-- Saves index to `.ch-index/` folder
+- Saves index to `.rustean-index/` folder
 
 ### 3. Interactive TUI Launches
 ```
   ╔═══════════════════════════════════════════════════╗
-  ║  ch-cli                                           ║
+  ║  rustean                                           ║
   ║  A semantic code indexer and TUI assistant       ║
   ╚═══════════════════════════════════════════════════╝
 
@@ -115,8 +115,8 @@ You can now:
 # 1. Navigate to your project
 cd /path/to/rust/project
 
-# 2. Start ch-cli (answer Y to index)
-ch-cli
+# 2. Start rustean (answer Y to index)
+rustean
 
 # This builds the semantic index
 ```
@@ -124,7 +124,7 @@ ch-cli
 ### Example 2: Search for a Symbol
 ```bash
 # 1. After index is built, search for a function
-ch-cli search my_function
+rustean search my_function
 
 # Output shows location:
 # 1. my_function → Function (src/lib.rs:42)
@@ -133,7 +133,7 @@ ch-cli search my_function
 ### Example 3: Navigate to Definition
 ```bash
 # 1. Jump to where a symbol is defined
-ch-cli goto MyStruct
+rustean goto MyStruct
 
 # Shows the definition location and code
 ```
@@ -141,7 +141,7 @@ ch-cli goto MyStruct
 ### Example 4: Find All References
 ```bash
 # 1. See all places a symbol is used
-ch-cli refs process_data
+rustean refs process_data
 
 # Shows all reference locations with context
 ```
@@ -149,7 +149,7 @@ ch-cli refs process_data
 ### Example 5: List All Symbols
 ```bash
 # 1. See all structs in your code
-ch-cli symbols --kind struct
+rustean symbols --kind struct
 
 # Lists all struct definitions
 ```
@@ -159,59 +159,59 @@ ch-cli symbols --kind struct
 ### Task: Explore Your Codebase
 ```bash
 # Step 1: Build index
-ch-cli index --semantic
+rustean index --semantic
 
 # Step 2: Check overall statistics
-ch-cli stats
+rustean stats
 
 # Step 3: List key symbols
-ch-cli symbols --kind function --limit 20
-ch-cli symbols --kind struct
+rustean symbols --kind function --limit 20
+rustean symbols --kind struct
 ```
 
 ### Task: Find Something Specific
 ```bash
 # Step 1: Search for the symbol
-ch-cli search MyType
+rustean search MyType
 
 # Step 2: See where it's defined
-ch-cli goto MyType
+rustean goto MyType
 
 # Step 3: See where it's used
-ch-cli refs MyType
+rustean refs MyType
 ```
 
 ### Task: Understand Code Flow
 ```bash
 # Step 1: Start with entry point
-ch-cli goto main
+rustean goto main
 
 # Step 2: See what main calls
-ch-cli refs main
+rustean refs main
 
 # Step 3: Navigate to related functions
-ch-cli search process
-ch-cli goto process_data
+rustean search process
+rustean goto process_data
 ```
 
 ### Task: Prepare for Refactoring
 ```bash
 # Step 1: Find the function/type to refactor
-ch-cli search old_name
+rustean search old_name
 
 # Step 2: See all references
-ch-cli refs old_name --include-definition
+rustean refs old_name --include-definition
 
 # Step 3: Review each location
-ch-cli goto old_name
+rustean goto old_name
 ```
 
 ## File Structure
 
-After first run, ch-cli creates:
+After first run, rustean creates:
 
 ```
-.ch-index/
+.rustean-index/
 ├── index.state       # Metadata and file tracking
 └── tantivy/          # Full-text search index
 ```
@@ -219,41 +219,41 @@ After first run, ch-cli creates:
 ### .gitignore
 Add to your `.gitignore`:
 ```
-.ch-index/
+.rustean-index/
 ```
 
 ## Available Commands
 
 ### Interactive Mode (Default)
 ```bash
-ch-cli          # Launch TUI (default)
-ch-cli tui      # Explicit TUI mode
+rustean          # Launch TUI (default)
+rustean tui      # Explicit TUI mode
 ```
 
 ### Indexing
 ```bash
-ch-cli index              # Build/update index
-ch-cli index --semantic   # With semantic analysis
-ch-cli index --verbose    # Show detailed progress
+rustean index              # Build/update index
+rustean index --semantic   # With semantic analysis
+rustean index --verbose    # Show detailed progress
 ```
 
 ### Searching
 ```bash
-ch-cli search MyStruct        # Exact search
-ch-cli search my --fuzzy      # Fuzzy search
-ch-cli search Thing --kind function  # Filter by type
+rustean search MyStruct        # Exact search
+rustean search my --fuzzy      # Fuzzy search
+rustean search Thing --kind function  # Filter by type
 ```
 
 ### Navigation
 ```bash
-ch-cli goto MyType           # Jump to definition
-ch-cli refs my_function      # Find all references
+rustean goto MyType           # Jump to definition
+rustean refs my_function      # Find all references
 ```
 
 ### Analysis
 ```bash
-ch-cli symbols --kind struct # List all structs
-ch-cli stats                 # Show statistics
+rustean symbols --kind struct # List all structs
+rustean stats                 # Show statistics
 ```
 
 ## Supported Languages
@@ -280,48 +280,48 @@ All with location information and semantic analysis.
 ## Typical Workflow
 
 ```
-1. First Run: ch-cli
+1. First Run: rustean
    ↓ (Answer Y to build index)
 
-2. Search: ch-cli search something
+2. Search: rustean search something
    ↓ (Find what you're looking for)
 
-3. Navigate: ch-cli goto symbol
+3. Navigate: rustean goto symbol
    ↓ (Jump to definition)
 
-4. Explore: ch-cli refs symbol
+4. Explore: rustean refs symbol
    ↓ (See all usages)
 
-5. Interactive: ch-cli
+5. Interactive: rustean
    ↓ (Use TUI for detailed exploration)
 ```
 
 ## Tips for Success
 
-1. **Always start with indexing** - `ch-cli index --semantic` on first run
-2. **Use fuzzy search** - When unsure of exact names: `ch-cli search --fuzzy`
+1. **Always start with indexing** - `rustean index --semantic` on first run
+2. **Use fuzzy search** - When unsure of exact names: `rustean search --fuzzy`
 3. **Combine commands** - Start with search, then goto, then refs
 4. **Keep index updated** - Rebuild when making significant changes
-5. **Explore statistics** - `ch-cli stats` shows what's indexed
+5. **Explore statistics** - `rustean stats` shows what's indexed
 
 ## Troubleshooting
 
 ### Issue: "No index found"
 **Solution:** Build the index first
 ```bash
-ch-cli index --semantic
+rustean index --semantic
 ```
 
 ### Issue: Symbol not found
 **Solutions:**
-- Make sure index was built: `ch-cli stats`
-- Try exact name spelling: `ch-cli search --fuzzy`
+- Make sure index was built: `rustean stats`
+- Try exact name spelling: `rustean search --fuzzy`
 - Symbol might be external (not in this codebase)
 
 ### Issue: Search is slow
 **Solution:** Use `--limit` to reduce results
 ```bash
-ch-cli search something --limit 10
+rustean search something --limit 10
 ```
 
 ### Issue: Language not supported
@@ -339,9 +339,9 @@ After first run:
 
 Commands support help:
 ```bash
-ch-cli --help              # Overall help
-ch-cli search --help       # Command-specific help
-ch-cli goto --help         # Get option details
+rustean --help              # Overall help
+rustean search --help       # Command-specific help
+rustean goto --help         # Get option details
 ```
 
 ## See Also

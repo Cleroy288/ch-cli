@@ -1,4 +1,4 @@
-# Benchmark: ch-cli Persistent Caching vs Augment MCP
+# Benchmark: rustean Persistent Caching vs Augment MCP
 
 **Date:** 2026-02-01
 **Environment:** macOS, Apple Silicon M2 Pro, 16GB RAM
@@ -8,13 +8,13 @@
 | Tool | Query Latency | Notes |
 |------|---------------|-------|
 | Augment MCP codebase-retrieval | **<200ms** | Near-instant, real-time index |
-| ch-cli (cold start) | ~6000ms | Full index + embed + search |
-| ch-cli (warm start, full pipeline) | ~2700ms | Cached index, but embed per query |
-| ch-cli (warm, no-rerank/context) | ~2500ms | Embedding is the bottleneck |
+| rustean (cold start) | ~6000ms | Full index + embed + search |
+| rustean (warm start, full pipeline) | ~2700ms | Cached index, but embed per query |
+| rustean (warm, no-rerank/context) | ~2500ms | Embedding is the bottleneck |
 
 ## Test Queries
 
-All tests performed on the ch-cli codebase (~100 source files, ~300 symbols).
+All tests performed on the rustean codebase (~100 source files, ~300 symbols).
 
 ### Query 1: "BgeEmbedder"
 ### Query 2: "HybridSearch"
@@ -24,10 +24,10 @@ All tests performed on the ch-cli codebase (~100 source files, ~300 symbols).
 
 ## Detailed Results
 
-### ch-cli Cold Start (no cache)
+### rustean Cold Start (no cache)
 ```bash
-rm -rf .ch-index
-time ./target/release/ch-cli retrieve "BgeEmbedder" --xml
+rm -rf .rustean-index
+time ./target/release/rustean retrieve "BgeEmbedder" --xml
 ```
 **Result:** 6.032s total (19.71s CPU)
 
@@ -41,9 +41,9 @@ time ./target/release/ch-cli retrieve "BgeEmbedder" --xml
 - Hybrid search: ~50ms
 - Reranking: ~400ms
 
-### ch-cli Warm Start (with cache)
+### rustean Warm Start (with cache)
 ```bash
-time ./target/release/ch-cli retrieve "HybridSearch" --xml
+time ./target/release/rustean retrieve "HybridSearch" --xml
 ```
 **Result:** 2.755s total (18.98s CPU)
 
@@ -55,19 +55,19 @@ time ./target/release/ch-cli retrieve "HybridSearch" --xml
 [pipeline] Hybrid index loaded from cache
 ```
 
-### ch-cli Warm Start (no rerank, no context)
+### rustean Warm Start (no rerank, no context)
 ```bash
-time ./target/release/ch-cli retrieve "BgeEmbedder" --no-rerank --no-context --xml
+time ./target/release/rustean retrieve "BgeEmbedder" --no-rerank --no-context --xml
 ```
 **Result:** 2.587s total (19.48s CPU)
 
-### ch-cli Warm Start (minimal - no expand, no rerank, no context)
+### rustean Warm Start (minimal - no expand, no rerank, no context)
 ```bash
-time ./target/release/ch-cli retrieve "BgeEmbedder" --no-expand --no-rerank --no-context --xml
+time ./target/release/rustean retrieve "BgeEmbedder" --no-expand --no-rerank --no-context --xml
 ```
 **Result:** 2.597s total (19.49s CPU)
 
-### ch-cli Multiple Consecutive Queries
+### rustean Multiple Consecutive Queries
 ```
 Query: BgeEmbedder    -> 2.516s
 Query: HybridSearch   -> 2.507s
@@ -88,15 +88,15 @@ Query: SemanticGraph  -> <200ms (instant response)
 
 ### Bottleneck Identification
 
-The ~2.5s query time in ch-cli (even with warm cache) is dominated by:
+The ~2.5s query time in rustean (even with warm cache) is dominated by:
 
 1. **Query Embedding (~2.5s)** - Each search requires embedding the query via the BGE model
 2. **Model inference overhead** - Even on Metal GPU, BERT inference takes ~2s
 
 The index caching is working correctly:
-- Tantivy index: loaded from `.ch-index/tantivy/`
-- Vector store: loaded from `.ch-index/vectors.json` (8.5MB, ~300 embeddings)
-- State tracking: `.ch-index/state.json` detects no file changes
+- Tantivy index: loaded from `.rustean-index/tantivy/`
+- Vector store: loaded from `.rustean-index/vectors.json` (8.5MB, ~300 embeddings)
+- State tracking: `.rustean-index/state.json` detects no file changes
 
 ### Why Augment MCP is Faster
 
@@ -107,7 +107,7 @@ The index caching is working correctly:
 
 ### Quality Comparison
 
-| Aspect | ch-cli | Augment MCP |
+| Aspect | rustean | Augment MCP |
 |--------|--------|-------------|
 | Result relevance | High (hybrid BM25 + semantic) | High |
 | Code context | Full source with line numbers | Snippets with context |
@@ -116,7 +116,7 @@ The index caching is working correctly:
 | Privacy | Local only | Cloud-processed |
 | Customization | Full control | Limited |
 
-### ch-cli Advantages
+### rustean Advantages
 
 1. **Offline operation**: Works without internet
 2. **Privacy**: Code never leaves the machine
@@ -133,7 +133,7 @@ The index caching is working correctly:
 
 ## Recommendations
 
-### For ch-cli Optimization
+### For rustean Optimization
 
 1. **Query embedding cache**: Cache recent query embeddings to avoid re-computation
 2. **Daemon query cache**: Cache (query, results) pairs in daemon memory
@@ -161,12 +161,12 @@ To achieve <500ms warm start:
 │  │  (<200ms)                    │                                │
 │  │                              │                                │
 │  │        ┌─────────────────────┤                                │
-│  │        │ ch-cli with         │                                │
+│  │        │ rustean with         │                                │
 │  │        │ query cache         │                                │
 │  │        │ (~500ms target)     │                                │
 │  │        └─────────────────────┤                                │
 │  │                              │                                │
-│  │                              │  ch-cli current                │
+│  │                              │  rustean current                │
 │  │                              │  (~2.5s)                       │
 │  │                              │                                │
 │  └──────────────────────────────┘                                │
@@ -177,7 +177,7 @@ To achieve <500ms warm start:
 ## Cache Directory Structure
 
 ```
-.ch-index/
+.rustean-index/
 ├── state.json      # 12KB - file mtime tracking
 ├── tantivy/        # 336KB - BM25 index
 └── vectors.json    # 8.5MB - 300 embeddings (384-dim each)

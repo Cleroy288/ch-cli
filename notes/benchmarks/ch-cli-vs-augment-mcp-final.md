@@ -1,7 +1,7 @@
-# ch-cli vs Augment MCP: Final Benchmark (Post-Improvements)
+# rustean vs Augment MCP: Final Benchmark (Post-Improvements)
 
 **Date:** 2026-02-01
-**ch-cli version:** Latest (with all Phase 1-4 improvements)
+**rustean version:** Latest (with all Phase 1-4 improvements)
 **Index size:** 3372 symbols (up from 1817 - includes documentation)
 
 ---
@@ -25,7 +25,7 @@
 
 ### Query 1: "BgeEmbedder" (Exact Symbol)
 
-| Metric | ch-cli | Augment MCP |
+| Metric | rustean | Augment MCP |
 |--------|--------|-------------|
 | Response time | 4.9s | <1s |
 | Primary result | `embedding.rs:25` (struct) | `embedding.rs:25` (struct) |
@@ -39,7 +39,7 @@
 
 ### Query 2: "How does the retrieval pipeline work?" (Conceptual)
 
-| Metric | ch-cli (BEFORE) | ch-cli (AFTER) | Augment MCP |
+| Metric | rustean (BEFORE) | rustean (AFTER) | Augment MCP |
 |--------|-----------------|----------------|-------------|
 | Extracted symbols | "How" ❌ | (filtered) ✅ | N/A |
 | Found pipeline.rs | ❌ | ✅ | ✅ |
@@ -53,7 +53,7 @@
 
 ### Query 3: "RRF fusion algorithm" (Algorithm Search)
 
-| Metric | ch-cli | Augment MCP |
+| Metric | rustean | Augment MCP |
 |--------|--------|-------------|
 | Response time | 4.9s | <1s |
 | Found fusion.rs | ✅ Full (271 lines) | ✅ Full |
@@ -67,7 +67,7 @@
 
 ### Query 4: "mean pooling embeddings" (Implementation Detail)
 
-| Metric | ch-cli | Augment MCP |
+| Metric | rustean | Augment MCP |
 |--------|--------|-------------|
 | Response time | 5.0s | <1s |
 | Found `mean_pooling()` | ✅ `embedding.rs:175` | ✅ `embedding.rs:175` |
@@ -81,7 +81,7 @@
 
 ### Query 5: "where is SemanticGraph defined" (Definition Lookup)
 
-| Metric | ch-cli | Augment MCP |
+| Metric | rustean | Augment MCP |
 |--------|--------|-------------|
 | Response time | 5.0s | <1s |
 | Found definition | ✅ `semantic.rs:69` | ✅ `semantic.rs:69` |
@@ -123,12 +123,12 @@
 ## Remaining Gaps
 
 ### 1. Cross-File Context
-- **ch-cli:** Returns definition only
+- **rustean:** Returns definition only
 - **Augment:** Returns definition + all usages across codebase
 - **Fix needed:** Query SemanticGraph for usages in retrieval
 
 ### ~~2. Cold Start Latency~~ ✅ FIXED
-- **Before:** Manual `ch-cli daemon start` required
+- **Before:** Manual `rustean daemon start` required
 - **After:** Auto-starts daemon on first use, waits for models
 - **Cold start:** ~11s (one-time model loading)
 - **Warm start:** ~550ms (comparable to Augment <1s)
@@ -142,7 +142,7 @@
 ## Architecture Comparison
 
 ```
-ch-cli Pipeline:
+rustean Pipeline:
 ┌─────────────┐   ┌──────────────┐   ┌─────────────┐   ┌──────────────┐
 │ Query       │ → │ Stop-word    │ → │ Tiered      │ → │ Hybrid       │
 │ Expansion   │   │ Filter       │   │ Expansion   │   │ Search       │
@@ -173,11 +173,11 @@ Augment MCP Pipeline:
 
 ## Conclusion
 
-### Is ch-cli as good as Augment MCP?
+### Is rustean as good as Augment MCP?
 
 **For most use cases: YES, now comparable.**
 
-| Use Case | ch-cli Quality |
+| Use Case | rustean Quality |
 |----------|----------------|
 | "Find function X" | ✅ Equal |
 | "How does Y work?" | ✅ Good (was broken) |
@@ -185,7 +185,7 @@ Augment MCP Pipeline:
 | Response time (warm) | ✅ Equal (<1s) |
 | "Show all usages of X" | ⚠️ Inferior |
 
-### ch-cli Advantages
+### rustean Advantages
 1. **Local execution** - No cloud dependency
 2. **Privacy** - Code never leaves machine
 3. **Customizable** - Full control over search weights
@@ -199,7 +199,7 @@ Augment MCP Pipeline:
 
 ### Verdict
 
-**ch-cli is now production-ready for Rust codebase retrieval.**
+**rustean is now production-ready for Rust codebase retrieval.**
 
 The improvements (stop-word filtering, markdown indexing, content search) closed the critical quality gaps. Remaining differences are primarily in response time and cross-reference depth - areas that can be improved with further daemon optimization.
 
@@ -208,12 +208,12 @@ The improvements (stop-word filtering, markdown indexing, content search) closed
 ## Test Commands Used 
 
 ```bash
-# ch-cli queries
-./target/release/ch-cli retrieve "BgeEmbedder"
-./target/release/ch-cli retrieve "How does the retrieval pipeline work?"
-./target/release/ch-cli retrieve "RRF fusion algorithm"
-./target/release/ch-cli retrieve "mean pooling embeddings"
-./target/release/ch-cli retrieve "where is SemanticGraph defined"
+# rustean queries
+./target/release/rustean retrieve "BgeEmbedder"
+./target/release/rustean retrieve "How does the retrieval pipeline work?"
+./target/release/rustean retrieve "RRF fusion algorithm"
+./target/release/rustean retrieve "mean pooling embeddings"
+./target/release/rustean retrieve "where is SemanticGraph defined"
 
 # Augment MCP queries (via Claude MCP tool)
 mcp__auggie-mcp__codebase-retrieval with same queries

@@ -9,7 +9,7 @@ use rustean::indexer::state::IndexState;
 fn test_index_dir() {
 	let root = Path::new("/home/user/project"); // root path
 	// expected: expected index directory path
-	let expected = PathBuf::from("/home/user/project/.ch-index");
+	let expected = PathBuf::from("/home/user/project/.rustean-index");
 
 	assert_eq!(IndexState::index_dir(root), expected);
 }
@@ -20,7 +20,7 @@ fn test_state_file() {
 	let root = Path::new("/home/user/project"); // root path
 	// expected: expected state file path
 	let expected = PathBuf::from(
-		"/home/user/project/.ch-index/state.json"
+		"/home/user/project/.rustean-index/state.json"
 	);
 
 	assert_eq!(IndexState::state_file(root), expected);
@@ -32,7 +32,7 @@ fn test_tantivy_dir() {
 	let root = Path::new("/home/user/project"); // root path
 	// expected: expected tantivy directory path
 	let expected = PathBuf::from(
-		"/home/user/project/.ch-index/tantivy"
+		"/home/user/project/.rustean-index/tantivy"
 	);
 
 	assert_eq!(IndexState::tantivy_dir(root), expected);
@@ -43,7 +43,7 @@ fn test_tantivy_dir() {
 fn test_refs_dir() {
 	let root = Path::new("/home/user/project");
 	let expected = PathBuf::from(
-		"/home/user/project/.ch-index/refs",
+		"/home/user/project/.rustean-index/refs",
 	);
 
 	assert_eq!(IndexState::refs_dir(root), expected);
@@ -55,7 +55,7 @@ fn test_refs_file() {
 	let root = Path::new("/home/user/project"); // root path
 	// expected: expected refs file path
 	let expected = PathBuf::from(
-		"/home/user/project/.ch-index/refs.json"
+		"/home/user/project/.rustean-index/refs.json"
 	);
 
 	assert_eq!(IndexState::refs_file(root), expected);
@@ -67,7 +67,7 @@ fn test_trigram_file() {
 	let root = Path::new("/home/user/project"); // root path
 	// expected: expected trigram file path
 	let expected = PathBuf::from(
-		"/home/user/project/.ch-index/trigrams.json"
+		"/home/user/project/.rustean-index/trigrams.json"
 	);
 
 	assert_eq!(IndexState::trigram_file(root), expected);

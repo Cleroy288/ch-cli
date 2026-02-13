@@ -1,6 +1,6 @@
 # CLI Commands Reference
 
-Complete reference for all ch-cli command-line interface commands for the semantic code indexer.
+Complete reference for all rustean command-line interface commands for the semantic code indexer.
 
 ## Contents
 
@@ -9,6 +9,7 @@ Complete reference for all ch-cli command-line interface commands for the semant
 - [Search Command](./search.md) - Search for symbols by name
 - [Retrieve Command](./retrieve.md) - Agentic retrieval with natural language queries
 - [Navigation Commands](./navigation.md) - Go-to-definition and find references
+- [Info Command](./info.md) - Detailed symbol info (code, callers, callees, refs)
 - [Analysis Commands](./analysis.md) - List symbols and view statistics
 - [Docs Command](./docs.md) - Manage LLM-generated documentation
 - [Daemon Command](./daemon.md) - Manage the ML model daemon
@@ -17,50 +18,64 @@ Complete reference for all ch-cli command-line interface commands for the semant
 
 ```bash
 # Indexing
-ch-cli index              # Interactive indexing with startup flow
-ch-cli index --path .     # Index current directory
-ch-cli index --semantic   # Enable semantic analysis
-ch-cli index --verbose    # Show detailed progress
+rustean index                 # Interactive indexing with startup flow
+rustean index -p .            # Index current directory
+rustean index -s              # Enable semantic analysis
+rustean index -s -v           # Semantic + verbose progress
 
 # Embedding (for semantic search)
-ch-cli embed              # Generate embeddings for indexed symbols
-ch-cli embed --force      # Force re-embedding all symbols
-ch-cli embed --path .     # Embed specific project
+rustean embed                 # Generate embeddings for indexed symbols
+rustean embed -f              # Force re-embedding all symbols
+rustean embed -p ./myproject  # Embed specific project
 
 # Searching
-ch-cli search MyStruct    # Search for symbol
-ch-cli search --fuzzy foo # Fuzzy search (handles typos)
-ch-cli search --kind function # Filter by symbol type
-ch-cli search --semantic "parse input" # Semantic search (requires embed)
+rustean search MyStruct              # Search for symbol
+rustean search -f foo                # Fuzzy search (handles typos)
+rustean search -k function handle    # Filter by symbol type
+rustean search --semantic "parse"    # Semantic search (requires embed)
+rustean search --semantic -r "auth"  # Semantic + rerank
+rustean search -c handle_request     # Context expansion (callers/callees)
+rustean search --full my_function    # Show file content around matches
 
 # Agentic Retrieval (natural language queries)
-ch-cli retrieve "how does auth work"  # Full pipeline with context
-ch-cli retrieve "error handling" --xml # XML output for LLMs
-ch-cli retrieve "config" --structured  # Separate code/doc/notes
+rustean retrieve "how does auth work"  # Full pipeline with context
+rustean retrieve "error handling" --xml # XML output for LLMs
+rustean retrieve "config" --structured  # Separate code/doc/notes
 
 # Navigation
-ch-cli goto MyClass       # Jump to symbol definition
-ch-cli refs my_function   # Find all references to symbol
+rustean goto MyClass              # Jump to symbol definition
+rustean refs my_function          # Find all references to symbol
+rustean refs MyStruct -i          # Include definition location
+
+# Symbol Info (instant, no daemon needed)
+rustean info MyStruct             # Basic info + doc comments
+rustean info my_function -c       # Show source code
+rustean info my_function --callers # Who calls this?
+rustean info my_function --callees # What does this call?
+rustean info my_function -r       # All references grouped by type
+rustean info my_function -a       # Everything (code+callers+callees+refs)
 
 # Analysis
-ch-cli symbols --kind struct # List all structs
-ch-cli stats              # Show indexing statistics
+rustean symbols -k struct         # List all structs
+rustean symbols -f src/main.rs    # List symbols in a specific file
+rustean stats                     # Show indexing statistics
 
 # Daemon
-ch-cli daemon start       # Start ML model daemon
-ch-cli daemon stop        # Stop the daemon
-ch-cli daemon status      # Check daemon status
-ch-cli daemon restart     # Restart the daemon
+rustean daemon start       # Start ML model daemon
+rustean daemon stop        # Stop the daemon
+rustean daemon status      # Check daemon status
+rustean daemon restart     # Restart the daemon
 
 # Documentation (LLM-generated)
-ch-cli docs generate      # Generate docs for all symbols
-ch-cli docs status        # Check generation progress
-ch-cli docs show MyStruct # View docs for a symbol
-ch-cli docs search "auth" # Search through docs
+rustean docs generate      # Generate docs for all symbols
+rustean docs generate -f   # Force regenerate all
+rustean docs status        # Check generation progress
+rustean docs show MyStruct # View docs for a symbol
+rustean docs search "auth" # Search through docs
 
 # Interactive
-ch-cli tui                # Launch interactive TUI
-ch-cli                    # Same as 'tui' (default)
+rustean tui                # Launch interactive TUI
+rustean                    # Same as 'tui' (default)
 ```
 
 ## Command Categories
@@ -76,6 +91,9 @@ ch-cli                    # Same as 'tui' (default)
 ### Navigation Commands
 - **`goto`** - Jump to where a symbol is defined
 - **`refs`** - Find all usages/references to a symbol
+
+### Inspection Commands
+- **`info`** - Detailed symbol info: code, callers, callees, refs (no daemon needed)
 
 ### Analysis Commands
 - **`symbols`** - List symbols with filtering options
@@ -98,7 +116,7 @@ ch-cli                    # Same as 'tui' (default)
 
 ## Default Behavior
 
-Running `ch-cli` without arguments or with `ch-cli tui` launches:
+Running `rustean` without arguments or with `rustean tui` launches:
 1. Startup flow (language detection + optional indexing)
 2. Interactive terminal UI for file/folder selection
 3. Message parsing and conversation interface
@@ -125,59 +143,59 @@ When filtering with `--kind`, use one of:
 ### Index and Search
 ```bash
 # Create or update index with semantic analysis
-ch-cli index --semantic
+rustean index --semantic
 
 # Search for a function
-ch-cli search my_function
+rustean search my_function
 
 # Find all places it's used
-ch-cli refs my_function
+rustean refs my_function
 
 # Navigate to the definition
-ch-cli goto my_function
+rustean goto my_function
 ```
 
 ### Semantic Search Workflow
 ```bash
 # 1. Index the project
-ch-cli index --semantic
+rustean index --semantic
 
 # 2. Start the daemon (auto-starts if needed)
-ch-cli daemon start
+rustean daemon start
 
 # 3. Generate embeddings
-ch-cli embed
+rustean embed
 
 # 4. Search by meaning
-ch-cli search --semantic "parse user input"
+rustean search --semantic "parse user input"
 ```
 
 ### Explore Codebase
 ```bash
 # List all functions in codebase
-ch-cli symbols --kind function
+rustean symbols --kind function
 
 # List all structs
-ch-cli symbols --kind struct
+rustean symbols --kind struct
 
 # See index statistics
-ch-cli stats
+rustean stats
 ```
 
 ### Development Workflow
 ```bash
 # Initial setup - index the project
-ch-cli index --semantic
+rustean index --semantic
 
 # Quick search while coding
-ch-cli search SomeType
-ch-cli refs some_function
+rustean search SomeType
+rustean refs some_function
 
 # Check what changed
-ch-cli stats
+rustean stats
 
 # Launch interactive mode for exploration
-ch-cli
+rustean
 ```
 
 ## Typical Workflows
@@ -188,15 +206,15 @@ Standard workflow for exploring a new codebase:
 
 ```bash
 # 1. Index the project
-ch-cli index --semantic
+rustean index --semantic
 
 # 2. Search for what you need
-ch-cli search AuthHandler
-ch-cli search --kind function login
+rustean search AuthHandler
+rustean search --kind function login
 
 # 3. Navigate to the code
-ch-cli goto AuthHandler           # Jump to definition
-ch-cli refs handle_login          # Find all usages
+rustean goto AuthHandler           # Jump to definition
+rustean refs handle_login          # Find all usages
 ```
 
 ### Semantic Workflow: Embeddings-Powered Search
@@ -205,19 +223,19 @@ Enhanced search using vector embeddings for better relevance:
 
 ```bash
 # 1. Index the project
-ch-cli index --semantic
+rustean index --semantic
 
 # 2. Start the ML daemon (loads embedding models)
-ch-cli daemon start
+rustean daemon start
 # Wait a few seconds for models to load
-ch-cli daemon status
+rustean daemon status
 
 # 3. Generate embeddings for all symbols
-ch-cli embed
+rustean embed
 
 # 4. Use semantic search
-ch-cli search --semantic "user authentication"
-ch-cli search --semantic --rerank "database connection pooling"
+rustean search --semantic "user authentication"
+rustean search --semantic --rerank "database connection pooling"
 ```
 
 ### Documentation Workflow: LLM-Generated Docs
@@ -226,20 +244,20 @@ Generate comprehensive documentation using LLM analysis:
 
 ```bash
 # 1. Index the project
-ch-cli index --semantic
+rustean index --semantic
 
 # 2. Start the daemon
-ch-cli daemon start
+rustean daemon start
 
 # 3. Generate documentation (runs in background)
-ch-cli docs generate
+rustean docs generate
 
 # 4. Check progress
-ch-cli docs status
+rustean docs status
 
 # 5. View and search documentation
-ch-cli docs show MyStruct
-ch-cli docs search "error handling"
+rustean docs show MyStruct
+rustean docs search "error handling"
 ```
 
 ### Agentic Retrieval: Natural Language Queries
@@ -248,19 +266,19 @@ Use natural language to find relevant code context for LLM assistants:
 
 ```bash
 # 1. Start the daemon (required)
-ch-cli daemon start
+rustean daemon start
 
 # 2. Query with natural language
-ch-cli retrieve "how does the authentication system work"
+rustean retrieve "how does the authentication system work"
 
 # 3. Get XML output for LLM consumption
-ch-cli retrieve --xml "explain the database layer"
+rustean retrieve --xml "explain the database layer"
 
 # 4. Get structured output (code/doc/notes separated)
-ch-cli retrieve --structured "find payment processing logic"
+rustean retrieve --structured "find payment processing logic"
 
 # 5. Fine-tune retrieval
-ch-cli retrieve --limit 15 --no-expand "specific_function_name"
+rustean retrieve --limit 15 --no-expand "specific_function_name"
 ```
 
 ## Advanced Commands Reference
@@ -270,9 +288,9 @@ ch-cli retrieve --limit 15 --no-expand "specific_function_name"
 Generate vector embeddings for all symbols in the index. Requires the daemon to be running.
 
 ```bash
-ch-cli embed                    # Embed symbols in current directory
-ch-cli embed --path ./myproject # Embed specific project
-ch-cli embed --force            # Re-embed all symbols (removes existing)
+rustean embed                    # Embed symbols in current directory
+rustean embed --path ./myproject # Embed specific project
+rustean embed --force            # Re-embed all symbols (removes existing)
 ```
 
 **Process:**
@@ -286,11 +304,11 @@ ch-cli embed --force            # Re-embed all symbols (removes existing)
 The agentic retrieval pipeline for natural language code queries. Uses query expansion, semantic search, and reranking.
 
 ```bash
-ch-cli retrieve "how does authentication work"
-ch-cli retrieve --limit 20 "find all database connections"
-ch-cli retrieve --xml "query"              # Raw XML output for LLM consumption
-ch-cli retrieve --structured "query"       # Separate code/doc/notes sections
-ch-cli retrieve --max-tokens 4000 "query"  # Limit output tokens
+rustean retrieve "how does authentication work"
+rustean retrieve --limit 20 "find all database connections"
+rustean retrieve --xml "query"              # Raw XML output for LLM consumption
+rustean retrieve --structured "query"       # Separate code/doc/notes sections
+rustean retrieve --max-tokens 4000 "query"  # Limit output tokens
 ```
 
 **Options:**
@@ -311,12 +329,12 @@ ch-cli retrieve --max-tokens 4000 "query"  # Limit output tokens
 Generate and manage LLM-powered documentation for symbols.
 
 ```bash
-ch-cli docs generate             # Start background doc generation
-ch-cli docs generate --force     # Regenerate all docs
-ch-cli docs status               # Show progress (completed/pending)
-ch-cli docs show my_function     # Display docs for a symbol
-ch-cli docs search "query"       # Search documentation
-ch-cli docs search --limit 20 q  # More search results
+rustean docs generate             # Start background doc generation
+rustean docs generate --force     # Regenerate all docs
+rustean docs status               # Show progress (completed/pending)
+rustean docs show my_function     # Display docs for a symbol
+rustean docs search "query"       # Search documentation
+rustean docs search --limit 20 q  # More search results
 ```
 
 **Docs show output includes:**
@@ -332,10 +350,10 @@ ch-cli docs search --limit 20 q  # More search results
 The search command supports advanced options for semantic and context-aware search:
 
 ```bash
-ch-cli search --semantic "query"    # Use hybrid search (keywords + embeddings)
-ch-cli search --context "query"     # Include parent, callers, callees
-ch-cli search --rerank "query"      # Rerank using cross-encoder
-ch-cli search --full "query"        # Show full file content in results
+rustean search --semantic "query"    # Use hybrid search (keywords + embeddings)
+rustean search --context "query"     # Include parent, callers, callees
+rustean search --rerank "query"      # Rerank using cross-encoder
+rustean search --full "query"        # Show full file content in results
 ```
 
 ## See Also

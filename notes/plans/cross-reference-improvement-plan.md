@@ -8,11 +8,11 @@
 
 ## Problem Statement
 
-ch-cli returns **definition only** when searching for a symbol like `SemanticGraph`.
+rustean returns **definition only** when searching for a symbol like `SemanticGraph`.
 Augment MCP returns **definition + all 8+ files where the symbol is used** with context.
 
 ### Current Benchmark Gap
-| Query | ch-cli | Augment MCP |
+| Query | rustean | Augment MCP |
 |-------|--------|-------------|
 | "where is SemanticGraph defined" | Definition at `semantic.rs:69` | Definition + 8 usage files |
 | Usage context depth | Limited | Full graph |
@@ -199,7 +199,7 @@ pub fn validate_reference(
 - `src/indexer/manager.rs`
 
 **What:**
-1. Persist cross-reference graph to `.ch-index/refs.json`
+1. Persist cross-reference graph to `.rustean-index/refs.json`
 2. Incremental updates on file changes
 3. Load from cache on startup
 

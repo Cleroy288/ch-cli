@@ -2,13 +2,13 @@
 
 **Date**: 2026-02-05
 **Status**: Completed
-**Goal**: Close gap between ch-cli (7.5/10) and Augment MCP (8.5/10)
+**Goal**: Close gap between rustean (7.5/10) and Augment MCP (8.5/10)
 
 ---
 
 ## Context
 
-Based on benchmark analysis in `notes/benchmarks/ch-cli-vs-augment-detailed-2026-02-05.md`, we identified 6 issues:
+Based on benchmark analysis in `notes/benchmarks/rustean-vs-augment-detailed-2026-02-05.md`, we identified 6 issues:
 
 1. Docs ranked over source in basic search (HIGH, partial fix)
 2. No full code display (HIGH, FIXED with --full flag)

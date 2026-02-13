@@ -114,8 +114,8 @@ CLI INTEGRATION
 
 Added --context flag to search command:
 
-ch-cli search --semantic "query"           # hybrid search
-ch-cli search --semantic --context "query" # with context expansion
+rustean search --semantic "query"           # hybrid search
+rustean search --semantic --context "query" # with context expansion
 
 The --context flag:
 1. Forces semantic analysis during indexing
@@ -132,7 +132,7 @@ Unit tests:
 
 Manual testing:
 1. Index a project with functions, structs, methods
-2. Run: ch-cli search --semantic --context "some_function"
+2. Run: rustean search --semantic --context "some_function"
 3. Verify XML output contains:
    - Code snippet with line numbers
    - Parent context (if applicable)

@@ -8,7 +8,7 @@ Persistent index caching dramatically reduces retrieval time from ~4.5s to <500m
 
 ```
 +-------------------------+     +------------------------+
-|      ch-cli retrieve    | --> |   RetrievalPipeline    |
+|      rustean retrieve    | --> |   RetrievalPipeline    |
 +-------------------------+     +------------------------+
                                           |
                     +---------------------+---------------------+
@@ -20,7 +20,7 @@ Persistent index caching dramatically reduces retrieval time from ~4.5s to <500m
                     |                     |                     |
                     v                     v                     v
            +----------------------------------------------------------+
-           |                    .ch-index/ (disk)                     |
+           |                    .rustean-index/ (disk)                     |
            |  +---------------+  +---------------+  +---------------+ |
            |  |  state.json   |  |   tantivy/    |  | vectors.json  | |
            |  | (file mtimes) |  | (BM25 index)  |  | (embeddings)  | |
@@ -78,7 +78,7 @@ enum DaemonResponse {
 
 ### Incremental Indexing
 
-The index manager tracks file modification times in `.ch-index/state.json`:
+The index manager tracks file modification times in `.rustean-index/state.json`:
 
 ```json
 {
@@ -100,16 +100,16 @@ On subsequent runs, only changed files are re-indexed.
 
 ```bash
 # First run (cold start ~4.5s)
-ch-cli retrieve "BgeEmbedder"
+rustean retrieve "BgeEmbedder"
 
 # Second run (warm start <500ms)
-ch-cli retrieve "HybridSearch"
+rustean retrieve "HybridSearch"
 ```
 
 ### Programmatic API
 
 ```rust
-use ch_cli::retrieval::agent::{PipelineConfig, RetrievalPipeline};
+use rustean::retrieval::agent::{PipelineConfig, RetrievalPipeline};
 
 // Default config has persistence enabled
 let config = PipelineConfig::default();
@@ -128,7 +128,7 @@ let output = pipeline.retrieve("query")?;
 ### Daemon Cache API
 
 ```rust
-use ch_cli::retrieval::daemon::DaemonClient;
+use rustean::retrieval::daemon::DaemonClient;
 
 let client = DaemonClient::new();
 
@@ -149,7 +149,7 @@ client.evict_project("/path/to/project")?;
 
 ```
 project/
-  .ch-index/
+  .rustean-index/
     state.json      # File modification tracking
     tantivy/        # BM25 keyword search index
     vectors.json    # Embedding vectors for semantic search

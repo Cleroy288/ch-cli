@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-Based on benchmark analysis (ch-cli 7.5/10 vs Augment 8.5/10), we identified 4 remaining improvements to close the gap. This plan provides senior-engineer-level implementation details for each.
+Based on benchmark analysis (rustean 7.5/10 vs Augment 8.5/10), we identified 4 remaining improvements to close the gap. This plan provides senior-engineer-level implementation details for each.
 
 ---
 
@@ -260,4 +260,4 @@ After implementation, re-run benchmarks:
 - "who calls search_command" → Returns list of call sites
 - "connection pool error handling" → Matches function bodies containing "connection" and "error"
 
-Target: ch-cli score 8.5/10 (matching Augment)
+Target: rustean score 8.5/10 (matching Augment)

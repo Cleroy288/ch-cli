@@ -1,6 +1,6 @@
 # Semantic Code Indexer Documentation
 
-Complete documentation for the semantic code indexing system in ch-cli.
+Complete documentation for the semantic code indexing system in rustean.
 
 ## Contents
 
@@ -10,7 +10,7 @@ Complete documentation for the semantic code indexing system in ch-cli.
 
 ## Overview
 
-The ch-cli semantic indexer is a fast, Rust-native system for:
+The rustean semantic indexer is a fast, Rust-native system for:
 - **Symbol Search** - Full-text and fuzzy search
 - **Go-to-Definition** - Find where symbols are defined
 - **Find References** - Locate all usages of a symbol

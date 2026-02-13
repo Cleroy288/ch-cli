@@ -385,18 +385,18 @@ Phase 5 (Optional):
 
 ```bash
 # After Phase 3:
-./target/release/ch-cli retrieve "where is SemanticGraph used"
+./target/release/rustean retrieve "where is SemanticGraph used"
 # Expected: 10+ usages grouped by file
 
 # After Phase 4:
 for i in {1..100}; do
-    ./target/release/ch-cli retrieve "BgeEmbedder" > /dev/null
+    ./target/release/rustean retrieve "BgeEmbedder" > /dev/null
     sleep 1
 done
 # Expected: 0 failures, auto-recovery if daemon crashes
 
 # Health check:
-./target/release/ch-cli daemon health
+./target/release/rustean daemon health
 # Expected: Shows healthy status with latency
 ```
 

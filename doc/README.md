@@ -1,6 +1,6 @@
-# ch-cli Documentation
+# rustean Documentation
 
-Complete feature documentation for the ch-cli project. This folder contains documentation for implemented and stable features.
+Complete feature documentation for the rustean project. This folder contains documentation for implemented and stable features.
 
 ## Quick Navigation
 
@@ -29,7 +29,7 @@ Documentation about testing and test scenarios.
 
 ## Project Overview
 
-**ch-cli** is a semantic code indexer and TUI assistant built with Rust and Ratatui.
+**rustean** is a semantic code indexer and TUI assistant built with Rust and Ratatui.
 
 ### Key Features
 - 🔍 Fast semantic code indexing for Rust projects

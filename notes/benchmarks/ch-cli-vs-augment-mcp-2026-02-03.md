@@ -1,14 +1,14 @@
-# ch-cli vs Augment MCP: Benchmark Report
+# rustean vs Augment MCP: Benchmark Report
 
 **Date:** 2026-02-03
-**ch-cli version:** Latest (release build)
+**rustean version:** Latest (release build)
 **Daemon status:** Running with all 3 models loaded (CPU)
 
 ---
 
 ## Executive Summary
 
-| Metric | ch-cli | Augment MCP | Winner |
+| Metric | rustean | Augment MCP | Winner |
 |--------|--------|-------------|--------|
 | Response Time (warm) | ~6s | <1s | **Augment** |
 | Exact Symbol Lookup | ✅ Excellent | ✅ Excellent | TIE |
@@ -16,7 +16,7 @@
 | Cross-file Context | ✅ Good | ✅ Excellent | Augment |
 | Error Handling Queries | ✅ Good | ✅ Excellent | Augment |
 | Documentation Search | ✅ Full | ✅ Full | TIE |
-| Local/Private | ✅ Yes | ❌ No | **ch-cli** |
+| Local/Private | ✅ Yes | ❌ No | **rustean** |
 
 ---
 
@@ -24,7 +24,7 @@
 
 ### Query 1: "BgeEmbedder struct" (Exact Symbol Lookup)
 
-| Metric | ch-cli | Augment MCP |
+| Metric | rustean | Augment MCP |
 |--------|--------|-------------|
 | Response time | 6.0s | <1s |
 | Found struct definition | ✅ `embedding.rs:25` | ✅ `embedding.rs:25` |
@@ -36,7 +36,7 @@
 
 **Result:** ✅ **EQUAL QUALITY** - Both find struct, impl, usages, and docs
 
-**ch-cli Issues Identified:**
+**rustean Issues Identified:**
 1. Returns some unrelated results (`FILE_REF_BG`, `FOLDER_REF_BG` constants) - trigram matching false positives
 2. Response time 6x slower than Augment
 
@@ -44,7 +44,7 @@
 
 ### Query 2: "How does the retrieval pipeline work?" (Conceptual)
 
-| Metric | ch-cli | Augment MCP |
+| Metric | rustean | Augment MCP |
 |--------|--------|-------------|
 | Response time | 6.1s | <1s |
 | Intent detected | ✅ Understand | N/A |
@@ -56,7 +56,7 @@
 
 **Result:** ⚠️ **AUGMENT BETTER** - Returns full pipeline flow with all components
 
-**ch-cli Issues Identified:**
+**rustean Issues Identified:**
 1. Returns benchmark notes as top results instead of actual code
 2. Missing `tiered.rs` which is critical for understanding query expansion
 3. Missing `context/mod.rs` which explains context expansion
@@ -65,7 +65,7 @@
 
 ### Query 3: "RRF fusion algorithm" (Algorithm Search)
 
-| Metric | ch-cli | Augment MCP |
+| Metric | rustean | Augment MCP |
 |--------|--------|-------------|
 | Response time | 5.8s | <1s |
 | Found fusion.rs | ✅ Field only (line 28) | ✅ Full algorithm (lines 1-271) |
@@ -77,7 +77,7 @@
 
 **Result:** ⚠️ **AUGMENT BETTER** - Returns complete algorithm implementation
 
-**ch-cli Issues Identified:**
+**rustean Issues Identified:**
 1. Returns `rrf_score` field instead of the `rrf_score()` function as top result
 2. Missing the full `fuse_results()` implementation
 3. Returns more benchmark notes than actual code
@@ -86,7 +86,7 @@
 
 ### Query 4: "where is SemanticGraph defined and how is it used" (Definition + Usage)
 
-| Metric | ch-cli | Augment MCP |
+| Metric | rustean | Augment MCP |
 |--------|--------|-------------|
 | Response time | 6.5s | <1s |
 | Found definition | ✅ `semantic.rs:70` | ✅ `semantic.rs:70` |
@@ -99,7 +99,7 @@
 
 **Result:** ⚠️ **AUGMENT BETTER** - Returns significantly more usage context
 
-**ch-cli Issues Identified:**
+**rustean Issues Identified:**
 1. Shows only 2 usages while Augment shows 8+ files
 2. Missing critical files: `pipeline.rs`, `graph_walker.rs`, tests
 3. Cross-reference depth is limited
@@ -108,7 +108,7 @@
 
 ### Query 5: "error handling in daemon communication" (Error Handling)
 
-| Metric | ch-cli | Augment MCP |
+| Metric | rustean | Augment MCP |
 |--------|--------|-------------|
 | Response time | 6.2s | <1s |
 | Intent detected | ✅ Debug | N/A |
@@ -121,7 +121,7 @@
 
 **Result:** ⚠️ **AUGMENT BETTER** - Returns complete error handling flow
 
-**ch-cli Issues Identified:**
+**rustean Issues Identified:**
 1. Returns documentation about error handling instead of actual error handling code
 2. Missing `lifecycle.rs` which handles daemon start/stop errors
 3. Missing protocol serialization error handling
@@ -130,7 +130,7 @@
 
 ## Error Analysis
 
-### ch-cli Systematic Errors
+### rustean Systematic Errors
 
 | Error Type | Frequency | Impact | Root Cause |
 |------------|-----------|--------|------------|
@@ -246,7 +246,7 @@ fn should_include_result(path: &Path) -> bool {
 
 ## Conclusion
 
-**ch-cli is functional but has quality gaps compared to Augment MCP:**
+**rustean is functional but has quality gaps compared to Augment MCP:**
 
 ### Strengths
 - ✅ Finds correct definitions
@@ -271,12 +271,12 @@ fn should_include_result(path: &Path) -> bool {
 ## Test Commands Used
 
 ```bash
-# ch-cli queries
-time ./target/release/ch-cli retrieve "BgeEmbedder struct"
-time ./target/release/ch-cli retrieve "How does the retrieval pipeline work?"
-time ./target/release/ch-cli retrieve "RRF fusion algorithm"
-time ./target/release/ch-cli retrieve "where is SemanticGraph defined and how is it used"
-time ./target/release/ch-cli retrieve "error handling in daemon communication"
+# rustean queries
+time ./target/release/rustean retrieve "BgeEmbedder struct"
+time ./target/release/rustean retrieve "How does the retrieval pipeline work?"
+time ./target/release/rustean retrieve "RRF fusion algorithm"
+time ./target/release/rustean retrieve "where is SemanticGraph defined and how is it used"
+time ./target/release/rustean retrieve "error handling in daemon communication"
 
 # Augment MCP queries (via Claude MCP tool)
 mcp__auggie-mcp__codebase-retrieval with same queries

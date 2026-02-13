@@ -16,7 +16,7 @@ mod types;
 mod types_default;
 
 /// The directory name for storing index data
-pub const INDEX_DIR_NAME: &str = ".ch-index";
+pub const INDEX_DIR_NAME: &str = ".rustean-index";
 
 /// Current index format version
 pub const INDEX_VERSION: u32 = 1;

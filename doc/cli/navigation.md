@@ -8,7 +8,7 @@ Jump directly to where a symbol is defined in your codebase.
 
 ### Syntax
 ```bash
-ch-cli goto <SYMBOL>
+rustean goto <SYMBOL>
 ```
 
 ### Arguments
@@ -22,13 +22,13 @@ Finds the definition of a symbol and displays its location. Useful for understan
 ### Usage Examples
 ```bash
 # Navigate to struct definition
-ch-cli goto MyStruct
+rustean goto MyStruct
 
 # Navigate to function definition
-ch-cli goto process_data
+rustean goto process_data
 
 # Navigate to trait definition
-ch-cli goto Iterator
+rustean goto Iterator
 ```
 
 ### Output
@@ -46,7 +46,7 @@ Definition of 'MyStruct':
 ```
 
 ### Requirements
-- Requires semantic analysis index: `ch-cli index --semantic`
+- Requires semantic analysis index: `rustean index --semantic`
 - Symbol must be defined in the codebase
 - Symbol must have a definition (not external)
 
@@ -58,7 +58,7 @@ Find all places where a symbol is used (referenced) in your codebase.
 
 ### Syntax
 ```bash
-ch-cli refs <SYMBOL> [OPTIONS]
+rustean refs <SYMBOL> [OPTIONS]
 ```
 
 ### Arguments
@@ -69,7 +69,7 @@ ch-cli refs <SYMBOL> [OPTIONS]
 ### Options
 | Option | Description |
 |--------|-------------|
-| `--include-definition` | Also show the definition location |
+| `-i, --include-definition` | Also show the definition location |
 | `-h, --help` | Print help information |
 
 ### Description
@@ -78,16 +78,16 @@ Finds all usages of a symbol throughout your codebase. Helps understand how a sy
 ### Usage Examples
 ```bash
 # Find all references to a function
-ch-cli refs my_function
+rustean refs my_function
 
 # Include the definition location
-ch-cli refs MyStruct --include-definition
+rustean refs MyStruct --include-definition
 
 # Find usage of a constant
-ch-cli refs MAX_BUFFER_SIZE
+rustean refs MAX_BUFFER_SIZE
 
 # Find method usages
-ch-cli refs process
+rustean refs process
 ```
 
 ### Output
@@ -122,7 +122,7 @@ Total: 1 definition + 5 references = 6 usages
 #### `--include-definition`
 ```bash
 # Show definition along with references
-ch-cli refs my_function --include-definition
+rustean refs my_function --include-definition
 
 # Output includes:
 # 📍 Definition(s):
@@ -140,29 +140,29 @@ Without this flag, only references are shown.
 ### Explore a Symbol Completely
 ```bash
 # Step 1: Find the symbol
-ch-cli search MyClass --kind struct
+rustean search MyClass --kind struct
 
 # Step 2: Jump to its definition
-ch-cli goto MyClass
+rustean goto MyClass
 
 # Step 3: See where it's used
-ch-cli refs MyClass --include-definition
+rustean refs MyClass --include-definition
 ```
 
 ### Track Feature Usage
 ```bash
 # Find all references to understand impact
-ch-cli refs deprecated_function
+rustean refs deprecated_function
 
 # Then navigate to each reference
-ch-cli goto deprecated_function  # see the definition
+rustean goto deprecated_function  # see the definition
 # Review each reference manually
 ```
 
 ### Refactoring Support
 ```bash
 # Before renaming/removing a function:
-ch-cli refs old_function_name
+rustean refs old_function_name
 
 # Shows all locations that need updating
 # Helps ensure nothing is missed during refactoring
@@ -175,26 +175,26 @@ ch-cli refs old_function_name
 ### Finding Root Causes
 ```bash
 # Error mentions a function - find where it's defined
-ch-cli goto error_handler
+rustean goto error_handler
 
 # See all places that call it
-ch-cli refs error_handler
+rustean refs error_handler
 ```
 
 ### Understanding Code Flow
 ```bash
 # Start with main entry point
-ch-cli goto main
+rustean goto main
 
 # Follow function calls using goto
-ch-cli goto init_app
-ch-cli goto setup_ui
+rustean goto init_app
+rustean goto setup_ui
 ```
 
 ### API Usage Patterns
 ```bash
 # Find all places a public API is used
-ch-cli refs public_api_function --include-definition
+rustean refs public_api_function --include-definition
 
 # Helps understand how API should be modified
 ```
@@ -204,7 +204,7 @@ ch-cli refs public_api_function --include-definition
 ## Requirements
 
 Both navigation commands require:
-- A built semantic index: `ch-cli index --semantic`
+- A built semantic index: `rustean index --semantic`
 - Semantic analysis enabled during indexing
 - The symbol must exist in the indexed codebase
 
@@ -212,7 +212,7 @@ Both navigation commands require:
 
 Build the index first:
 ```bash
-ch-cli index --semantic
+rustean index --semantic
 ```
 
 This enables:
@@ -227,16 +227,16 @@ This enables:
 ### Navigate Multiple Related Symbols
 ```bash
 # For related functionality
-ch-cli goto init_system
-ch-cli refs init_system
-ch-cli goto setup_handlers
-ch-cli refs setup_handlers
+rustean goto init_system
+rustean refs init_system
+rustean goto setup_handlers
+rustean refs setup_handlers
 ```
 
 ### Find Unused Code
 ```bash
 # Check references to potential unused code
-ch-cli refs old_utility_function
+rustean refs old_utility_function
 
 # If no references found, it might be unused
 # (unless used externally)
@@ -245,17 +245,17 @@ ch-cli refs old_utility_function
 ### Trace Dependencies
 ```bash
 # Understand what a type depends on
-ch-cli goto DataProcessor
-ch-cli refs DataProcessor  # see all usages
+rustean goto DataProcessor
+rustean refs DataProcessor  # see all usages
 
 # Then check what DataProcessor uses
-ch-cli search "impl DataProcessor"
+rustean search "impl DataProcessor"
 ```
 
 ### Code Review
 ```bash
 # Before approving a change
-ch-cli refs changed_function
+rustean refs changed_function
 
 # See all impact points
 # Ensures nothing is missed

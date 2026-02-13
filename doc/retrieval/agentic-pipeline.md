@@ -61,22 +61,22 @@ The agentic retrieval pipeline combines all components (query expansion, hybrid 
 
 ```bash
 # Run full pipeline
-ch-cli retrieve "how does authentication work"
+rustean retrieve "how does authentication work"
 
 # With options
-ch-cli retrieve "find the parser" --limit 5 --max-tokens 4000
+rustean retrieve "find the parser" --limit 5 --max-tokens 4000
 
 # Disable specific steps
-ch-cli retrieve "AuthService" --no-expand  # Skip LLM interpretation
-ch-cli retrieve "login" --no-rerank        # Skip cross-encoder
-ch-cli retrieve "config" --no-context      # Skip context expansion
+rustean retrieve "AuthService" --no-expand  # Skip LLM interpretation
+rustean retrieve "login" --no-rerank        # Skip cross-encoder
+rustean retrieve "config" --no-context      # Skip context expansion
 
 # Raw XML output (for LLM consumption)
-ch-cli retrieve "error handling" --xml
+rustean retrieve "error handling" --xml
 
 # Structured output (separate code, doc, notes sections)
-ch-cli retrieve "how does auth work" --structured
-ch-cli retrieve "database connection" --structured --xml
+rustean retrieve "how does auth work" --structured
+rustean retrieve "database connection" --structured --xml
 ```
 
 ## Command Options
@@ -116,19 +116,19 @@ The `--min-results` ensures you always get results even if all scores are below 
 
 ```bash
 # Default filtering (threshold=0.015, min-results=1)
-ch-cli retrieve "authentication"
+rustean retrieve "authentication"
 
 # Stricter filtering - only highly relevant results
-ch-cli retrieve "auth flow" --threshold 0.02
+rustean retrieve "auth flow" --threshold 0.02
 
 # Looser filtering - include more marginal results
-ch-cli retrieve "config" --threshold 0.01
+rustean retrieve "config" --threshold 0.01
 
 # Guarantee at least 3 results per type
-ch-cli retrieve "parser" --min-results 3
+rustean retrieve "parser" --min-results 3
 
 # Disable filtering entirely
-ch-cli retrieve "error handling" --threshold 0.0
+rustean retrieve "error handling" --threshold 0.0
 ```
 
 ## Structured Pipeline
@@ -384,7 +384,7 @@ The XML output is designed for LLM consumption:
 ```
 User: How does authentication work in this codebase?
 
-[ch-cli retrieve "authentication" --xml]
+[rustean retrieve "authentication" --xml]
 
 LLM receives:
 <context>

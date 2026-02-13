@@ -8,7 +8,7 @@
 
 ## Summary
 
-This report compares the improved ch-cli retrieval system against Augment MCP after implementing Phases 3-5. Key improvements include enhanced cross-references (30 usages vs 2-3), connection pooling, graceful degradation, and async client support.
+This report compares the improved rustean retrieval system against Augment MCP after implementing Phases 3-5. Key improvements include enhanced cross-references (30 usages vs 2-3), connection pooling, graceful degradation, and async client support.
 
 ---
 
@@ -16,17 +16,17 @@ This report compares the improved ch-cli retrieval system against Augment MCP af
 
 ### Query Comparison Table
 
-| Query | ch-cli Result | Augment MCP Result | Winner |
+| Query | rustean Result | Augment MCP Result | Winner |
 |-------|---------------|-------------------|--------|
 | `BgeEmbedder struct` | struct + 8 usages, 1.5s | Full file + usages | Tie |
 | `How does retrieval pipeline work` | PLAN.md first (docs) | pipeline.rs first (code) | **Augment** |
-| `RRF fusion algorithm` | rrf_score function first ✅ | Full fusion.rs | **ch-cli** |
-| `SemanticGraph definition + usage` | struct + 30 usages ✅ | struct + multiple files | **ch-cli** |
+| `RRF fusion algorithm` | rrf_score function first ✅ | Full fusion.rs | **rustean** |
+| `SemanticGraph definition + usage` | struct + 30 usages ✅ | struct + multiple files | **rustean** |
 | `error handling in daemon` | test file first | client.rs with retry logic | **Augment** |
 
 ### Response Time Comparison
 
-| Metric | ch-cli | Augment MCP |
+| Metric | rustean | Augment MCP |
 |--------|--------|-------------|
 | Cold start (first query) | ~3-4s | ~2s |
 | Warm cache | ~1.3-1.6s | <1s |
@@ -92,7 +92,7 @@ This report compares the improved ch-cli retrieval system against Augment MCP af
 - Index function/module docstrings separately with higher weight
 
 ### 2. Response Time Gap
-**Issue:** ch-cli ~1.3-1.6s vs Augment <1s
+**Issue:** rustean ~1.3-1.6s vs Augment <1s
 
 **Root Cause:**
 - Daemon communication overhead
@@ -169,4 +169,4 @@ Phases 3-5 successfully improved:
 
 Remaining gaps are primarily in conceptual query handling and response time optimization. The boost configuration provides a solid foundation for future tuning.
 
-**Overall Score:** ch-cli wins 2/5 queries, ties 1/5, loses 2/5 to Augment MCP. Main advantage is detailed usage tracking; main gap is conceptual query relevance.
+**Overall Score:** rustean wins 2/5 queries, ties 1/5, loses 2/5 to Augment MCP. Main advantage is detailed usage tracking; main gap is conceptual query relevance.

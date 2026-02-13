@@ -1,4 +1,4 @@
-# ch-cli vs Augment MCP Benchmark
+# rustean vs Augment MCP Benchmark
 
 **Date:** 2026-02-05
 **After:** Module structure queries implementation + CodeRabbit fixes
@@ -7,23 +7,23 @@
 
 ## Test Results Summary
 
-| Query | ch-cli Result | Augment MCP Result | Winner |
+| Query | rustean Result | Augment MCP Result | Winner |
 |-------|--------------|-------------------|--------|
-| "modules in retrieval" | Full module hierarchy with docs | Raw mod.rs content | **ch-cli** |
+| "modules in retrieval" | Full module hierarchy with docs | Raw mod.rs content | **rustean** |
 | "BgeEmbedder struct" | 10 doc files (no source) | Full 228-line file | Augment |
 | "how does pipeline work" | 10 doc headers | Full pipeline.rs source | Augment |
 | "RetrievalError definition" | Docs #1-4, enum at #5 | Enum definition #1 | Augment |
 | "callers of embed" | Docs + definitions | Definitions (no callers) | Tie |
 
-**Score: ch-cli 1, Augment 3, Tie 1**
+**Score: rustean 1, Augment 3, Tie 1**
 
 ---
 
 ## Detailed Results
 
-### Query 1: "modules in retrieval" (IMPROVED - ch-cli wins)
+### Query 1: "modules in retrieval" (IMPROVED - rustean wins)
 
-**ch-cli Output:**
+**rustean Output:**
 ```
 Module structure for 'retrieval':
 
@@ -55,7 +55,7 @@ Module structure for 'retrieval':
 - Returns raw file content of mod.rs files
 - More verbose, less structured
 
-**Verdict:** ch-cli now provides purpose-built structure queries with:
+**Verdict:** rustean now provides purpose-built structure queries with:
 - Hierarchical view
 - Doc comments inline
 - Re-export counts
@@ -65,9 +65,9 @@ Module structure for 'retrieval':
 
 ### Query 2: "BgeEmbedder struct" (Augment wins)
 
-**ch-cli Output:**
+**rustean Output:**
 ```
-1. doc Query 1: "BgeEmbedder struct" (ch-cli-vs-augment-gaps.md:23)
+1. doc Query 1: "BgeEmbedder struct" (rustean-vs-augment-gaps.md:23)
 2. doc Test full file content (retrieval-quality-improvements-2026-02-04.md:301)
 3. doc Find the struct (search.md:169)
 ...
@@ -80,13 +80,13 @@ Module structure for 'retrieval':
 - All implementation methods
 - Related files
 
-**Verdict:** Augment clearly better. ch-cli returns docs about the query, not the actual struct.
+**Verdict:** Augment clearly better. rustean returns docs about the query, not the actual struct.
 
 ---
 
 ### Query 3: "how does pipeline work" (Augment wins)
 
-**ch-cli Output:**
+**rustean Output:**
 ```
 1. doc Run full pipeline (agentic-pipeline.md:63)
 2. doc Test intent detection (retrieval-quality-improvements-2026-02-04.md:298)
@@ -105,10 +105,10 @@ Module structure for 'retrieval':
 
 ### Query 4: "RetrievalError definition" (Augment wins)
 
-**ch-cli Output:**
+**rustean Output:**
 ```
 1. doc Test definition boosting (retrieval-quality-improvements-2026-02-04.md:304)
-2. doc Query 2: "RetrievalError definition" (ch-cli-vs-augment-gaps.md:35)
+2. doc Query 2: "RetrievalError definition" (rustean-vs-augment-gaps.md:35)
 3. doc Should NOT trigger structure query (module-structure-queries-implementation.md:539)
 4. variant RetrievalError (commands.rs:41)  <- usage
 5. enum RetrievalError (mod.rs:38)          <- DEFINITION
@@ -124,9 +124,9 @@ Module structure for 'retrieval':
 
 ### Query 5: "callers of embed" (Tie)
 
-**ch-cli Output:**
+**rustean Output:**
 ```
-1. doc Query 4: "Callers of embed function" (ch-cli-vs-augment-gaps.md:59)
+1. doc Query 4: "Callers of embed function" (rustean-vs-augment-gaps.md:59)
 ...
 7. method embed (client.rs:182)     <- definition
 8. method embed (async_client.rs:98) <- definition
@@ -142,7 +142,7 @@ Module structure for 'retrieval':
 
 ## Gap Analysis
 
-### What ch-cli Does Well Now
+### What rustean Does Well Now
 1. **Structure queries** - New feature works excellently
 2. **Fast keyword search** - Instant results
 3. **Index persistence** - Quick warm starts
@@ -169,7 +169,7 @@ let intent = fallback_parse(query).intent;
 
 ### Priority 2: Add --full Flag (HIGH impact, LOW effort)
 ```bash
-ch-cli search "BgeEmbedder struct" --full
+rustean search "BgeEmbedder struct" --full
 # Returns full file content instead of pointers
 ```
 
@@ -183,7 +183,7 @@ ch-cli search "BgeEmbedder struct" --full
 
 ## Conclusion
 
-The module structure query feature is a significant win - ch-cli now outperforms Augment MCP for structural queries. However, for symbol lookups and conceptual queries, Augment MCP still provides better results by returning actual source code instead of documentation files.
+The module structure query feature is a significant win - rustean now outperforms Augment MCP for structural queries. However, for symbol lookups and conceptual queries, Augment MCP still provides better results by returning actual source code instead of documentation files.
 
 The remaining gaps can be addressed with relatively low effort by:
 1. Integrating existing intent detection into basic search

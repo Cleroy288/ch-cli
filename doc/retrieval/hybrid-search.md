@@ -38,13 +38,13 @@ Hybrid search combines keyword-based search (Tantivy BM25) with semantic search 
 
 ```bash
 # Standard keyword search
-ch-cli search "parse_user"
+rustean search "parse_user"
 
 # Hybrid search (keyword + semantic)
-ch-cli search --semantic "parse user input"
+rustean search --semantic "parse user input"
 
 # Fuzzy keyword search
-ch-cli search --fuzzy "pars_usr"
+rustean search --fuzzy "pars_usr"
 ```
 
 ## RRF Algorithm
@@ -163,7 +163,7 @@ pub struct HybridSearchConfig {
 
 | Scenario | Recommended |
 |----------|-------------|
-| Exact symbol name known | Keyword (`ch-cli search`) |
+| Exact symbol name known | Keyword (`rustean search`) |
 | Fuzzy/typo search | Keyword + fuzzy (`--fuzzy`) |
 | Natural language query | Hybrid (`--semantic`) |
 | Concept search | Hybrid (`--semantic`) |
@@ -172,16 +172,16 @@ pub struct HybridSearchConfig {
 
 ```bash
 # You know the exact name
-ch-cli search "IndexManager"
+rustean search "IndexManager"
 
 # You have typos
-ch-cli search --fuzzy "indx_mngr"
+rustean search --fuzzy "indx_mngr"
 
 # You're describing what you want
-ch-cli search --semantic "function that parses user credentials"
+rustean search --semantic "function that parses user credentials"
 
 # Conceptual search
-ch-cli search --semantic "error handling for file operations"
+rustean search --semantic "error handling for file operations"
 ```
 
 ## Performance

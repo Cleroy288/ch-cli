@@ -1,4 +1,4 @@
-# ch-cli Improvement Plan: Matching Augment MCP Quality
+# rustean Improvement Plan: Matching Augment MCP Quality
 
 **Date:** 2026-02-03
 **Goal:** Fix the 3 main issues identified in benchmark:
@@ -1226,18 +1226,18 @@ impl AsyncDaemonClient {
 
 ```bash
 # After implementation, run these queries:
-./target/release/ch-cli retrieve "How does the retrieval pipeline work?"
+./target/release/rustean retrieve "How does the retrieval pipeline work?"
 # Expected: pipeline.rs first, not benchmark notes
 
-./target/release/ch-cli retrieve "RRF fusion algorithm"
+./target/release/rustean retrieve "RRF fusion algorithm"
 # Expected: rrf_score() function first, not rrf_score field
 
-./target/release/ch-cli retrieve "where is SemanticGraph used"
+./target/release/rustean retrieve "where is SemanticGraph used"
 # Expected: 10+ usages across multiple files
 
 # Stability test:
 for i in {1..100}; do
-    ./target/release/ch-cli retrieve "BgeEmbedder" > /dev/null
+    ./target/release/rustean retrieve "BgeEmbedder" > /dev/null
     sleep 1
 done
 # Expected: 0 failures

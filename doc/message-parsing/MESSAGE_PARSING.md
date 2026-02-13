@@ -1,6 +1,6 @@
 # Message Parsing & Storage System
 
-This document explains how user messages are parsed, stored, and structured in the tcah CLI tool.
+This document explains how user messages are parsed, stored, and structured in the rustean CLI tool.
 
 ---
 

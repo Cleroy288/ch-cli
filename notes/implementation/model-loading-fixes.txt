@@ -30,7 +30,7 @@ All 3 models load successfully:
 - microsoft/phi-3-mini-4k-instruct (query expansion) ✓
 
 Full pipeline test passed:
-$ ch-cli retrieve "How does hybrid search work? What is RRF fusion?"
+$ rustean retrieve "How does hybrid search work? What is RRF fusion?"
 - Query expansion: Detected "RRF" symbol
 - Hybrid search: Found 15 candidates
 - Reranking: Applied cross-encoder scoring
@@ -122,9 +122,9 @@ Step A2: Update cross_encoder.rs
      - May be at root level, not prefixed
 
 Step A3: Test reranker
-  - ch-cli daemon stop
+  - rustean daemon stop
   - cargo build --release
-  - ch-cli daemon start
+  - rustean daemon start
   - Check status shows reranker loaded
 
 
@@ -199,9 +199,9 @@ Step B2: Update weight loading in all consumers
     ```
 
 Step B3: Test LLM loading
-  - ch-cli daemon stop
+  - rustean daemon stop
   - cargo build --release
-  - ch-cli daemon start (will download ~7.6GB on first run)
+  - rustean daemon start (will download ~7.6GB on first run)
   - Check status shows LLM loaded
 
 
@@ -212,7 +212,7 @@ VERIFICATION
 After both fixes:
 
 1. Check daemon status:
-   $ ch-cli daemon status
+   $ rustean daemon status
 
    Expected output:
    Loaded Models:
@@ -221,7 +221,7 @@ After both fixes:
      - microsoft/phi-3-mini-4k-instruct (query expansion)
 
 2. Test full pipeline:
-   $ ch-cli retrieve "How does hybrid search work?" --limit 5
+   $ rustean retrieve "How does hybrid search work?" --limit 5
 
    Expected:
    - Query expansion: Interprets query semantically
@@ -504,15 +504,15 @@ BENCHMARK RESULTS
 ================================================================================
 
 After model loading fixes, a comprehensive benchmark was conducted comparing
-ch-cli vs Augment MCP codebase-retrieval tool.
+rustean vs Augment MCP codebase-retrieval tool.
 
-Results: See notes/benchmarks/ch-cli-vs-augment-mcp.md
+Results: See notes/benchmarks/rustean-vs-augment-mcp.md
 
 Key findings:
-- ch-cli: ~9s per query (ML inference overhead)
+- rustean: ~9s per query (ML inference overhead)
 - Augment MCP: <1s per query
-- ch-cli retrieval accuracy needs improvement (query expansion issues)
-- ch-cli provides better structured XML output for LLM consumption
+- rustean retrieval accuracy needs improvement (query expansion issues)
+- rustean provides better structured XML output for LLM consumption
 
 Recommendations for improvement:
 1. Filter common words from query expansion ("How", "Where", "What")

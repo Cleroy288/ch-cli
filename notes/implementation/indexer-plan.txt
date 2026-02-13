@@ -116,7 +116,7 @@ PHASE 2: FILE SYSTEM CRAWLING
   - [ ] Implement parallel file processing using rayon
   - [ ] Add progress tracking for large codebases
   - [ ] Handle errors gracefully (skip unparseable files)
-  - [ ] Test: Index the entire ch-cli project in parallel
+  - [ ] Test: Index the entire rustean project in parallel
 
 □ 2.3 Workspace Detection
   - [ ] Detect Cargo.toml for Rust workspaces
@@ -147,7 +147,7 @@ PHASE 3: TANTIVY SEARCH ENGINE INTEGRATION
         - doc_comment: TEXT (tokenized, stored, optional)
         - visibility: STRING (stored)
         - full_qualified_name: TEXT (stored) # e.g., "mod::struct::method"
-  - [ ] Create index directory structure (.ch-cli-index/)
+  - [ ] Create index directory structure (.rustean-index/)
   - [ ] Test: Create index and verify schema
 
 □ 3.3 Implement Index Writer
@@ -278,7 +278,7 @@ PHASE 6: OPTIMIZATION & POLISH
   - [ ] Test: Handle malformed files
 
 □ 6.3 Configuration
-  - [ ] Create .ch-cli-config.toml for settings:
+  - [ ] Create .rustean-config.toml for settings:
         - Languages to index
         - Exclude patterns
         - Index location
@@ -329,13 +329,13 @@ IMPLEMENTATION STRATEGY
 Development Approach:
 1. Build in phases - complete one milestone before moving to next
 2. Write tests alongside implementation
-3. Use existing ch-cli UI as the interface
+3. Use existing rustean UI as the interface
 4. Start with Rust-only support, expand later
 5. Keep performance in mind from day one
 6. Document as you go
 
 Key Decisions to Make Early:
-- [ ] Where to store index? (.ch-cli-index/ in project root)
+- [ ] Where to store index? (.rustean-index/ in project root)
 - [ ] How to handle multi-workspace projects?
 - [ ] Should indexing be automatic or manual?
 - [ ] How to display search results in TUI?
@@ -368,7 +368,7 @@ NEXT STEPS
 1. Review this plan and adjust based on project priorities
 2. Start with Phase 1 - Tree-sitter integration
 3. Build incrementally, testing at each step
-4. Keep existing ch-cli functionality working throughout
+4. Keep existing rustean functionality working throughout
 5. Consider creating feature branches for each phase
 
 ================================================================================

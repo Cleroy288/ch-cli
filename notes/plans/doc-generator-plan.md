@@ -217,7 +217,7 @@ impl DocStore {
 ```
 
 **Persistence:**
-- Location: `.ch-index/docs.json`
+- Location: `.rustean-index/docs.json`
 - Format: JSON (same as other persistence)
 
 ---
@@ -463,7 +463,7 @@ impl DocStore {
 **Trigger conditions:**
 1. **On daemon start**: Check all files, regenerate stale
 2. **On index refresh**: Sync DocStore with IndexState
-3. **On explicit request**: `ch-cli docs --regenerate`
+3. **On explicit request**: `rustean docs --regenerate`
 
 ---
 
@@ -531,19 +531,19 @@ pub struct SearchResult {
 **New commands:**
 ```bash
 # Start doc generation (runs in background via daemon)
-ch-cli docs generate
+rustean docs generate
 
 # Check generation status
-ch-cli docs status
+rustean docs status
 
 # View doc for specific symbol
-ch-cli docs show <symbol_name>
+rustean docs show <symbol_name>
 
 # Regenerate all docs
-ch-cli docs regenerate
+rustean docs regenerate
 
 # Search docs
-ch-cli docs search "authentication flow"
+rustean docs search "authentication flow"
 ```
 
 ---
@@ -608,7 +608,7 @@ ch-cli docs search "authentication flow"
 3. **Integration:**
    - [ ] Works with existing daemon architecture
    - [ ] Uses existing GPU detection
-   - [ ] Stores in .ch-index alongside other data
+   - [ ] Stores in .rustean-index alongside other data
 
 ---
 

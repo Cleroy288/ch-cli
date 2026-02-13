@@ -9,7 +9,7 @@ The `docs` command provides tools to generate, view, and search AI-generated doc
 ## Syntax
 
 ```bash
-ch-cli docs <COMMAND>
+rustean docs <COMMAND>
 ```
 
 ## Subcommands
@@ -65,28 +65,28 @@ Start background documentation generation for all symbols.
 ### Syntax
 
 ```bash
-ch-cli docs generate [OPTIONS]
+rustean docs generate [OPTIONS]
 ```
 
 ### Options
 
 | Option | Description |
 |--------|-------------|
-| `-f, --force` | Force regeneration even if docs already exist |
+| `-f, --force` | Force regeneration even if docs exist |
 | `-h, --help` | Print help information |
 
 ### Description
 
-Initiates documentation generation in the background via the daemon. The LLM processes each symbol and generates technical descriptions. Progress can be monitored with `ch-cli docs status`.
+Initiates documentation generation in the background via the daemon. The LLM processes each symbol and generates technical descriptions. Progress can be monitored with `rustean docs status`.
 
 ### Usage Examples
 
 ```bash
 # Generate docs for all symbols
-ch-cli docs generate
+rustean docs generate
 
 # Force regenerate all docs (even existing ones)
-ch-cli docs generate --force
+rustean docs generate --force
 ```
 
 ### Output
@@ -94,7 +94,7 @@ ch-cli docs generate --force
 ```
 Starting documentation generation...
 Documentation generation started in background.
-Use 'ch-cli docs status' to check progress.
+Use 'rustean docs status' to check progress.
 ```
 
 ### Notes
@@ -112,7 +112,7 @@ Display the current documentation generation progress.
 ### Syntax
 
 ```bash
-ch-cli docs status
+rustean docs status
 ```
 
 ### Description
@@ -123,7 +123,7 @@ Shows how many symbols have been documented, how many are pending, and displays 
 
 ```bash
 # Check generation progress
-ch-cli docs status
+rustean docs status
 ```
 
 ### Output Example
@@ -172,7 +172,7 @@ Display documentation for a specific symbol.
 ### Syntax
 
 ```bash
-ch-cli docs show <SYMBOL>
+rustean docs show <SYMBOL>
 ```
 
 ### Arguments
@@ -189,13 +189,13 @@ Retrieves and displays all documentation for a named symbol, including user comm
 
 ```bash
 # Show documentation for a function
-ch-cli docs show parse_config
+rustean docs show parse_config
 
 # Show documentation for a struct
-ch-cli docs show SearchIndex
+rustean docs show SearchIndex
 
 # Show documentation for a method
-ch-cli docs show HybridSearchEngine::search
+rustean docs show HybridSearchEngine::search
 ```
 
 ### Output Example
@@ -240,7 +240,7 @@ Documentation for 'parse_config'
 
 ```
 No documentation found for 'unknown_symbol'
-Run 'ch-cli docs generate' to generate docs.
+Run 'rustean docs generate' to generate docs.
 ```
 
 ---
@@ -252,7 +252,7 @@ Search through generated documentation.
 ### Syntax
 
 ```bash
-ch-cli docs search <QUERY> [OPTIONS]
+rustean docs search <QUERY> [OPTIONS]
 ```
 
 ### Arguments
@@ -276,13 +276,13 @@ Searches through all generated documentation for symbols matching the query. Sea
 
 ```bash
 # Search for authentication-related docs
-ch-cli docs search "authentication"
+rustean docs search "authentication"
 
 # Search with more results
-ch-cli docs search "parser" --limit 20
+rustean docs search "parser" --limit 20
 
 # Search for error handling patterns
-ch-cli docs search "error handling"
+rustean docs search "error handling"
 ```
 
 ### Output Example
@@ -311,18 +311,18 @@ Documentation search results for 'parser':
 
 Before using `docs` commands, ensure:
 
-1. **Index exists** - Run `ch-cli index --semantic` first
-2. **Embeddings generated** - Run `ch-cli embed` for semantic search
-3. **Daemon is running** - Start with `ch-cli daemon start`
+1. **Index exists** - Run `rustean index --semantic` first
+2. **Embeddings generated** - Run `rustean embed` for semantic search
+3. **Daemon is running** - Start with `rustean daemon start`
 
 ### Verify Prerequisites
 
 ```bash
 # Check if index exists
-ch-cli stats
+rustean stats
 
 # Check daemon status
-ch-cli daemon status
+rustean daemon status
 ```
 
 ### Error Messages
@@ -330,13 +330,13 @@ ch-cli daemon status
 If daemon not running:
 ```
 Error starting doc generation: connection refused
-Make sure the daemon is running: ch-cli daemon start
+Make sure the daemon is running: rustean daemon start
 ```
 
 If no index:
 ```
 No documentation found.
-Run 'ch-cli docs generate' to start.
+Run 'rustean docs generate' to start.
 ```
 
 ---
@@ -347,54 +347,54 @@ Run 'ch-cli docs generate' to start.
 
 ```bash
 # Step 1: Build the semantic index
-ch-cli index --semantic
+rustean index --semantic
 
 # Step 2: Generate embeddings for semantic search
-ch-cli embed
+rustean embed
 
 # Step 3: Start the background daemon
-ch-cli daemon start
+rustean daemon start
 
 # Step 4: Generate documentation
-ch-cli docs generate
+rustean docs generate
 
 # Step 5: Monitor progress
-ch-cli docs status
+rustean docs status
 
 # Step 6: View specific symbol docs
-ch-cli docs show MyStruct
+rustean docs show MyStruct
 
 # Step 7: Search documentation
-ch-cli docs search "configuration"
+rustean docs search "configuration"
 ```
 
 ### Quick Reference After Setup
 
 ```bash
 # Check if docs are ready
-ch-cli docs status
+rustean docs status
 
 # Look up a symbol
-ch-cli docs show function_name
+rustean docs show function_name
 
 # Search for concepts
-ch-cli docs search "error handling"
+rustean docs search "error handling"
 ```
 
 ### Regenerating After Code Changes
 
 ```bash
 # Re-index changed files
-ch-cli index --semantic
+rustean index --semantic
 
 # Regenerate embeddings
-ch-cli embed
+rustean embed
 
 # Force regenerate all docs
-ch-cli docs generate --force
+rustean docs generate --force
 
 # Or just generate for new symbols
-ch-cli docs generate
+rustean docs generate
 ```
 
 ---
@@ -412,13 +412,13 @@ Index (symbols) ──> DocStore ──> DocGenerator (LLM) ──> docs.json
 1. **DocStore** loads symbols from the index
 2. **DocGenerator** uses Phi-3 LLM to generate descriptions
 3. **Background daemon** processes symbols asynchronously
-4. Results stored in `.ch-index/docs.json`
+4. Results stored in `.rustean-index/docs.json`
 
 ### Storage
 
 Documentation is stored in:
 ```
-.ch-index/
+.rustean-index/
 ├── index.state      # Index metadata
 ├── tantivy/         # Search index
 ├── embeddings.bin   # Vector embeddings
@@ -433,32 +433,32 @@ Documentation is stored in:
 
 ```bash
 # Generate docs once, then use show/search frequently
-ch-cli docs generate
-ch-cli docs show symbol_name  # Fast lookup
-ch-cli docs search "query"    # Fast search
+rustean docs generate
+rustean docs show symbol_name  # Fast lookup
+rustean docs search "query"    # Fast search
 ```
 
 ### Understanding Code Flow
 
 ```bash
 # Find a symbol
-ch-cli docs search "handler"
+rustean docs search "handler"
 
 # View its documentation and dependencies
-ch-cli docs show handle_request
+rustean docs show handle_request
 
 # Follow the dependency chain
-ch-cli docs show AuthMiddleware
+rustean docs show AuthMiddleware
 ```
 
 ### Finding Related Symbols
 
 ```bash
 # Search by concept
-ch-cli docs search "database connection"
+rustean docs search "database connection"
 
 # View docs to see what each depends on
-ch-cli docs show DatabasePool
+rustean docs show DatabasePool
 ```
 
 ---
@@ -469,44 +469,44 @@ ch-cli docs show DatabasePool
 
 ```bash
 # Check if daemon is running
-ch-cli daemon status
+rustean daemon status
 
 # Restart daemon if needed
-ch-cli daemon stop
-ch-cli daemon start
+rustean daemon stop
+rustean daemon start
 ```
 
 ### Documentation Not Generating
 
 ```bash
 # Ensure index exists and is up to date
-ch-cli index --semantic
+rustean index --semantic
 
 # Check generation status
-ch-cli docs status
+rustean docs status
 
 # Force regeneration
-ch-cli docs generate --force
+rustean docs generate --force
 ```
 
 ### Symbol Not Found
 
 ```bash
 # Verify symbol exists in index
-ch-cli search symbol_name
+rustean search symbol_name
 
 # Check exact name (case-sensitive)
-ch-cli symbols --kind function | grep -i symbol_name
+rustean symbols --kind function | grep -i symbol_name
 
 # Regenerate docs if symbol is new
-ch-cli docs generate
+rustean docs generate
 ```
 
 ### Slow Generation
 
 - Large codebases take time (LLM processes each symbol)
 - Generation runs in background - continue using other commands
-- Check progress with `ch-cli docs status`
+- Check progress with `rustean docs status`
 
 ---
 

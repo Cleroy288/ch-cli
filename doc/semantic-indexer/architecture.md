@@ -1,4 +1,4 @@
-# Project Overview: tcah CLI Tool
+# Project Overview: rustean CLI Tool
 
 **A terminal user interface (TUI) coding assistant tool built with Rust and Ratatui**
 
@@ -27,7 +27,7 @@ Build a Claude Code-like CLI tool that allows users to:
 ## Core Features
 
 ### 1. Terminal UI
-- ASCII art "tcah" logo
+- ASCII art "rustean" logo
 - Interactive input box with cursor
 - File/folder picker with real-time search
 - Debug panel showing parsed messages
@@ -58,7 +58,7 @@ Build a Claude Code-like CLI tool that allows users to:
 ## Project Structure
 
 ```
-ch-cli/
+rustean/
 ├── Cargo.toml              # Dependencies and metadata
 ├── README.md               # Main documentation
 ├── USAGE_GUIDE.md          # User guide with examples

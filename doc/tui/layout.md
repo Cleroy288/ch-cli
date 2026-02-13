@@ -32,7 +32,7 @@ The application uses a vertical layout with three main sections:
 ## Section Details
 
 ### 1. Title Area (Fixed: 7 lines)
-- ASCII art "tcah" logo
+- ASCII art "rustean" logo
 - Cyan colored, bold
 - Centered with border
 - Always visible

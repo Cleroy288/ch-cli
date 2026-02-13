@@ -65,9 +65,9 @@ CLI INTEGRATION
 
 Added --semantic flag to search command:
 
-ch-cli search "query"              # keyword only
-ch-cli search --semantic "query"   # hybrid (keyword + semantic)
-ch-cli search --fuzzy "query"      # fuzzy keyword
+rustean search "query"              # keyword only
+rustean search --semantic "query"   # hybrid (keyword + semantic)
+rustean search --fuzzy "query"      # fuzzy keyword
 
 Output format includes:
 - Symbol info (kind, name, location)

@@ -108,4 +108,4 @@ cargo test:             284 pass, 0 fail
 2. **No `sync_with_index()`**: Changed functions keep old docs (only new symbols get docs)
 3. **No unit tests**: For `DocGenProgress`, `run_doc_gen_background`, `progress_docgen.rs`, startup flow
 4. **No bg thread cancellation**: Thread runs until done or process exits
-5. **First-launch flow not interactively tested**: Requires deleting `.ch-index/` and running TUI
+5. **First-launch flow not interactively tested**: Requires deleting `.rustean-index/` and running TUI

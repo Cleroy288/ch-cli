@@ -9,7 +9,7 @@ The `retrieve` command is the most powerful way to search your codebase. Unlike 
 ## Syntax
 
 ```bash
-ch-cli retrieve <QUERY> [OPTIONS]
+rustean retrieve <QUERY> [OPTIONS]
 ```
 
 ## Arguments
@@ -96,58 +96,58 @@ Natural Language Query
 
 ```bash
 # Ask how something works
-ch-cli retrieve "how does authentication work"
+rustean retrieve "how does authentication work"
 
 # Find where something is defined
-ch-cli retrieve "where is the parser defined"
+rustean retrieve "where is the parser defined"
 
 # Debug an issue
-ch-cli retrieve "what causes the login error"
+rustean retrieve "what causes the login error"
 
 # Understand a concept
-ch-cli retrieve "explain the retrieval pipeline"
+rustean retrieve "explain the retrieval pipeline"
 ```
 
 ### Controlling Results
 
 ```bash
 # Limit to 5 results
-ch-cli retrieve "config handling" --limit 5
+rustean retrieve "config handling" --limit 5
 
 # Allow more tokens in output
-ch-cli retrieve "how does caching work" --max-tokens 16000
+rustean retrieve "how does caching work" --max-tokens 16000
 
 # Get more marginal results (lower threshold)
-ch-cli retrieve "auth" --threshold 0.01
+rustean retrieve "auth" --threshold 0.01
 
 # Guarantee at least 3 results per content type
-ch-cli retrieve "parser" --min-results 3
+rustean retrieve "parser" --min-results 3
 ```
 
 ### Disabling Pipeline Stages
 
 ```bash
 # Skip LLM query expansion (faster, uses heuristics)
-ch-cli retrieve "AuthService" --no-expand
+rustean retrieve "AuthService" --no-expand
 
 # Skip cross-encoder reranking
-ch-cli retrieve "login" --no-rerank
+rustean retrieve "login" --no-rerank
 
 # Skip context expansion (callers, callees, etc.)
-ch-cli retrieve "config" --no-context
+rustean retrieve "config" --no-context
 
 # Minimal pipeline (fastest)
-ch-cli retrieve "MyStruct" --no-expand --no-rerank --no-context
+rustean retrieve "MyStruct" --no-expand --no-rerank --no-context
 ```
 
 ### LLM Consumption (--xml)
 
 ```bash
 # Output raw XML for piping to an LLM
-ch-cli retrieve "error handling" --xml
+rustean retrieve "error handling" --xml
 
 # Combine with other options
-ch-cli retrieve "authentication flow" --xml --limit 5
+rustean retrieve "authentication flow" --xml --limit 5
 ```
 
 Use the `--xml` flag when integrating with LLM tools. The output is structured XML designed for LLM context windows.
@@ -156,10 +156,10 @@ Use the `--xml` flag when integrating with LLM tools. The output is structured X
 
 ```bash
 # Get separate code, doc, notes sections
-ch-cli retrieve "how does auth work" --structured
+rustean retrieve "how does auth work" --structured
 
 # Structured XML output for LLMs
-ch-cli retrieve "database connection" --structured --xml
+rustean retrieve "database connection" --structured --xml
 ```
 
 The `--structured` flag runs three parallel search pipelines:
@@ -287,8 +287,8 @@ Retrieval complete in 1250 ms
 - Performance is critical
 
 ```bash
-ch-cli search MyStruct
-ch-cli search handle --fuzzy --kind function
+rustean search MyStruct
+rustean search handle --fuzzy --kind function
 ```
 
 **Use `retrieve` when:**
@@ -298,8 +298,8 @@ ch-cli search handle --fuzzy --kind function
 - You're building LLM context
 
 ```bash
-ch-cli retrieve "how does the parser work"
-ch-cli retrieve "authentication flow" --xml
+rustean retrieve "how does the parser work"
+rustean retrieve "authentication flow" --xml
 ```
 
 ## Query Intent Detection
@@ -328,19 +328,19 @@ The pipeline filters low-relevance results using RRF (Reciprocal Rank Fusion) sc
 
 ```bash
 # Default filtering (threshold=0.015, min-results=1)
-ch-cli retrieve "authentication"
+rustean retrieve "authentication"
 
 # Stricter filtering - only highly relevant results
-ch-cli retrieve "auth flow" --threshold 0.02
+rustean retrieve "auth flow" --threshold 0.02
 
 # Looser filtering - include more marginal results
-ch-cli retrieve "config" --threshold 0.01
+rustean retrieve "config" --threshold 0.01
 
 # Guarantee at least 3 results per type
-ch-cli retrieve "parser" --min-results 3
+rustean retrieve "parser" --min-results 3
 
 # Disable filtering entirely
-ch-cli retrieve "error handling" --threshold 0.0
+rustean retrieve "error handling" --threshold 0.0
 ```
 
 ## Performance
@@ -379,20 +379,20 @@ The pipeline handles errors gracefully:
 
 ```bash
 # Good: Specific and descriptive
-ch-cli retrieve "how does the authentication middleware validate JWT tokens"
+rustean retrieve "how does the authentication middleware validate JWT tokens"
 
 # OK: General but clear
-ch-cli retrieve "authentication flow"
+rustean retrieve "authentication flow"
 
 # Avoid: Too vague
-ch-cli retrieve "auth"
+rustean retrieve "auth"
 ```
 
 ### LLM Integration Pattern
 
 ```bash
 # 1. Get context for LLM
-context=$(ch-cli retrieve "error handling in database module" --xml)
+context=$(rustean retrieve "error handling in database module" --xml)
 
 # 2. Pipe to your LLM tool
 echo "$context" | llm "Explain this error handling approach"
@@ -402,20 +402,20 @@ echo "$context" | llm "Explain this error handling approach"
 
 ```bash
 # Start broad
-ch-cli retrieve "main entry point"
+rustean retrieve "main entry point"
 
 # Then narrow down
-ch-cli retrieve "how does the CLI parse arguments"
+rustean retrieve "how does the CLI parse arguments"
 
 # Finally, specific questions
-ch-cli retrieve "where is the search command defined"
+rustean retrieve "where is the search command defined"
 ```
 
 ### Structured Output for Multi-Source Context
 
 ```bash
 # Get code + docs + notes in one query
-ch-cli retrieve "authentication" --structured --xml
+rustean retrieve "authentication" --structured --xml
 
 # This ensures you get relevant code AND documentation
 ```
@@ -424,7 +424,7 @@ ch-cli retrieve "authentication" --structured --xml
 
 The retrieval pipeline requires:
 
-1. **Indexed project**: Run `ch-cli index --semantic` first
+1. **Indexed project**: Run `rustean index --semantic` first
 2. **ML daemon**: Automatically started on first use
 3. **Memory**: ~5-6GB for all models loaded
 

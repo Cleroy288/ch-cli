@@ -1,6 +1,6 @@
 # Semantic Code Indexer
 
-A fast, Rust-native code indexer built into `ch-cli` for symbol search and navigation.
+A fast, Rust-native code indexer built into `rustean` for symbol search and navigation.
 
 ## Features
 
@@ -14,25 +14,25 @@ A fast, Rust-native code indexer built into `ch-cli` for symbol search and navig
 
 ```bash
 # Index the current project
-ch-cli index --semantic
+rustean index --semantic
 
 # Search for symbols
-ch-cli search MyStruct
+rustean search MyStruct
 
 # Fuzzy search (handles typos)
-ch-cli search --fuzzy procs
+rustean search --fuzzy procs
 
 # Go to definition
-ch-cli goto App
+rustean goto App
 
 # Find all references
-ch-cli refs --include-definition handle_key
+rustean refs --include-definition handle_key
 
 # List all structs
-ch-cli symbols --kind struct
+rustean symbols --kind struct
 
 # Show statistics
-ch-cli stats
+rustean stats
 ```
 
 ## How It Works

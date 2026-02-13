@@ -1,6 +1,6 @@
-# tcah CLI - Usage Guide
+# rustean CLI - Usage Guide
 
-A comprehensive guide to using the tcah CLI with file/folder picker functionality.
+A comprehensive guide to using the rustean CLI with file/folder picker functionality.
 
 ---
 
@@ -12,7 +12,7 @@ cargo run
 
 You'll see:
 ```
-┌─ tcah ──────────────────────────────────────┐
+┌─ rustean ──────────────────────────────────────┐
 │                                              │
 │  ████████  ██████   █████  ██   ██          │
 │     ██    ██       ██   ██ ██   ██          │
@@ -390,7 +390,7 @@ When you select a file or folder from the picker:
 | `/Users/me/projects/app/src/main.rs` | `main.rs` |
 | `/Users/me/projects/app/config.json` | `config.json` |
 | `/Users/me/projects/app/docs/` | `docs` |
-| `./target/debug/ch-cli` | `ch-cli` |
+| `./target/debug/rustean` | `rustean` |
 | `./node_modules/` | `node_modules` |
 
 ### Visual Highlighting:
@@ -434,7 +434,7 @@ Both show a friendly goodbye message:
 ```
 ╔═══════════════════════════════════════════╗
 ║                                           ║
-║          Thanks for using tcah!           ║
+║          Thanks for using rustean!           ║
 ║                                           ║
 ║            See you next time! 👋          ║
 ║                                           ║

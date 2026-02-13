@@ -14,7 +14,7 @@ When users ask structural questions like:
 - "what's in the retrieval directory"
 - "structure of indexer module"
 
-ch-cli should return the relevant `mod.rs` files showing the module hierarchy, not keyword search results.
+rustean should return the relevant `mod.rs` files showing the module hierarchy, not keyword search results.
 
 ---
 
@@ -22,11 +22,11 @@ ch-cli should return the relevant `mod.rs` files showing the module hierarchy, n
 
 **Query:** "what modules are in retrieval"
 
-**ch-cli returns:**
+**rustean returns:**
 ```
-1. doc Query 6: "What modules are in retrieval directory" (ch-cli-vs-augment-gaps.md:83)
+1. doc Query 6: "What modules are in retrieval directory" (rustean-vs-augment-gaps.md:83)
 2. doc Expected Result: (TEST_SCENARIOS.md:177)
-3. doc Retrieval Quality (Unchanged) (ch-cli-vs-augment-mcp-metal.md:94)
+3. doc Retrieval Quality (Unchanged) (rustean-vs-augment-mcp-metal.md:94)
 ...
 7. mod retrieval (lib.rs:9)
 ```
@@ -446,7 +446,7 @@ fn handle_structure_query(query: &StructureQuery) -> CommandResult {
 ```rust
 //! Tests for module structure query detection and search
 
-use ch_cli::retrieval::query::{detect_structure_query, find_module_structure};
+use rustean::retrieval::query::{detect_structure_query, find_module_structure};
 use std::path::Path;
 
 #[test]
@@ -532,18 +532,18 @@ cargo test structure --lib
 ### Manual Tests
 ```bash
 # Should return module structure
-ch-cli search "modules in retrieval"
-ch-cli search "what's in daemon directory"
-ch-cli search "structure of indexer"
+rustean search "modules in retrieval"
+rustean search "what's in daemon directory"
+rustean search "structure of indexer"
 
 # Should NOT trigger structure query
-ch-cli search "how does retrieval work"
-ch-cli search "RetrievalError definition"
+rustean search "how does retrieval work"
+rustean search "RetrievalError definition"
 ```
 
 ### Expected Output
 ```
-$ ch-cli search "modules in retrieval"
+$ rustean search "modules in retrieval"
 
 Module structure for 'retrieval':
 

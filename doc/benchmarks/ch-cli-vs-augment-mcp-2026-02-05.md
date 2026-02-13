@@ -1,21 +1,21 @@
-# ch-cli vs Augment MCP: Final Comparison Report
+# rustean vs Augment MCP: Final Comparison Report
 
 **Date:** 2026-02-05
-**Test Codebase:** ch-cli (~15k lines Rust, 5098 symbols)
+**Test Codebase:** rustean (~15k lines Rust, 5098 symbols)
 **Version:** After intent boost fixes applied
 
 ---
 
 ## Executive Summary
 
-| Metric | ch-cli | Augment MCP | Winner |
+| Metric | rustean | Augment MCP | Winner |
 |--------|--------|-------------|--------|
 | **Overall Score** | **8.0/10** | **8.5/10** | Augment |
 | Definition Queries | 9/10 | 9/10 | Tie |
 | Conceptual Queries | 8/10 | 9/10 | Augment |
 | Code Display | 6/10 | 10/10 | Augment |
-| Local Operation | 10/10 | 0/10 | ch-cli |
-| Customization | 9/10 | 3/10 | ch-cli |
+| Local Operation | 10/10 | 0/10 | rustean |
+| Customization | 9/10 | 3/10 | rustean |
 | Response Speed | 7/10 | 8/10 | Augment |
 
 ---
@@ -24,7 +24,7 @@
 
 ### Test 1: "BgeEmbedder struct" (Definition Query)
 
-**ch-cli Output:**
+**rustean Output:**
 ```
 1. struct BgeEmbedder (embedding.rs:25)
 2. impl BgeEmbedder (embedding.rs:36)
@@ -47,7 +47,7 @@
 
 ### Test 2: "how does hybrid search work" (Conceptual Query)
 
-**ch-cli Output:**
+**rustean Output:**
 ```
 1. method initialize_hybrid_search (pipeline.rs:448)
 2. fn initialize_hybrid_search (pipeline.rs:448)
@@ -72,7 +72,7 @@
 
 ### Test 3: "RetrievalError enum" (Definition Query)
 
-**ch-cli Output:**
+**rustean Output:**
 ```
 1. enum RetrievalError (mod.rs:38)
 2. fn test_parse_enum (parser.rs:499)
@@ -96,7 +96,7 @@
 
 ### Test 4: "what is RetrievalPipeline" (Conceptual Query)
 
-**ch-cli Output:**
+**rustean Output:**
 ```
 1. struct RetrievalPipeline (pipeline.rs:110)
 2. impl RetrievalPipeline (pipeline.rs:129)
@@ -120,7 +120,7 @@
 
 ### Test 5: "DaemonClient" (Symbol Lookup)
 
-**ch-cli Output:**
+**rustean Output:**
 ```
 1. struct DaemonClient (client.rs:71)
 2. impl DaemonClient (client.rs:404)
@@ -144,7 +144,7 @@
 
 ## Detailed Comparison
 
-### Strengths: ch-cli
+### Strengths: rustean
 
 | Strength | Description |
 |----------|-------------|
@@ -168,7 +168,7 @@
 | **Real-Time Index** | Always reflects current codebase state |
 | **Response Format** | Code blocks ready for reading |
 
-### Weaknesses: ch-cli
+### Weaknesses: rustean
 
 | Weakness | Impact |
 |----------|--------|
@@ -190,7 +190,7 @@
 
 ## Score Breakdown
 
-### ch-cli: 8.0/10
+### rustean: 8.0/10
 
 | Category | Score | Notes |
 |----------|-------|-------|
@@ -218,7 +218,7 @@
 
 ---
 
-## Fixes Applied to ch-cli
+## Fixes Applied to rustean
 
 ### Fix 1: Semantic Search Intent Boost
 **Location:** `src/cli/commands.rs` - `search_semantic()`
@@ -254,14 +254,14 @@ search_index.search_with_boost(query, limit * fetch_multiplier)?
 
 ## Recommendations
 
-### For ch-cli Users
+### For rustean Users
 
 1. **Use --full flag** for complete file content display
 2. **Phrase queries explicitly**: "BgeEmbedder struct" vs "BgeEmbedder"
 3. **Use --semantic** for conceptual queries
-4. **Run `ch-cli daemon start`** for faster repeated queries
+4. **Run `rustean daemon start`** for faster repeated queries
 
-### Future Improvements for ch-cli
+### Future Improvements for rustean
 
 | Priority | Enhancement | Effort |
 |----------|-------------|--------|
@@ -279,9 +279,9 @@ search_index.search_with_boost(query, limit * fetch_multiplier)?
 - Deep understanding of implementations
 - Cross-file context
 
-**ch-cli** is the better choice for developers who need:
+**rustean** is the better choice for developers who need:
 - Local/offline operation
 - Privacy (code never leaves machine)
 - Customizable ranking
 
-After the fixes, ch-cli now correctly prioritizes source code over documentation for conceptual queries. The main remaining gap is **content display** - ch-cli shows locations, Augment shows code.
+After the fixes, rustean now correctly prioritizes source code over documentation for conceptual queries. The main remaining gap is **content display** - rustean shows locations, Augment shows code.

@@ -1,27 +1,27 @@
 # Fast-Path vs Augment MCP Benchmark
 
 ## Date: 2026-02-01
-## Project: ch-cli (1769 symbols)
+## Project: rustean (1769 symbols)
 
 ## Summary
 
-| Metric | ch-cli Fast-Path | ch-cli LLM | Augment MCP |
+| Metric | rustean Fast-Path | rustean LLM | Augment MCP |
 |--------|------------------|------------|-------------|
 | Query Expansion | **0ms** | 20-100ms | N/A (persistent index) |
 | Full Pipeline (cold) | ~4.5s | ~4.5s | <1s |
 | Full Pipeline (warm) | N/A | N/A | <1s |
 
-**Key Finding**: The fast-path query expansion achieves **0ms** for explicit symbol queries, but the ch-cli CLI re-indexes on each invocation (~4.5s). Augment MCP maintains a persistent index, providing consistently fast responses.
+**Key Finding**: The fast-path query expansion achieves **0ms** for explicit symbol queries, but the rustean CLI re-indexes on each invocation (~4.5s). Augment MCP maintains a persistent index, providing consistently fast responses.
 
 ## Test Environment
 
 - **Hardware**: Apple Silicon (Metal GPU, 25GB VRAM)
 - **Daemon**: Running with Phi-3, BGE-small, BGE-reranker
-- **Project**: ch-cli (1769 symbols, ~15k lines Rust)
+- **Project**: rustean (1769 symbols, ~15k lines Rust)
 
 ## Query Expansion Benchmark
 
-### ch-cli Tiered Expansion Results
+### rustean Tiered Expansion Results
 
 | Query | Tier Used | Time |
 |-------|-----------|------|
@@ -45,7 +45,7 @@
 
 ## Pipeline Breakdown
 
-### ch-cli Full Pipeline (~4.5s total)
+### rustean Full Pipeline (~4.5s total)
 
 | Step | Time | Notes |
 |------|------|-------|
@@ -86,7 +86,7 @@ Query → FastPathParser
 
 ## Recommendations
 
-### For ch-cli Improvement
+### For rustean Improvement
 
 1. **Persistent index caching**: Store indexed symbols/embeddings between CLI runs
 2. **Daemon-side caching**: Cache project index in daemon process
@@ -103,20 +103,20 @@ Query → FastPathParser
 The fast-path implementation achieves the target **0ms query expansion** for explicit symbol queries. The remaining latency (~4.5s) is dominated by project indexing, which runs on each CLI invocation.
 
 **Comparison**:
-- ch-cli fast-path query expansion: **0ms** (goal achieved)
+- rustean fast-path query expansion: **0ms** (goal achieved)
 - Augment MCP total response: **<1s** (persistent index advantage)
 
-To match Augment MCP's total latency, ch-cli needs persistent index caching.
+To match Augment MCP's total latency, rustean needs persistent index caching.
 
 ## Test Commands
 
 ```bash
-# Run ch-cli benchmark
-./target/release/ch-cli retrieve "BgeEmbedder" --limit 3 2>&1 | grep "Tiered expansion"
+# Run rustean benchmark
+./target/release/rustean retrieve "BgeEmbedder" --limit 3 2>&1 | grep "Tiered expansion"
 
 # Compare multiple queries
 for q in "BgeEmbedder" "HybridSearch" "why does daemon fail"; do
     echo "Query: $q"
-    ./target/release/ch-cli retrieve "$q" --limit 3 2>&1 | grep "Tiered expansion"
+    ./target/release/rustean retrieve "$q" --limit 3 2>&1 | grep "Tiered expansion"
 done
 ```

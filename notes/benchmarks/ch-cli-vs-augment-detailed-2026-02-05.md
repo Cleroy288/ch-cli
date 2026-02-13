@@ -1,16 +1,16 @@
-# ch-cli vs Augment MCP Codebase-Retrieval: Implementation Notes
+# rustean vs Augment MCP Codebase-Retrieval: Implementation Notes
 
 **Date:** 2026-02-05
-**Test Codebase:** ch-cli (5098 symbols, ~15k lines Rust)
+**Test Codebase:** rustean (5098 symbols, ~15k lines Rust)
 **Status:** ✅ Fixes Applied and Verified
 
-> **Final Report:** See `doc/benchmarks/ch-cli-vs-augment-mcp-2026-02-05.md` for formal documentation
+> **Final Report:** See `doc/benchmarks/rustean-vs-augment-mcp-2026-02-05.md` for formal documentation
 
 ---
 
 ## Summary
 
-| Metric | ch-cli | Augment MCP |
+| Metric | rustean | Augment MCP |
 |--------|--------|-------------|
 | **Overall Score** | **7.5/10** | **8.5/10** |
 | Definition Queries | 8/10 | 9/10 |
@@ -25,7 +25,7 @@
 
 ### Test 1: "BgeEmbedder struct"
 
-**ch-cli (semantic search):**
+**rustean (semantic search):**
 ```
 #1 [struct] BgeEmbedder - src/retrieval/hybrid/embedding.rs:19 (score: 0.0462)
 #2 [DocumentChunk] doc/retrieval/hybrid-search.md:1 (score: 0.0421)
@@ -42,7 +42,7 @@ Shows BgeEmbedder struct definition with all fields and impl blocks
 
 ### Test 2: "RetrievalError enum"
 
-**ch-cli:**
+**rustean:**
 ```
 #1 [enum] RetrievalError - src/retrieval/mod.rs:18 (score: 0.0495)
 #2 [DocumentChunk] doc/retrieval/agentic-pipeline.md (score: 0.0388)
@@ -59,7 +59,7 @@ Plus impl Display and From implementations
 
 ### Test 3: "how does hybrid search work"
 
-**ch-cli:**
+**rustean:**
 ```
 #1 [DocumentChunk] doc/retrieval/hybrid-search.md:1 (score: 0.0310)
 #2 [mod] hybrid - src/retrieval/hybrid/mod.rs:1 (score: 0.0288)
@@ -79,7 +79,7 @@ Returns actual source code from:
 
 ### Test 4: "TantivyIndex"
 
-**ch-cli:**
+**rustean:**
 ```
 Returns SearchIndex struct (wrapper), not Tantivy internals
 ```
@@ -97,7 +97,7 @@ Returns SearchIndex struct with:
 
 ### Test 5: "RetrievalPipeline"
 
-**ch-cli:**
+**rustean:**
 ```
 Returns pipeline struct location without content
 ```
@@ -116,7 +116,7 @@ Returns full 900+ line implementation:
 
 ## Pros and Cons
 
-### ch-cli
+### rustean
 
 **Pros:**
 1. **Intent-aware boosting** - Correctly boosts struct/enum definitions for "find X" queries
@@ -153,10 +153,10 @@ Returns full 900+ line implementation:
 
 ---
 
-## Key Gaps in ch-cli
+## Key Gaps in rustean
 
 ### Gap 1: No Source Code Display
-ch-cli only shows symbol locations. User must manually open files.
+rustean only shows symbol locations. User must manually open files.
 ```
 Current: [struct] BgeEmbedder - src/retrieval/hybrid/embedding.rs:19
 Needed:  Full struct definition with fields and comments
@@ -185,7 +185,7 @@ Needed:  Shows where it's instantiated, what calls it
 
 ---
 
-## Enhancement Proposals for ch-cli
+## Enhancement Proposals for rustean
 
 ### Enhancement 1: Full Content Display (Priority: HIGH)
 **Already partially implemented with --full flag**
@@ -363,9 +363,9 @@ search_index.search_with_boost(query, limit * fetch_multiplier)?
 
 **Augment MCP wins on usability** - Returns actual code, not just pointers.
 
-**ch-cli wins on customization** - Intent-aware boosting, local operation.
+**rustean wins on customization** - Intent-aware boosting, local operation.
 
-**To close the gap**, ch-cli needs:
+**To close the gap**, rustean needs:
 1. ✅ Full content display (--full flag implemented)
 2. Source code priority for conceptual queries
 3. Better query intent classification

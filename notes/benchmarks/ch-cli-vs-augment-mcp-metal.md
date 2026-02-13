@@ -1,27 +1,27 @@
-# Benchmark: ch-cli (Metal) vs Augment MCP Code Retrieval
+# Benchmark: rustean (Metal) vs Augment MCP Code Retrieval
 
 **Date:** 2026-01-31
-**Codebase:** ch-cli (1658 symbols)
+**Codebase:** rustean (1658 symbols)
 **Device:** Apple Silicon GPU (Metal, 25769 MB)
-**Previous Benchmark:** ch-cli CPU vs Augment MCP (2026-01-31)
+**Previous Benchmark:** rustean CPU vs Augment MCP (2026-01-31)
 
 ---
 
 ## Summary
 
-| Metric | ch-cli (CPU) | ch-cli (Metal) | Augment MCP | Winner |
+| Metric | rustean (CPU) | rustean (Metal) | Augment MCP | Winner |
 |--------|--------------|----------------|-------------|--------|
 | **Speed** | ~9.2s | ~4.4s | <1s | Augment MCP |
-| **Speedup vs CPU** | - | **2.1x faster** | - | ch-cli Metal |
+| **Speedup vs CPU** | - | **2.1x faster** | - | rustean Metal |
 | **Code Accuracy** | Variable | Variable | High | Augment MCP |
-| **Context Quality** | Structured XML | Structured XML | Raw code + docs | ch-cli |
-| **Local Execution** | Yes | Yes | No (cloud) | ch-cli |
+| **Context Quality** | Structured XML | Structured XML | Raw code + docs | rustean |
+| **Local Execution** | Yes | Yes | No (cloud) | rustean |
 
 ---
 
 ## Speed Benchmark
 
-### ch-cli with Metal Acceleration
+### rustean with Metal Acceleration
 
 | Query | CPU Time | Metal Time | Speedup |
 |-------|----------|------------|---------|
@@ -113,15 +113,15 @@ Metal acceleration does not affect retrieval quality - the same models produce i
 
 ---
 
-## Comparison: ch-cli vs Augment MCP
+## Comparison: rustean vs Augment MCP
 
 ### Augment MCP Advantages
-1. **Speed**: ~10x faster than ch-cli Metal
+1. **Speed**: ~10x faster than rustean Metal
 2. **Accuracy**: Finds correct files consistently
 3. **Documentation**: Includes docs and notes alongside code
 4. **Coverage**: Broader context per query
 
-### ch-cli Advantages
+### rustean Advantages
 1. **Local Execution**: No network dependency
 2. **Privacy**: Code never leaves machine
 3. **Structured Output**: XML format optimized for LLM consumption
@@ -150,12 +150,12 @@ Metal acceleration does not affect retrieval quality - the same models produce i
 
 ## Conclusion
 
-**Metal acceleration delivers a 2.1x speedup**, reducing ch-cli query time from ~9.2s to ~4.4s. This is a significant improvement, but ch-cli remains ~4x slower than Augment MCP.
+**Metal acceleration delivers a 2.1x speedup**, reducing rustean query time from ~9.2s to ~4.4s. This is a significant improvement, but rustean remains ~4x slower than Augment MCP.
 
 The main bottleneck is now the Phi-3 LLM for query expansion (~70% of query time). Optimizing or replacing this component would yield the largest performance gains.
 
 **For production use:**
 - Use **Augment MCP** when speed and accuracy are critical
-- Use **ch-cli** when local execution and privacy are required
+- Use **rustean** when local execution and privacy are required
 
 **Current Status:** Metal acceleration is working and provides measurable benefits. Further optimization needed to match cloud-based solutions.

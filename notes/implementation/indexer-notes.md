@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes how the semantic code indexer for `ch-cli` was designed and implemented. The indexer provides fast symbol search, "go to definition", and reference finding capabilities for Rust codebases.
+This document describes how the semantic code indexer for `rustean` was designed and implemented. The indexer provides fast symbol search, "go to definition", and reference finding capabilities for Rust codebases.
 
 ## Architecture
 
@@ -190,12 +190,12 @@ Expose indexer functionality through command-line interface
 
 ### Usage Examples
 ```bash
-ch-cli index --semantic          # Index with semantic analysis
-ch-cli search IndexManager       # Search for symbols
-ch-cli search --fuzzy proc       # Fuzzy search
-ch-cli goto App                  # Find definition
-ch-cli symbols --kind struct     # List all structs
-ch-cli stats                     # Show statistics
+rustean index --semantic          # Index with semantic analysis
+rustean search IndexManager       # Search for symbols
+rustean search --fuzzy proc       # Fuzzy search
+rustean goto App                  # Find definition
+rustean symbols --kind struct     # List all structs
+rustean stats                     # Show statistics
 ```
 
 ## Testing Strategy

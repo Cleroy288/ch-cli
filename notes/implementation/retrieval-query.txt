@@ -140,9 +140,9 @@ Unit tests:
 - test_parse_llm_response - JSON parsing
 
 Manual testing:
-1. Start daemon: ch-cli daemon start
+1. Start daemon: rustean daemon start
 2. Wait for LLM to load (~5-10s)
-3. Run: ch-cli daemon status (verify LLM listed)
+3. Run: rustean daemon status (verify LLM listed)
 4. Test expansion via daemon client
 
 ================================================================================
@@ -206,7 +206,7 @@ NEXT STEPS (Phase 6: Agentic Execution)
    - Iterative refinement of results
 
 3. CLI Integration
-   - ch-cli retrieve "natural language query"
+   - rustean retrieve "natural language query"
    - Full pipeline execution
 
 ================================================================================
