@@ -3,14 +3,14 @@
 use super::FileName;
 
 impl From<String> for FileName {
-	fn from(s: String) -> Self {
-		Self(s)
+	fn from(val: String) -> Self {
+		Self(val)
 	}
 }
 
 impl From<&str> for FileName {
-	fn from(s: &str) -> Self {
-		Self(s.to_string())
+	fn from(val: &str) -> Self {
+		Self(val.to_string())
 	}
 }
 

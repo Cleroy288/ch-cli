@@ -12,18 +12,18 @@ pub(crate) fn find_containing_symbol(
 ) -> Option<String> {
 	symbols
 		.iter()
-		.filter(|s| {
-			s.location.file == location.file
-				&& s.location.line <= location.line
+		.filter(|sym| {
+			sym.location.file == location.file
+				&& sym.location.line <= location.line
 				&& matches!(
-					s.kind,
+					sym.kind,
 					crate::indexer::SymbolKind::Function
 						| crate::indexer::SymbolKind::Method
 						| crate::indexer::SymbolKind::Impl
 				)
 		})
-		.max_by_key(|s| s.location.line)
-		.map(|s| s.name.clone())
+		.max_by_key(|sym| sym.location.line)
+		.map(|sym| sym.name.clone())
 }
 
 /// Find symbols that this symbol depends on.
@@ -32,22 +32,20 @@ pub(crate) fn find_dependencies(
 	symbols: &[Symbol],
 	symbol_name: &str,
 ) -> Vec<String> {
-	let symbol =
-		match symbols.iter().find(|s| s.name == symbol_name) {
-			Some(s) => s,
-			None => return Vec::new(),
-		};
+	let symbol = match symbols
+		.iter()
+		.find(|sym| sym.name == symbol_name)
+	{
+		Some(sym) => sym,
+		None => return Vec::new(),
+	};
 
 	let refs =
 		graph.references_in_file(&symbol.location.file);
 
 	let mut deps = HashSet::new();
 	for ref_loc in refs {
-		// references within ~100 lines after the symbol
-		let in_body =
-			ref_loc.location.line > symbol.location.line
-				&& ref_loc.location.line
-					< symbol.location.line + 100;
+		let in_body = is_in_body(ref_loc, symbol);
 		if !in_body {
 			continue;
 		}
@@ -60,6 +58,16 @@ pub(crate) fn find_dependencies(
 	deps.into_iter().collect()
 }
 
+/// Check if a reference is within a symbol body.
+fn is_in_body(
+	ref_loc: &crate::indexer::semantic::SymbolReference,
+	symbol: &Symbol,
+) -> bool {
+	ref_loc.location.line > symbol.location.line
+		&& ref_loc.location.line
+			< symbol.location.line + 100
+}
+
 /// Find child symbols (methods, variants, etc.).
 pub(crate) fn find_children(
 	symbols: &[Symbol],
@@ -67,17 +75,17 @@ pub(crate) fn find_children(
 ) -> Vec<String> {
 	symbols
 		.iter()
-		.filter(|s| {
-			s.parent
+		.filter(|sym| {
+			sym.parent
 				.as_ref()
-				.map(|p| p == parent_name)
+				.map(|par| par == parent_name)
 				.unwrap_or(false)
 		})
-		.map(|s| s.name.clone())
+		.map(|sym| sym.name.clone())
 		.collect()
 }
 
-/// Extract external crate dependencies from code snippet.
+/// Extract external crate dependencies from code.
 pub(crate) fn extract_external_deps(
 	code: &str,
 ) -> Vec<String> {

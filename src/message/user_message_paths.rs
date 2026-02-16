@@ -18,11 +18,11 @@ impl UserMessage {
 
 	/// Get all file paths referenced in this message
 	pub fn file_paths(&self) -> Vec<String> {
-		self.extract_paths(|s| {
+		self.extract_paths(|seg| {
 			if let MessageSegment::FileReference {
 				full_path,
 				..
-			} = s
+			} = seg
 			{
 				Some(full_path.clone())
 			} else {
@@ -33,11 +33,11 @@ impl UserMessage {
 
 	/// Get all folder paths referenced in this message
 	pub fn folder_paths(&self) -> Vec<String> {
-		self.extract_paths(|s| {
+		self.extract_paths(|seg| {
 			if let MessageSegment::FolderReference {
 				full_path,
 				..
-			} = s
+			} = seg
 			{
 				Some(full_path.clone())
 			} else {

@@ -9,7 +9,7 @@
 
 ## Summary
 
-Three improvements to close gaps between ch-cli and Augment MCP:
+Three improvements to close gaps between rustean and Augment MCP:
 
 | # | Improvement | Impact | Effort | Files |
 |---|-------------|--------|--------|-------|
@@ -22,7 +22,7 @@ Three improvements to close gaps between ch-cli and Augment MCP:
 ## Improvement 1: Intent Detection in Basic Search
 
 ### Problem
-Basic `ch-cli search` doesn't use intent detection. Queries like "BgeEmbedder struct" return documentation files instead of the actual struct definition.
+Basic `rustean search` doesn't use intent detection. Queries like "BgeEmbedder struct" return documentation files instead of the actual struct definition.
 
 ### Current Flow
 ```
@@ -220,10 +220,10 @@ fn apply_find_definition_boost(&self, base_boost: f32) -> f32 {
 cargo test --lib
 
 # Manual tests
-ch-cli search "BgeEmbedder struct"           # struct at #1
-ch-cli search "how does pipeline work"        # source code
-ch-cli search "RetrievalError definition"     # enum at #1
-ch-cli search "BgeEmbedder" --full            # full content
+rustean search "BgeEmbedder struct"           # struct at #1
+rustean search "how does pipeline work"        # source code
+rustean search "RetrievalError definition"     # enum at #1
+rustean search "BgeEmbedder" --full            # full content
 ```
 
 ---
@@ -819,7 +819,7 @@ pub struct TripleSearchResults {
 
 **Storage structure:**
 ```
-.ch-index/
+.rustean-index/
 ├── code/
 │   └── tantivy/     # Code keyword index
 ├── docs/
@@ -888,7 +888,7 @@ pub struct TripleVectorResults {
 
 **Storage structure:**
 ```
-.ch-index/
+.rustean-index/
 ├── code/
 │   └── vectors.json   # Code embeddings
 ├── docs/
@@ -1307,7 +1307,7 @@ pub const INDEX_VERSION: u32 = 3;  // was 2, forces re-index
 ## Storage Structure
 
 ```
-.ch-index/
+.rustean-index/
 ├── state.json          # Index metadata (version 3)
 ├── code/
 │   ├── tantivy/        # Code keyword index

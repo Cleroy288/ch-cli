@@ -7,7 +7,7 @@ use super::watcher::WatcherError;
 #[derive(Debug, thiserror::Error)]
 pub enum IndexError {
 	#[error("IO error: {0}")]
-	Io(#[from] std::io::Error),
+	IoError(#[from] std::io::Error),
 
 	#[error("Search error: {0}")]
 	Search(#[from] SearchError),

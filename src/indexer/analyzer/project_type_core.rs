@@ -32,7 +32,7 @@ impl ProjectType {
 			}
 			ProjectType::NodeJs => Some(DetectedLanguage::JavaScript),
 			ProjectType::Python => Some(DetectedLanguage::Python),
-			ProjectType::GoMod => Some(DetectedLanguage::Go),
+			ProjectType::GoMod => Some(DetectedLanguage::GoLang),
 			ProjectType::Gradle | ProjectType::Maven => {
 				Some(DetectedLanguage::Java)
 			}

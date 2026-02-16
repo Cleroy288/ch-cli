@@ -2,9 +2,7 @@
 //!
 //! Parses LLM JSON responses into SearchSpec.
 
-use crate::retrieval::daemon::protocol::{
-	FileFilter, SearchSpec,
-};
+use crate::retrieval::daemon::protocol::SearchSpec;
 
 use super::super::parsing::{
 	extract_identifiers, filter_stop_words,
@@ -42,7 +40,9 @@ pub fn parse_llm_response(
 	response: &str,
 ) -> SearchSpec {
 	if let Ok(json) =
-		serde_json::from_str::<serde_json::Value>(response)
+		serde_json::from_str::<serde_json::Value>(
+			response,
+		)
 	{
 		parse_json_spec(query, &json)
 	} else {
@@ -64,7 +64,7 @@ fn parse_json_spec(
 
 	let intent = json
 		.get("intent")
-		.and_then(|v| v.as_str())
+		.and_then(|val| val.as_str())
 		.map(super::super::parsing::parse_intent)
 		.unwrap_or(
 			crate::retrieval::daemon::protocol::QueryIntent::Search,

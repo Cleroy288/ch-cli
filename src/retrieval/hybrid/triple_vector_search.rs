@@ -1,85 +1,110 @@
 //! Triple Vector Store — Search Operations
 //!
-//! Individual and parallel search operations across the
-//! code, doc, and notes vector stores.
+//! Parallel semantic search across code, notes, and
+//! enriched vector stores. Doc pipeline uses keyword-only
+//! search (no vector store).
 
+use crate::indexer::triple_search::TripleLimits;
 use crate::retrieval::hybrid::triple_vector_store::{
 	TripleVectorResults, TripleVectorStore,
 };
 use crate::retrieval::hybrid::vector_store::SearchResult;
+
+/// Pair of search result vectors from two stores
+type SearchPair =
+	(Vec<SearchResult>, Vec<SearchResult>);
 
 impl TripleVectorStore {
 	/// Search code vectors only
 	pub fn search_code(
 		&self,
 		query: &[f32],
-		k: usize,
+		top_k: usize,
 	) -> Vec<SearchResult> {
-		self.code_store.search(query, k)
+		self.code_store.search(query, top_k)
 	}
 
-	/// Search doc vectors only
+	/// Doc pipeline uses keyword-only search.
+	/// Returns empty — no doc vectors are stored.
 	pub fn search_docs(
 		&self,
-		query: &[f32],
-		k: usize,
+		_query: &[f32],
+		_top_k: usize,
 	) -> Vec<SearchResult> {
-		self.doc_store.search(query, k)
+		Vec::new()
 	}
 
 	/// Search notes vectors only
 	pub fn search_notes(
 		&self,
 		query: &[f32],
-		k: usize,
+		top_k: usize,
 	) -> Vec<SearchResult> {
-		self.notes_store.search(query, k)
+		self.notes_store.search(query, top_k)
 	}
 
-	/// Parallel search all three stores using rayon
+	/// Search enriched (LLM doc) vectors only
+	pub fn search_enriched(
+		&self,
+		query: &[f32],
+		top_k: usize,
+	) -> Vec<SearchResult> {
+		self.enriched_store.search(query, top_k)
+	}
+}
+
+impl TripleVectorStore {
+	/// Parallel search code, notes, enriched stores.
+	/// Doc store is skipped (keyword-only pipeline).
 	pub fn search_parallel(
 		&self,
 		query: &[f32],
-		code_k: usize,
-		doc_k: usize,
-		notes_k: usize,
+		limits: &TripleLimits,
 	) -> TripleVectorResults {
-		// Use rayon::join for parallel execution
-		let ((code_results, doc_results), notes_results) =
-			rayon::join(
-				|| {
-					rayon::join(
-						|| self.search_code(query, code_k),
-						|| self.search_docs(query, doc_k),
-					)
-				},
-				|| self.search_notes(query, notes_k),
-			);
-
+		let (code, right) = rayon::join(
+			|| self.search_code(query, limits.code),
+			|| self.search_right_pair(query, limits),
+		);
 		TripleVectorResults {
-			code_results,
-			doc_results,
-			notes_results,
+			code_results: code,
+			doc_results: Vec::new(),
+			notes_results: right.0,
+			enriched_results: right.1,
 		}
 	}
 
-	/// Sequential search all three stores (fallback)
+	/// Search notes + enriched stores in parallel
+	fn search_right_pair(
+		&self,
+		query: &[f32],
+		limits: &TripleLimits,
+	) -> SearchPair {
+		rayon::join(
+			|| self.search_notes(query, limits.notes),
+			|| self.search_enriched(query, limits.code),
+		)
+	}
+}
+
+impl TripleVectorStore {
+	/// Sequential search all stores (fallback).
+	/// Doc store returns empty (keyword-only pipeline).
 	pub fn search_sequential(
 		&self,
 		query: &[f32],
-		code_k: usize,
-		doc_k: usize,
-		notes_k: usize,
+		limits: &TripleLimits,
 	) -> TripleVectorResults {
-		let code_results = self.search_code(query, code_k);
-		let doc_results = self.search_docs(query, doc_k);
-		let notes_results =
-			self.search_notes(query, notes_k);
-
 		TripleVectorResults {
-			code_results,
-			doc_results,
-			notes_results,
+			code_results: self.search_code(
+				query, limits.code,
+			),
+			doc_results: Vec::new(),
+			notes_results: self.search_notes(
+				query, limits.notes,
+			),
+			enriched_results: self.search_enriched(
+				query, limits.code,
+			),
 		}
 	}
 }

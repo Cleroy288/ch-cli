@@ -1,10 +1,10 @@
 //! Structure Query Detection Core
 //!
-//! Defines the StructureQuery type and main detection function.
+//! Defines the StructureQuery type and main detection.
 
 use super::patterns::{
-	detect_modules_in, detect_structure_of, detect_whats_in,
-	detect_x_structure,
+	detect_modules_in, detect_structure_of,
+	detect_whats_in, detect_x_structure,
 };
 
 /// Result of structure query detection
@@ -17,20 +17,25 @@ pub struct StructureQuery {
 }
 
 /// Detect if a query is asking about structure
-/// Returns Some(StructureQuery) if detected, None otherwise
 pub fn detect_structure_query(
 	query: &str,
 ) -> Option<StructureQuery> {
 	let query_lower = query.to_lowercase();
 
-	if let Some(sq) = detect_modules_in(&query_lower) {
-		return Some(sq);
+	if let Some(result) =
+		detect_modules_in(&query_lower)
+	{
+		return Some(result);
 	}
-	if let Some(sq) = detect_whats_in(&query_lower) {
-		return Some(sq);
+	if let Some(result) =
+		detect_whats_in(&query_lower)
+	{
+		return Some(result);
 	}
-	if let Some(sq) = detect_structure_of(&query_lower) {
-		return Some(sq);
+	if let Some(result) =
+		detect_structure_of(&query_lower)
+	{
+		return Some(result);
 	}
 	detect_x_structure(&query_lower)
 }

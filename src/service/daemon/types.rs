@@ -1,7 +1,7 @@
 //! DTOs for the daemon service.
 
 /// Daemon status information
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct DaemonStatusInfo {
 	/// Whether the daemon is running
 	pub is_running: bool,
@@ -23,18 +23,3 @@ pub struct DaemonStatusInfo {
 	pub error: Option<String>,
 }
 
-impl Default for DaemonStatusInfo {
-	fn default() -> Self {
-		Self {
-			is_running: false,
-			pid: None,
-			loaded_models: vec![],
-			device: None,
-			device_detail: None,
-			gpu_memory_mb: None,
-			uptime_secs: None,
-			is_reachable: false,
-			error: None,
-		}
-	}
-}

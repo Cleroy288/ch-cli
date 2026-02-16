@@ -3,8 +3,6 @@
 //! Insert, batch insert, index building, and clear operations
 //! for the HNSW vector store.
 
-use instant_distance::Builder;
-
 use crate::retrieval::hybrid::vector_store::{
 	VectorPoint, VectorStore,
 };
@@ -14,31 +12,46 @@ impl VectorStore {
 	/// Add a point to the store (index needs rebuild after)
 	pub fn insert(&mut self, point: VectorPoint) {
 		self.points.push(point);
-		self.index = None; // invalidate index
+		self.indexed = false;
 	}
 
 	/// Add multiple points
-	pub fn insert_batch(&mut self, points: Vec<VectorPoint>) {
+	pub fn insert_batch(
+		&mut self, points: Vec<VectorPoint>,
+	) {
 		self.points.extend(points);
-		self.index = None;
+		self.indexed = false;
 	}
 
-	/// Build the HNSW index
+	/// Build the HNSW index and precompute LS sigma
 	pub fn build_index(&mut self) -> RetrievalResult<()> {
 		if self.points.is_empty() {
-			self.index = None;
+			self.indexed = false;
+			self.sigma_values = Vec::new();
 			return Ok(());
 		}
 
-		// create values (IDs)
-		let values: Vec<u64> =
-			self.points.iter().map(|p| p.id).collect();
+		// Mean-center only if not already centered
+		if self.mean_vector.is_none() {
+			let mean = super::mean_center::compute_mean(
+				&self.points,
+			);
+			super::mean_center::apply_centering(
+				&mut self.points, &mean,
+			);
+			self.mean_vector = Some(mean);
+		}
 
-		// build index
-		let hnsw =
-			Builder::default().build(self.points.clone(), values);
-		self.index = Some(hnsw);
+		self.indexed = true;
 		self.next_id = self.points.len() as u64;
+
+		// Reuse cached sigma if loaded from disk
+		if self.sigma_values.is_empty() {
+			self.sigma_values =
+				super::vector_store_csls::compute_all_sigma(
+					self,
+				);
+		}
 
 		Ok(())
 	}
@@ -46,8 +59,10 @@ impl VectorStore {
 	/// Clear all points and invalidate index
 	pub fn clear(&mut self) {
 		self.points.clear();
-		self.index = None;
+		self.indexed = false;
 		self.next_id = 0;
+		self.sigma_values.clear();
+		self.mean_vector = None;
 	}
 
 	/// Generate next unique ID

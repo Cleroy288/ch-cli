@@ -18,8 +18,8 @@ impl PickerQuery {
     }
 
     /// Add a character to the search query
-    pub fn push(&mut self, c: char) {
-        self.query.push(c);
+    pub fn push(&mut self, chr: char) {
+        self.query.push(chr);
         self.reset_selection();
     }
 

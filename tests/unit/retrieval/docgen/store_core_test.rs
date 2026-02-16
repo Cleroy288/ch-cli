@@ -2,7 +2,7 @@
 
 use tempfile::tempdir;
 
-use ch_cli::retrieval::docgen::{DocStore, DocStoreStats};
+use rustean::retrieval::docgen::{DocStore, DocStoreStats};
 
 #[test]
 fn test_store_new() {

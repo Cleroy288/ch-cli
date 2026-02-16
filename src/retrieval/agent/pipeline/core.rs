@@ -1,5 +1,7 @@
 //! Core RetrievalPipeline struct and basic methods.
 
+use std::sync::Arc;
+
 use crate::indexer::{SemanticGraph, Symbol, TrigramIndex};
 use crate::retrieval::daemon::DaemonClient;
 use crate::retrieval::docgen::DocStore;
@@ -19,9 +21,9 @@ pub struct RetrievalPipeline {
 	/// indexed symbols (cached after first run)
 	#[doc(hidden)]
 	pub symbols: Option<Vec<Symbol>>,
-	/// semantic graph (cached after first run)
+	/// semantic graph (Arc-wrapped for zero-cost sharing)
 	#[doc(hidden)]
-	pub graph: Option<SemanticGraph>,
+	pub graph: Option<Arc<SemanticGraph>>,
 	/// hybrid search instance (unified pipeline)
 	#[doc(hidden)]
 	pub hybrid: Option<HybridSearch>,
@@ -89,7 +91,7 @@ impl RetrievalPipeline {
 	pub fn has_doc_context(&self) -> bool {
 		self.doc_store
 			.as_ref()
-			.map(|s| s.is_ready())
+			.map(|store| store.is_ready())
 			.unwrap_or(false)
 	}
 }

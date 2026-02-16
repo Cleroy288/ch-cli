@@ -1,9 +1,9 @@
 //! Unit tests for cli::commands::search
 //! — migrated from inline tests
 
-use ch_cli::cli::commands::error::CommandError;
-use ch_cli::cli::commands::search::parse_symbol_kind;
-use ch_cli::indexer::SymbolKind;
+use rustean::cli::commands::error::CommandError;
+use rustean::cli::commands::search::parse_symbol_kind;
+use rustean::indexer::SymbolKind;
 
 /// Test parsing function kind variants
 #[test]

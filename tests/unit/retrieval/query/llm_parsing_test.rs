@@ -1,5 +1,5 @@
-use ch_cli::retrieval::daemon::protocol::QueryIntent;
-use ch_cli::retrieval::query::{
+use rustean::retrieval::daemon::protocol::QueryIntent;
+use rustean::retrieval::query::{
 	fallback_parse, parse_llm_response,
 };
 

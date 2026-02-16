@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use ch_cli::indexer::crawler::{DetectedLanguage, Language};
+use rustean::indexer::crawler::{DetectedLanguage, Language};
 
 /// Test from_extension detects Rust as supported language
 #[test]

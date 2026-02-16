@@ -17,22 +17,24 @@ pub struct FileWatcher {
 
 impl FileWatcher {
 	/// Create a new file watcher for the given root directory
-	pub fn new<P: AsRef<Path>>(root: P) -> WatcherResult<Self> {
-		let (tx, rx) = channel();
+	pub fn new<P: AsRef<Path>>(
+		root: P,
+	) -> WatcherResult<Self> {
+		let (sender, recv) = channel();
 
 		let config = Config::default()
 			.with_poll_interval(Duration::from_secs(2));
 
 		let watcher = RecommendedWatcher::new(
 			move |res| {
-				let _ = tx.send(res);
+				let _ = sender.send(res);
 			},
 			config,
 		)?;
 
 		Ok(Self {
 			watcher,
-			receiver: rx,
+			receiver: recv,
 			root: root.as_ref().to_path_buf(),
 		})
 	}

@@ -26,7 +26,7 @@ pub fn detect_codebase_changes() -> Option<ChangeSet> {
 	}
 
 	let state = match IndexState::load(".".as_ref()) {
-		Ok(s) => s,
+		Ok(loaded) => loaded,
 		Err(_) => return None,
 	};
 

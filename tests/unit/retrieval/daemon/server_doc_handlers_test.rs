@@ -2,11 +2,11 @@
 
 use std::path::PathBuf;
 
-use ch_cli::indexer::SymbolKind;
-use ch_cli::retrieval::daemon::server::doc_handlers::{
+use rustean::indexer::SymbolKind;
+use rustean::retrieval::daemon::server::doc_handlers::{
 	doc_entry_to_response,
 };
-use ch_cli::retrieval::docgen::DocEntry;
+use rustean::retrieval::docgen::DocEntry;
 
 /// Verify doc_entry_to_response maps all fields
 #[test]

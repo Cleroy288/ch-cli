@@ -9,7 +9,9 @@ pub fn filter_rust_paths(event: Event) -> Option<FileChangeEvent> {
 	let rust_paths: Vec<_> = event
 		.paths
 		.into_iter()
-		.filter(|p| p.extension().map_or(false, |e| e == "rs"))
+		.filter(|path| {
+			path.extension().is_some_and(|ext| ext == "rs")
+		})
 		.collect();
 
 	if rust_paths.is_empty() {

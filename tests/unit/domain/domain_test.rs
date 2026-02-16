@@ -4,7 +4,10 @@
 
 use std::path::PathBuf;
 
-use ch_cli::domain::{CursorPosition, FileName, FilePath, FileReference};
+use rustean::domain::{
+    CursorPosition, FileName, FilePath,
+    FileReference, InputSpan,
+};
 
 // ─── CursorPosition tests ───────────────────────────────────────────────────
 
@@ -125,7 +128,7 @@ fn test_cursor_equality() {
 #[test]
 fn test_cursor_clone() {
     let original = CursorPosition::from_raw(8); // original cursor
-    let cloned = original.clone(); // cloned cursor
+    let cloned = original; // cloned via Copy
     assert_eq!(original, cloned);
 }
 
@@ -306,13 +309,14 @@ fn test_file_reference_new() {
     let display = FileName::new("main.rs".to_string()); // display name
     let is_dir = false; // not a directory
 
-    let fref = FileReference::new(start, end, path, display, is_dir);
+    let span = InputSpan { start, end };
+    let fref = FileReference::new(span, path, display, is_dir);
 
     assert_eq!(fref.start, 5);
     assert_eq!(fref.end, 20);
     assert_eq!(fref.full_path.as_string(), "./src/main.rs");
     assert_eq!(fref.display_name.as_str(), "main.rs");
-    assert_eq!(fref.is_dir, false);
+    assert!(!fref.is_dir);
 }
 
 /// FileReference::new for a directory
@@ -324,13 +328,14 @@ fn test_file_reference_new_directory() {
     let display = FileName::new("src".to_string()); // display name
     let is_dir = true; // is a directory
 
-    let fref = FileReference::new(start, end, path, display, is_dir);
+    let span = InputSpan { start, end };
+    let fref = FileReference::new(span, path, display, is_dir);
 
     assert_eq!(fref.start, 0);
     assert_eq!(fref.end, 6);
     assert_eq!(fref.full_path.as_string(), "./src/");
     assert_eq!(fref.display_name.as_str(), "src");
-    assert_eq!(fref.is_dir, true);
+    assert!(fref.is_dir);
 }
 
 /// FileReference supports clone
@@ -338,7 +343,8 @@ fn test_file_reference_new_directory() {
 fn test_file_reference_clone() {
     let path = FilePath::from_string("./Cargo.toml"); // full path
     let display = FileName::new("Cargo.toml".to_string()); // display name
-    let original = FileReference::new(0, 10, path, display, false); // original ref
+    let span = InputSpan { start: 0, end: 10 };
+    let original = FileReference::new(span, path, display, false); // original ref
 
     let cloned = original.clone(); // cloned ref
 

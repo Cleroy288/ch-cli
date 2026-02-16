@@ -18,6 +18,7 @@ mod conversion_parsing;
 mod error;
 mod index_core;
 mod indexing;
+mod loading;
 mod querying;
 mod schema;
 mod schema_builder;

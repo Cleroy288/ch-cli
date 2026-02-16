@@ -1,4 +1,4 @@
-use ch_cli::retrieval::hybrid::embedding::{
+use rustean::retrieval::hybrid::embedding::{
 	BgeEmbedder, EMBEDDING_DIM,
 };
 

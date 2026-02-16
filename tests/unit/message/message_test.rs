@@ -2,7 +2,7 @@
 //!
 //! Covers MessageSegment, UserMessage, and ConversationHistory.
 
-use ch_cli::message::{ConversationHistory, MessageSegment, UserMessage};
+use rustean::message::{ConversationHistory, MessageSegment, UserMessage};
 
 // ============================================================================
 // MessageSegment tests

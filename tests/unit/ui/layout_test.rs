@@ -2,11 +2,11 @@
 
 use ratatui::layout::Rect;
 
-use ch_cli::domain::{
+use rustean::domain::{
     INPUT_BOX_HEIGHT, MAX_PICKER_HEIGHT, PICKER_WIDTH,
     TITLE_BOX_HEIGHT,
 };
-use ch_cli::ui::layout::{
+use rustean::ui::layout::{
     calculate_file_list_area, calculate_help_text_area,
     calculate_type_chooser_area, get_main_layout_constraints,
 };

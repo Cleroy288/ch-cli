@@ -1,9 +1,9 @@
 //! Tests for retrieval::agent::feedback_accessors
 
-use ch_cli::retrieval::agent::feedback::FeedbackLoop;
-use ch_cli::retrieval::agent::pipeline::RetrievalPipeline;
-use ch_cli::retrieval::agent::RetrievalOutput;
-use ch_cli::retrieval::daemon::protocol::{
+use rustean::retrieval::agent::feedback::FeedbackLoop;
+use rustean::retrieval::agent::pipeline::RetrievalPipeline;
+use rustean::retrieval::agent::RetrievalOutput;
+use rustean::retrieval::daemon::protocol::{
 	QueryIntent, SearchSpec,
 };
 

@@ -31,7 +31,7 @@ impl Default for RetryConfig {
 /// Check if an error is transient and worth retrying
 pub fn is_retryable_error(error: &RetrievalError) -> bool {
 	match error {
-		RetrievalError::Io(io_err) => {
+		RetrievalError::IoError(io_err) => {
 			// Retry on transient IO errors
 			matches!(
 				io_err.kind(),

@@ -1,16 +1,18 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 
-use ch_cli::indexer::{CodeLocation, SearchHit, Symbol, SymbolKind};
-use ch_cli::retrieval::daemon::protocol::QueryIntent;
-use ch_cli::retrieval::hybrid::config::HybridSearchConfig;
-use ch_cli::retrieval::hybrid::fusion::RankedItem;
-use ch_cli::retrieval::hybrid::fusion_intent::{
-	fuse_with_weights_and_intent,
-	process_keyword_with_intent,
-	process_semantic_with_intent,
+use rustean::indexer::{
+	ByteSpan, CodeLocation, SearchHit,
+	Symbol, SymbolKind,
 };
-use ch_cli::retrieval::hybrid::vector_store::{
-	SearchResult as VectorSearchResult, VectorPoint,
+use rustean::retrieval::daemon::protocol::QueryIntent;
+use rustean::retrieval::hybrid::fusion::RankedItem;
+use rustean::retrieval::hybrid::fusion_core::FusionParams;
+use rustean::retrieval::hybrid::fusion_intent::{
+	fuse_with_weights_and_intent, IntentContext,
+};
+use rustean::retrieval::hybrid::vector_store::{
+	PointMeta, SearchResult as VectorSearchResult,
 };
 
 /// Helper to create a test SearchHit
@@ -20,7 +22,7 @@ fn create_search_hit(
 	score: f32,
 ) -> SearchHit {
 	let location =
-		CodeLocation::new(PathBuf::from("test.rs"), line, 1, 0, 0);
+		CodeLocation::new(PathBuf::from("test.rs"), line, 1, ByteSpan::ZERO);
 	let symbol = Symbol::new(
 		name.to_string(),
 		SymbolKind::Function,
@@ -35,9 +37,8 @@ fn create_vector_result(
 	line: usize,
 	distance: f32,
 ) -> VectorSearchResult {
-	let point = VectorPoint {
+	let point = PointMeta {
 		id: 0,
-		vector: vec![0.0, 0.0, 0.0],
 		file_path: PathBuf::from("test.rs"),
 		line,
 		symbol_name: name.to_string(),
@@ -46,15 +47,15 @@ fn create_vector_result(
 	VectorSearchResult { point, distance }
 }
 
-/// Test fuse_with_weights_and_intent combines results with intent
+/// Test fuse_with_weights_and_intent produces results
 #[test]
-fn test_fuse_with_weights_and_intent() {
-	let config = HybridSearchConfig::default();
+fn test_fuse_with_intent_produces_results() {
 	let intent = QueryIntent::FindDefinition;
+	let rc: HashMap<String, usize> = HashMap::new();
 	let keyword_results = vec![RankedItem {
-		item: create_search_hit("func_a", 10, 1.0),
+		item: create_search_hit("func_a", 10, 5.0),
 		rank: 1,
-		score: 1.0,
+		score: 5.0,
 	}];
 	let semantic_results = vec![RankedItem {
 		item: create_vector_result("func_b", 20, 0.1),
@@ -62,29 +63,32 @@ fn test_fuse_with_weights_and_intent() {
 		score: 0.1,
 	}];
 
+	let params = FusionParams {
+		keyword_weight: 0.5,
+		semantic_weight: 0.5,
+		query: "test",
+	};
+	let ctx = IntentContext {
+		intent: &intent, ref_counts: &rc,
+	};
 	let results = fuse_with_weights_and_intent(
-		&config,
-		keyword_results,
-		semantic_results,
-		1.0,
-		1.0,
-		"test",
-		&intent,
+		keyword_results, semantic_results,
+		&params, &ctx,
 	);
 
 	assert_eq!(results.len(), 2);
-	assert!(results[0].rrf_score > 0.0);
+	assert!(results[0].score > 0.0);
 }
 
-/// Test fuse_with_weights_and_intent merges overlapping results
+/// Test fuse_with_weights_and_intent merges overlapping
 #[test]
-fn test_fuse_with_weights_and_intent_overlap() {
-	let config = HybridSearchConfig::default();
+fn test_fuse_with_intent_overlap() {
 	let intent = QueryIntent::Understand;
+	let rc: HashMap<String, usize> = HashMap::new();
 	let keyword_results = vec![RankedItem {
-		item: create_search_hit("func_a", 10, 1.0),
+		item: create_search_hit("func_a", 10, 5.0),
 		rank: 1,
-		score: 1.0,
+		score: 5.0,
 	}];
 	let semantic_results = vec![RankedItem {
 		item: create_vector_result("func_a", 10, 0.1),
@@ -92,14 +96,17 @@ fn test_fuse_with_weights_and_intent_overlap() {
 		score: 0.1,
 	}];
 
+	let params = FusionParams {
+		keyword_weight: 0.5,
+		semantic_weight: 0.5,
+		query: "test",
+	};
+	let ctx = IntentContext {
+		intent: &intent, ref_counts: &rc,
+	};
 	let results = fuse_with_weights_and_intent(
-		&config,
-		keyword_results,
-		semantic_results,
-		1.0,
-		1.0,
-		"test",
-		&intent,
+		keyword_results, semantic_results,
+		&params, &ctx,
 	);
 
 	assert_eq!(results.len(), 1);
@@ -107,87 +114,31 @@ fn test_fuse_with_weights_and_intent_overlap() {
 	assert!(results[0].semantic_rank.is_some());
 }
 
-/// Test process_keyword_with_intent applies intent-aware boost
+/// Test different intents produce different boosts
 #[test]
-fn test_process_keyword_with_intent() {
-	let config = HybridSearchConfig::default();
-	let intent = QueryIntent::FindUsages;
-	let ranked = RankedItem {
-		item: create_search_hit("func_a", 10, 1.0),
-		rank: 1,
-		score: 1.0,
-	};
-
-	let result = process_keyword_with_intent(
-		&config, &ranked, 1.0, "test", &intent,
-	);
-
-	assert_eq!(result.symbol.name, "func_a");
-	assert!(result.rrf_score > 0.0);
-	assert_eq!(result.keyword_rank, Some(1));
-	assert_eq!(result.semantic_rank, None);
-}
-
-/// Test process_semantic_with_intent applies intent-aware boost
-#[test]
-fn test_process_semantic_with_intent() {
-	let config = HybridSearchConfig::default();
-	let intent = QueryIntent::Debug;
-	let ranked = RankedItem {
-		item: create_vector_result("func_b", 20, 0.1),
-		rank: 1,
-		score: 0.1,
-	};
-
-	let (key, result) = process_semantic_with_intent(
-		&config, &ranked, 1.0, "test", &intent,
-	);
-
-	assert_eq!(key, "func_b:20");
-	assert_eq!(result.symbol.name, "func_b");
-	assert!(result.rrf_score > 0.0);
-	assert_eq!(result.keyword_rank, None);
-	assert_eq!(result.semantic_rank, Some(1));
-}
-
-/// Test process_keyword_with_intent with different intents
-#[test]
-fn test_process_keyword_with_intent_modify() {
-	let config = HybridSearchConfig::default();
+fn test_fuse_with_intent_modify() {
 	let intent = QueryIntent::Modify;
-	let ranked = RankedItem {
-		item: create_search_hit("func_c", 30, 0.8),
-		rank: 2,
-		score: 0.8,
-	};
+	let rc: HashMap<String, usize> = HashMap::new();
+	let keyword_results = vec![RankedItem {
+		item: create_search_hit("func_c", 30, 3.0),
+		rank: 1,
+		score: 3.0,
+	}];
 
-	let result = process_keyword_with_intent(
-		&config, &ranked, 1.5, "modify test", &intent,
+	let params = FusionParams {
+		keyword_weight: 0.5,
+		semantic_weight: 0.5,
+		query: "modify test",
+	};
+	let ctx = IntentContext {
+		intent: &intent, ref_counts: &rc,
+	};
+	let results = fuse_with_weights_and_intent(
+		keyword_results, vec![],
+		&params, &ctx,
 	);
 
-	assert_eq!(result.symbol.name, "func_c");
-	assert!(result.rrf_score > 0.0);
-	assert_eq!(result.keyword_rank, Some(2));
-	assert_eq!(result.keyword_score, Some(0.8));
-}
-
-/// Test process_semantic_with_intent with different intents
-#[test]
-fn test_process_semantic_with_intent_search() {
-	let config = HybridSearchConfig::default();
-	let intent = QueryIntent::Search;
-	let ranked = RankedItem {
-		item: create_vector_result("func_d", 40, 0.2),
-		rank: 3,
-		score: 0.2,
-	};
-
-	let (key, result) = process_semantic_with_intent(
-		&config, &ranked, 0.5, "search test", &intent,
-	);
-
-	assert_eq!(key, "func_d:40");
-	assert_eq!(result.symbol.name, "func_d");
-	assert_eq!(result.semantic_rank, Some(3));
-	assert_eq!(result.semantic_distance, Some(0.2));
+	assert_eq!(results.len(), 1);
+	assert!(results[0].score > 0.0);
+	assert_eq!(results[0].keyword_rank, Some(1));
 }

@@ -1,16 +1,16 @@
 //! Tests for IndexManager builder.
 
-use ch_cli::indexer::crawler::CrawlerConfig;
-use ch_cli::indexer::manager::IndexManager;
+use rustean::indexer::crawler::CrawlerConfig;
+use rustean::indexer::manager::IndexManager;
 
 /// Test IndexManager::new creates manager with default config
 #[test]
 fn test_new() {
 	let manager = IndexManager::new();
 
-	assert!(!manager.enable_semantic_analysis);
-	assert!(!manager.enable_reference_extraction);
-	assert!(!manager.enable_persistence);
+	assert!(!manager.flags.semantic_analysis);
+	assert!(!manager.flags.reference_extraction);
+	assert!(!manager.flags.persistence);
 	assert!(manager.progress_callback.is_none());
 }
 
@@ -20,9 +20,9 @@ fn test_with_config() {
 	let config = CrawlerConfig::default();
 	let manager = IndexManager::with_config(config);
 
-	assert!(!manager.enable_semantic_analysis);
-	assert!(!manager.enable_reference_extraction);
-	assert!(!manager.enable_persistence);
+	assert!(!manager.flags.semantic_analysis);
+	assert!(!manager.flags.reference_extraction);
+	assert!(!manager.flags.persistence);
 }
 
 /// Test on_progress sets progress callback
@@ -41,15 +41,15 @@ fn test_default() {
 	let new_manager = IndexManager::new(); // new manager
 
 	assert_eq!(
-		default_manager.enable_semantic_analysis,
-		new_manager.enable_semantic_analysis
+		default_manager.flags.semantic_analysis,
+		new_manager.flags.semantic_analysis
 	);
 	assert_eq!(
-		default_manager.enable_reference_extraction,
-		new_manager.enable_reference_extraction
+		default_manager.flags.reference_extraction,
+		new_manager.flags.reference_extraction
 	);
 	assert_eq!(
-		default_manager.enable_persistence,
-		new_manager.enable_persistence
+		default_manager.flags.persistence,
+		new_manager.flags.persistence
 	);
 }

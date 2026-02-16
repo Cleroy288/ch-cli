@@ -52,8 +52,8 @@ impl ConversationHistory {
             self.len()
         ));
 
-        for (i, message) in self.messages.iter().enumerate() {
-            result.push_str(&format!("=== Message {} ===\n", i + 1));
+        for (idx, message) in self.messages.iter().enumerate() {
+            result.push_str(&format!("=== Message {} ===\n", idx + 1));
             result.push_str(&format!("Raw: \"{}\"\n", message.raw_input));
             result.push_str(&message.debug_string());
             result.push_str(&format!(

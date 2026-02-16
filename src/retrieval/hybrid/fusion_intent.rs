@@ -1,152 +1,128 @@
 //! Intent-aware fusion functions for hybrid search
 //!
-//! Contains fuse_with_weights_and_intent and
-//! process_*_with_intent functions that combine keyword
-//! and semantic results using RRF with intent-aware boosting.
+//! Combines keyword and semantic results using min-max
+//! normalized Convex Combination with intent-aware boosting.
 
 use std::collections::HashMap;
 
-use crate::indexer::{CodeLocation, DocumentType, SearchHit, Symbol};
+use crate::indexer::SearchHit;
 use crate::retrieval::daemon::protocol::QueryIntent;
-use crate::retrieval::hybrid::config::HybridSearchConfig;
-use crate::retrieval::hybrid::converters::parse_symbol_kind;
-use crate::retrieval::hybrid::fusion::{rrf_score, RankedItem};
+use crate::retrieval::hybrid::fusion::RankedItem;
+use crate::retrieval::hybrid::fusion_core::FusionParams;
+use crate::retrieval::hybrid::fusion_intent_builders::{
+	build_keyword_intent_result,
+	build_semantic_intent_result,
+	merge_into_map, IntentFusionArgs,
+};
+use crate::retrieval::hybrid::normalize::{
+	normalize_keyword_scores, normalize_semantic_scores,
+};
 use crate::retrieval::hybrid::result::HybridSearchResult;
-use crate::retrieval::hybrid::vector_store::SearchResult as VectorSearchResult;
+use crate::retrieval::hybrid::vector_store::SearchResult
+	as VectorSearchResult;
 
-/// Fuse results with intent-aware symbol kind boost.
-/// Uses boost_factor_for_intent to adjust symbol
-/// priority based on query intent.
-pub fn fuse_with_weights_and_intent(
-	config: &HybridSearchConfig,
+/// Bundled intent and ref count context for fusion
+pub struct IntentContext<'ctx> {
+	/// query intent for symbol kind boosting
+	pub intent: &'ctx QueryIntent,
+	/// ref counts for hub penalty
+	pub ref_counts: &'ctx HashMap<String, usize>,
+}
+
+/// Fuse results with intent-aware symbol kind boost
+/// using Convex Combination with normalized scores
+pub fn fuse_with_weights_and_intent<'prm>(
 	keyword_results: Vec<RankedItem<SearchHit>>,
 	semantic_results: Vec<RankedItem<VectorSearchResult>>,
-	keyword_weight: f32,
-	semantic_weight: f32,
-	query: &str,
-	intent: &QueryIntent,
+	params: &FusionParams<'prm>,
+	ctx: &IntentContext<'prm>,
 ) -> Vec<HybridSearchResult> {
-	let mut results_by_key: HashMap<String, HybridSearchResult> =
-		HashMap::new();
+	let mut results_map: HashMap<
+		String,
+		HybridSearchResult,
+	> = HashMap::new();
 
-	// process keyword results with intent-aware boost
-	for ranked in keyword_results {
-		let result = process_keyword_with_intent(
-			config, &ranked, keyword_weight, query, intent,
-		);
-		let key = format!(
-			"{}:{}",
-			ranked.item.symbol.name, ranked.item.symbol.location.line
-		);
+	let kw_args = IntentFusionArgs {
+		params,
+		ctx,
+		norms: normalize_keyword_scores(
+			&keyword_results,
+		),
+	};
+	let sem_args = IntentFusionArgs {
+		params,
+		ctx,
+		norms: normalize_semantic_scores(
+			&semantic_results,
+		),
+	};
 
-		results_by_key
-			.entry(key)
-			.and_modify(|r| {
-				r.rrf_score += result.rrf_score;
-				r.keyword_rank = result.keyword_rank;
-				r.keyword_score = result.keyword_score;
-			})
-			.or_insert(result);
-	}
+	process_keyword_intent(
+		&mut results_map, &keyword_results, &kw_args,
+	);
+	process_semantic_intent(
+		&mut results_map, &semantic_results, &sem_args,
+	);
 
-	// process semantic results with intent-aware boost
-	for ranked in semantic_results {
-		let (key, result) = process_semantic_with_intent(
-			config, &ranked, semantic_weight, query, intent,
-		);
+	sort_fused_results(results_map)
+}
 
-		results_by_key
-			.entry(key)
-			.and_modify(|r| {
-				r.rrf_score += result.rrf_score;
-				r.semantic_rank = result.semantic_rank;
-				r.semantic_distance = result.semantic_distance;
-			})
-			.or_insert(result);
-	}
-
-	// sort by RRF score descending
-	let mut results: Vec<_> = results_by_key.into_values().collect();
-	results.sort_by(|a, b| b.rrf_score.partial_cmp(&a.rrf_score).unwrap());
-
+/// Sort fused results by score descending
+fn sort_fused_results(
+	results_map: HashMap<String, HybridSearchResult>,
+) -> Vec<HybridSearchResult> {
+	let mut results: Vec<_> =
+		results_map.into_values().collect();
+	results.sort_by(|left, right| {
+		right.score.partial_cmp(&left.score).unwrap()
+	});
 	results
 }
 
-/// Process a single keyword result with intent-aware boost
-pub fn process_keyword_with_intent(
-	config: &HybridSearchConfig,
-	ranked: &RankedItem<SearchHit>,
-	keyword_weight: f32,
-	query: &str,
-	intent: &QueryIntent,
-) -> HybridSearchResult {
-	let doc_type =
-		DocumentType::from_path(&ranked.item.symbol.location.file);
-	let doc_query_boost = doc_type.boost_factor_for_query(query);
-	let doc_intent_boost = doc_type.boost_factor_for_intent(intent);
-	let kind_boost =
-		ranked.item.symbol.kind.boost_factor_for_intent(intent);
-	let combined_boost =
-		doc_query_boost * doc_intent_boost * kind_boost;
-
-	let base = rrf_score(ranked.rank, config.rrf_k);
-	let rrf = base * keyword_weight * combined_boost;
-
-	HybridSearchResult {
-		symbol: ranked.item.symbol.clone(),
-		rrf_score: rrf,
-		keyword_rank: Some(ranked.rank),
-		semantic_rank: None,
-		keyword_score: Some(ranked.score),
-		semantic_distance: None,
-		rerank_score: None,
+/// Process keyword results with intent boost
+fn process_keyword_intent<'prm>(
+	results_map: &mut HashMap<
+		String,
+		HybridSearchResult,
+	>,
+	keyword_results: &[RankedItem<SearchHit>],
+	args: &IntentFusionArgs<'prm>,
+) {
+	for (idx, ranked) in
+		keyword_results.iter().enumerate()
+	{
+		let norm =
+			args.norms.get(idx).copied().unwrap_or(0.0);
+		let result = build_keyword_intent_result(
+			ranked, norm, args,
+		);
+		let key = format!(
+			"{}:{}",
+			ranked.item.symbol.name,
+			ranked.item.symbol.location.line,
+		);
+		merge_into_map(results_map, key, result);
 	}
 }
 
-/// Process a single semantic result with intent-aware boost
-pub fn process_semantic_with_intent(
-	config: &HybridSearchConfig,
-	ranked: &RankedItem<VectorSearchResult>,
-	semantic_weight: f32,
-	query: &str,
-	intent: &QueryIntent,
-) -> (String, HybridSearchResult) {
-	let doc_type =
-		DocumentType::from_path(&ranked.item.point.file_path);
-	let doc_query_boost = doc_type.boost_factor_for_query(query);
-	let doc_intent_boost = doc_type.boost_factor_for_intent(intent);
-	let symbol_kind =
-		parse_symbol_kind(&ranked.item.point.symbol_kind);
-	let kind_boost = symbol_kind.boost_factor_for_intent(intent);
-	let combined_boost =
-		doc_query_boost * doc_intent_boost * kind_boost;
-
-	let base = rrf_score(ranked.rank, config.rrf_k);
-	let rrf = base * semantic_weight * combined_boost;
-
-	let key = format!(
-		"{}:{}",
-		ranked.item.point.symbol_name,
-		ranked.item.point.line,
-	);
-
-	let point = &ranked.item.point;
-	let symbol = Symbol::new(
-		point.symbol_name.clone(),
-		symbol_kind,
-		CodeLocation::new(point.file_path.clone(), point.line, 1, 0, 0),
-	);
-
-	let result = HybridSearchResult {
-		symbol,
-		rrf_score: rrf,
-		keyword_rank: None,
-		semantic_rank: Some(ranked.rank),
-		keyword_score: None,
-		semantic_distance: Some(ranked.score),
-		rerank_score: None,
-	};
-
-	(key, result)
+/// Process semantic results with intent boost
+fn process_semantic_intent<'prm>(
+	results_map: &mut HashMap<
+		String,
+		HybridSearchResult,
+	>,
+	semantic_results: &[RankedItem<VectorSearchResult>],
+	args: &IntentFusionArgs<'prm>,
+) {
+	for (idx, ranked) in
+		semantic_results.iter().enumerate()
+	{
+		let norm =
+			args.norms.get(idx).copied().unwrap_or(0.0);
+		let (key, result) =
+			build_semantic_intent_result(
+				ranked, norm, args,
+			);
+		merge_into_map(results_map, key, result);
+	}
 }
-

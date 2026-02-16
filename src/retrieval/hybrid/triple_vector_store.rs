@@ -1,8 +1,8 @@
 //! Triple Vector Store
 //!
-//! Provides separate HNSW vector stores for Code, Doc, and
-//! Notes content types. Enables parallel semantic search
-//! across all three stores without interference.
+//! Provides separate HNSW vector stores for Code, Doc,
+//! Notes, and Enriched (LLM doc) content types. Enables
+//! parallel semantic search without interference.
 
 use std::path::{Path, PathBuf};
 
@@ -22,12 +22,17 @@ pub struct TripleVectorStats {
 	pub doc_count: usize,
 	/// number of notes vectors indexed
 	pub notes_count: usize,
+	/// number of enriched (LLM doc) vectors indexed
+	pub enriched_count: usize,
 }
 
 impl TripleVectorStats {
 	/// Get total vectors indexed
 	pub fn total(&self) -> usize {
-		self.code_count + self.doc_count + self.notes_count
+		self.code_count
+			+ self.doc_count
+			+ self.notes_count
+			+ self.enriched_count
 	}
 }
 
@@ -40,11 +45,12 @@ pub struct TripleVectorResults {
 	pub doc_results: Vec<SearchResult>,
 	/// search results from notes store
 	pub notes_results: Vec<SearchResult>,
+	/// search results from enriched store
+	pub enriched_results: Vec<SearchResult>,
 }
 
-/// Triple vector store with separate code, doc, and notes
-/// HNSW indexes. Enables parallel semantic search without
-/// content type interference.
+/// Triple vector store with separate code, doc, notes,
+/// and enriched HNSW indexes.
 pub struct TripleVectorStore {
 	/// vector store for code embeddings
 	pub(crate) code_store: VectorStore,
@@ -52,6 +58,8 @@ pub struct TripleVectorStore {
 	pub(crate) doc_store: VectorStore,
 	/// vector store for notes embeddings
 	pub(crate) notes_store: VectorStore,
+	/// vector store for LLM doc enriched embeddings
+	pub(crate) enriched_store: VectorStore,
 	/// base path for persistence (if enabled)
 	pub(crate) base_path: Option<PathBuf>,
 }
@@ -63,6 +71,7 @@ impl TripleVectorStore {
 			code_store: VectorStore::new(),
 			doc_store: VectorStore::new(),
 			notes_store: VectorStore::new(),
+			enriched_store: VectorStore::new(),
 			base_path: None,
 		}
 	}
@@ -71,29 +80,21 @@ impl TripleVectorStore {
 	pub fn with_path(
 		base_path: &Path,
 	) -> RetrievalResult<Self> {
-		let code_path =
-			base_path.join("code").join("vectors.json");
-		let doc_path =
-			base_path.join("docs").join("vectors.json");
-		let notes_path =
-			base_path.join("notes").join("vectors.json");
+		let paths = build_store_paths(base_path);
 
-		// Ensure directories exist
 		create_store_dirs(
-			&code_path, &doc_path, &notes_path,
+			&paths.0, &paths.1,
+			&paths.2, &paths.3,
 		)?;
 
-		let code_store =
-			VectorStore::with_path(&code_path)?;
-		let doc_store =
-			VectorStore::with_path(&doc_path)?;
-		let notes_store =
-			VectorStore::with_path(&notes_path)?;
+		let stores =
+			open_all_stores(&paths)?;
 
 		Ok(Self {
-			code_store,
-			doc_store,
-			notes_store,
+			code_store: stores.0,
+			doc_store: stores.1,
+			notes_store: stores.2,
+			enriched_store: stores.3,
 			base_path: Some(base_path.to_path_buf()),
 		})
 	}
@@ -116,6 +117,41 @@ impl TripleVectorStore {
 			}
 		}
 	}
+
+	/// Insert into the enriched (LLM doc) store
+	pub fn insert_enriched(&mut self, point: VectorPoint) {
+		self.enriched_store.insert(point);
+	}
+}
+
+/// Build the four vector store paths from base
+fn build_store_paths(base: &Path) -> FourPaths {
+	let vectors = "vectors.bin";
+	(
+		base.join("code").join(vectors),
+		base.join("docs").join(vectors),
+		base.join("notes").join(vectors),
+		base.join("enriched").join(vectors),
+	)
+}
+
+/// Four vector store paths (code, doc, notes, enriched)
+type FourPaths = (PathBuf, PathBuf, PathBuf, PathBuf);
+
+/// Four opened vector stores
+type FourStores =
+	(VectorStore, VectorStore, VectorStore, VectorStore);
+
+/// Open all four vector stores from paths
+fn open_all_stores(
+	paths: &FourPaths,
+) -> RetrievalResult<FourStores> {
+	Ok((
+		VectorStore::with_path(&paths.0)?,
+		VectorStore::with_path(&paths.1)?,
+		VectorStore::with_path(&paths.2)?,
+		VectorStore::with_path(&paths.3)?,
+	))
 }
 
 impl Default for TripleVectorStore {
@@ -123,4 +159,3 @@ impl Default for TripleVectorStore {
 		Self::new()
 	}
 }
-

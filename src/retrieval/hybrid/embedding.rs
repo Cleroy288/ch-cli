@@ -5,7 +5,7 @@
 
 use std::path::Path;
 
-use candle_core::{DType, Device};
+use candle_core::Device;
 use candle_nn::VarBuilder;
 use candle_transformers::models::bert::{
 	BertModel, Config as BertConfig,
@@ -13,8 +13,8 @@ use candle_transformers::models::bert::{
 use tokenizers::{PaddingParams, Tokenizer, TruncationParams};
 
 use crate::retrieval::models::{
-	download_model, get_device, load_tokenizer, ModelError,
-	ModelResult,
+	download_model, embedding_dtype, get_device,
+	get_device_info, load_tokenizer, ModelError, ModelResult,
 };
 
 /// Default BGE model for embeddings
@@ -67,19 +67,21 @@ impl BgeEmbedder {
 		// load config
 		let config_str = std::fs::read_to_string(config_path)?;
 		let config: BertConfig = serde_json::from_str(&config_str)
-			.map_err(|e| ModelError::WeightLoad(format!("config: {}", e)))?;
+			.map_err(|err| ModelError::WeightLoad(format!("config: {}", err)))?;
 
 		let dim = config.hidden_size;
 
-		// load weights (supports multiple files for sharded models)
-		let vb = unsafe {
+		// load weights with device-optimal dtype
+		let dtype =
+			embedding_dtype(get_device_info().device_type);
+		let var_builder = unsafe {
 			VarBuilder::from_mmaped_safetensors(
-				weights_paths, DType::F32, &device,
+				weights_paths, dtype, &device,
 			)?
 		};
 
 		// create model
-		let model = BertModel::load(vb, &config)?;
+		let model = BertModel::load(var_builder, &config)?;
 
 		// load tokenizer
 		let mut tokenizer = load_tokenizer(&tokenizer_path.to_path_buf())?;

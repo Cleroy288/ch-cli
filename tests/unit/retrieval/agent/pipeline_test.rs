@@ -1,36 +1,40 @@
 //! Tests for retrieval::agent::pipeline (mod.rs)
 
-use ch_cli::retrieval::agent::pipeline::{
+use rustean::retrieval::agent::pipeline::{
 	PipelineConfig, RetrievalPipeline,
 };
-use ch_cli::retrieval::daemon::protocol::QueryIntent;
+use rustean::retrieval::daemon::protocol::QueryIntent;
 
 #[test]
 fn test_config_default() {
 	let config = PipelineConfig::default();
 	assert_eq!(config.max_results, 20);
-	assert!(config.expand_query);
-	assert!(config.semantic_search);
-	assert!(config.use_daemon_cache);
-	assert!(config.include_usage_counts);
+	assert!(config.flags.expand_query);
+	assert!(config.flags.semantic_search);
+	assert!(config.flags.use_daemon_cache);
+	assert!(config.flags.include_usage_counts);
 }
 
 #[test]
 fn test_config_persistence_enabled_by_default() {
 	let config = PipelineConfig::default();
 	assert!(
-		config.enable_persistence,
+		config.flags.enable_persistence,
 		"Persistence should be enabled by default"
 	);
 }
 
 #[test]
 fn test_config_with_persistence_disabled() {
+	use rustean::retrieval::agent::pipeline::PipelineFlags;
 	let config = PipelineConfig {
-		enable_persistence: false,
+		flags: PipelineFlags {
+			enable_persistence: false,
+			..PipelineFlags::default()
+		},
 		..PipelineConfig::default()
 	};
-	assert!(!config.enable_persistence);
+	assert!(!config.flags.enable_persistence);
 }
 
 #[test]

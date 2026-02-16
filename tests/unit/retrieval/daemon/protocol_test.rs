@@ -1,6 +1,6 @@
 //! Tests for retrieval::daemon::protocol
 
-use ch_cli::retrieval::daemon::protocol::{
+use rustean::retrieval::daemon::protocol::{
 	deserialize_request, deserialize_response,
 	serialize_request, serialize_response,
 	CachedSearchResult, DaemonRequest, DaemonResponse,

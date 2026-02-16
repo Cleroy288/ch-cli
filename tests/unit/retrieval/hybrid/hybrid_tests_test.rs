@@ -5,9 +5,9 @@
 
 use std::path::PathBuf;
 
-use ch_cli::indexer::symbols::{DocumentType, SymbolKind};
-use ch_cli::retrieval::daemon::protocol::QueryIntent;
-use ch_cli::retrieval::hybrid::converters::parse_symbol_kind;
+use rustean::indexer::symbols::{DocumentType, SymbolKind};
+use rustean::retrieval::daemon::protocol::QueryIntent;
+use rustean::retrieval::hybrid::converters::parse_symbol_kind;
 
 /// Test that source code files get higher boost than benchmark files
 #[test]

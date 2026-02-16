@@ -2,13 +2,12 @@
 //!
 //! Core conversion and utility functions.
 
-use std::fs;
 use std::path::Path;
 
 use crate::indexer::semantic::ReferenceContext;
 use crate::retrieval::docgen::entry_types::ReferenceKind;
 
-/// Number of lines to include as context around a reference.
+/// Number of lines to include as context.
 const CONTEXT_LINES: usize = 3;
 
 /// Convert SemanticGraph ReferenceContext to ReferenceKind.
@@ -16,35 +15,47 @@ const CONTEXT_LINES: usize = 3;
 pub fn convert_reference_context(
 	ctx: ReferenceContext,
 ) -> ReferenceKind {
+	convert_call_types(ctx)
+		.unwrap_or_else(|| convert_type_usages(ctx))
+}
+
+/// Convert call-related reference contexts.
+fn convert_call_types(
+	ctx: ReferenceContext,
+) -> Option<ReferenceKind> {
 	match ctx {
-		ReferenceContext::Call => ReferenceKind::Call,
-		ReferenceContext::Type => ReferenceKind::TypeUsage,
+		ReferenceContext::Call => {
+			Some(ReferenceKind::Call)
+		}
+		ReferenceContext::Import => {
+			Some(ReferenceKind::Import)
+		}
 		ReferenceContext::FieldAccess => {
-			ReferenceKind::FieldAccess
+			Some(ReferenceKind::FieldAccess)
 		}
-		ReferenceContext::Import => ReferenceKind::Import,
-		ReferenceContext::Identifier => {
+		ReferenceContext::Unknown => {
+			Some(ReferenceKind::Call)
+		}
+		_ => None,
+	}
+}
+
+/// Convert type-usage reference contexts.
+fn convert_type_usages(
+	ctx: ReferenceContext,
+) -> ReferenceKind {
+	match ctx {
+		ReferenceContext::Type
+		| ReferenceContext::Identifier
+		| ReferenceContext::FieldType
+		| ReferenceContext::ReturnType
+		| ReferenceContext::ParameterType
+		| ReferenceContext::GenericArg
+		| ReferenceContext::TraitBound
+		| ReferenceContext::ImplTarget => {
 			ReferenceKind::TypeUsage
 		}
-		ReferenceContext::Unknown => ReferenceKind::Call,
-		ReferenceContext::FieldType => {
-			ReferenceKind::TypeUsage
-		}
-		ReferenceContext::ReturnType => {
-			ReferenceKind::TypeUsage
-		}
-		ReferenceContext::ParameterType => {
-			ReferenceKind::TypeUsage
-		}
-		ReferenceContext::GenericArg => {
-			ReferenceKind::TypeUsage
-		}
-		ReferenceContext::TraitBound => {
-			ReferenceKind::TypeUsage
-		}
-		ReferenceContext::ImplTarget => {
-			ReferenceKind::TypeUsage
-		}
+		_ => ReferenceKind::Call,
 	}
 }
 
@@ -54,10 +65,11 @@ pub fn extract_context_lines(
 	file_path: &Path,
 	line: usize,
 ) -> String {
-	let content = match fs::read_to_string(file_path) {
-		Ok(c) => c,
-		Err(_) => return String::new(),
-	};
+	let content =
+		match std::fs::read_to_string(file_path) {
+			Ok(text) => text,
+			Err(_) => return String::new(),
+		};
 
 	let lines: Vec<&str> = content.lines().collect();
 
@@ -83,4 +95,3 @@ pub fn is_std_module(name: &str) -> bool {
 			| "crate"
 	)
 }
-

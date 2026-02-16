@@ -3,7 +3,7 @@ use crossterm::event::KeyCode;
 use crate::app::App;
 
 impl App {
-    /// Handle regular input keyboard events (when not active).
+    /// Handle regular input keyboard events.
     ///
     /// Processes character input, backspace, delete,
     /// cursor movement, and Enter.
@@ -13,11 +13,15 @@ impl App {
         key: KeyCode,
     ) -> bool {
         match key {
-            KeyCode::Char(c) => self.handle_char_input(c),
+            KeyCode::Char(chr) => {
+                self.handle_char_input(chr)
+            }
             KeyCode::Backspace => self.handle_backspace(),
             KeyCode::Delete => self.handle_delete(),
             KeyCode::Left => self.handle_cursor_left(),
             KeyCode::Right => self.handle_cursor_right(),
+            KeyCode::Up => self.scroll_up(),
+            KeyCode::Down => self.scroll_down(),
             KeyCode::Home => self.handle_home(),
             KeyCode::End => self.handle_end(),
             KeyCode::Enter => self.handle_enter(),
@@ -31,19 +35,48 @@ impl App {
     }
 
     /// Insert a character at the cursor position
-    fn handle_char_input(&mut self, c: char) {
+    fn handle_char_input(&mut self, chr: char) {
         let cursor_pos = self.cursor_position.get();
-        self.input.insert(cursor_pos, c);
-        self.cursor_position.move_right(self.input.len());
+        self.input.insert(cursor_pos, chr);
+        self.cursor_position.move_right(
+            self.input.len(),
+        );
 
-        // Check if @ was typed to activate picker
-        if c == '@' {
-            self.picker.rescan();
+        if chr == '@' {
             self.picker.activate(cursor_pos);
+            return;
+        }
+
+        if chr == '#' {
+            self.picker.activate_tools(cursor_pos);
+            return;
+        }
+
+        // Check if ( typed right after a file ref
+        if chr == '(' {
+            self.try_open_symbol_picker();
         }
     }
 
-    /// Handle backspace key - delete character before cursor
+    /// Check if cursor is right after a FileReference
+    /// and open symbol picker if so.
+    pub(crate) fn try_open_symbol_picker(&mut self) {
+        let cursor = self.cursor_position.get();
+        // The ( was inserted at cursor-1
+        let paren_pos = cursor - 1;
+
+        // Find a file ref that ends exactly at paren_pos
+        let ref_idx = self
+            .file_references
+            .iter()
+            .position(|fref| fref.end == paren_pos && !fref.is_dir);
+
+        if let Some(idx) = ref_idx {
+            self.activate_symbol_picker(idx);
+        }
+    }
+
+    /// Handle backspace key
     fn handle_backspace(&mut self) {
         let cursor_pos = self.cursor_position.get();
         if cursor_pos > 0 {
@@ -53,7 +86,7 @@ impl App {
         }
     }
 
-    /// Handle delete key - delete character at cursor
+    /// Handle delete key
     fn handle_delete(&mut self) {
         let cursor_pos = self.cursor_position.get();
         if cursor_pos < self.input.len() {
@@ -61,6 +94,4 @@ impl App {
             self.update_file_references();
         }
     }
-
 }
-

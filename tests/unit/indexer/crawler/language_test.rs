@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use ch_cli::indexer::crawler::Language;
+use rustean::indexer::crawler::Language;
 
 /// Test extensions returns "rs" for Rust
 #[test]

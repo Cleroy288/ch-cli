@@ -4,8 +4,8 @@
 
 use std::path::Path;
 
-use ch_cli::indexer::parser::RustParser;
-use ch_cli::indexer::symbols::{SymbolKind, Visibility};
+use rustean::indexer::parser::RustParser;
+use rustean::indexer::symbols::{SymbolKind, Visibility};
 
 #[test]
 fn test_parse_simple_function() {

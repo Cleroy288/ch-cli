@@ -1,7 +1,7 @@
 //! Tests for retrieval::context::graph_walker
 
-use ch_cli::indexer::SemanticGraph;
-use ch_cli::retrieval::context::{
+use rustean::indexer::SemanticGraph;
+use rustean::retrieval::context::{
 	ContextConfig, GraphWalker,
 };
 

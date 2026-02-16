@@ -9,7 +9,7 @@ use crate::indexer::{Symbol, SymbolKind};
 use super::graph_walker::GraphWalker;
 use super::{RelatedType, TypeRelationship};
 
-impl<'a> GraphWalker<'a> {
+impl<'graph> GraphWalker<'graph> {
 	/// Find types related to the symbol
 	pub fn find_related_types(
 		&self,
@@ -25,8 +25,8 @@ impl<'a> GraphWalker<'a> {
 		if let Some(ref sig) = symbol.signature {
 			let types = extract_types_from_signature(sig);
 			for type_name in types {
-				let rt = self.resolve_type(&type_name, sig);
-				related.push(rt);
+				let rel = self.resolve_type(&type_name, sig);
+				related.push(rel);
 			}
 		}
 
@@ -46,10 +46,10 @@ impl<'a> GraphWalker<'a> {
 
 		let (file, line) = type_defs
 			.first()
-			.map(|d| {
-				let f = d.symbol.location.file.clone();
-				let l = d.symbol.location.line;
-				(Some(f), Some(l))
+			.map(|def| {
+				let path = def.symbol.location.file.clone();
+				let line_num = def.symbol.location.line;
+				(Some(path), Some(line_num))
 			})
 			.unwrap_or((None, None));
 
@@ -77,7 +77,7 @@ impl<'a> GraphWalker<'a> {
 		}
 
 		let parent = match symbol.parent {
-			Some(ref p) => p,
+			Some(ref parent_name) => parent_name,
 			None => return,
 		};
 
@@ -137,7 +137,7 @@ pub fn extract_types_from_signature(
 
 	// extract words that look like type names
 	for word in sig.split(
-		|c: char| !c.is_alphanumeric() && c != '_',
+		|chr: char| !chr.is_alphanumeric() && chr != '_',
 	) {
 		if word.is_empty() {
 			continue;

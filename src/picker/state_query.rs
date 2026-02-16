@@ -2,8 +2,8 @@ use super::state::Picker;
 
 impl Picker {
     /// Add a character to the search query
-    pub fn push_query(&mut self, c: char) {
-        self.query.push(c);
+    pub fn push_query(&mut self, chr: char) {
+        self.query.push(chr);
     }
 
     /// Remove the last character from the query

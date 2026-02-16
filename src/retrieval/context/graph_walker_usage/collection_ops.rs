@@ -8,8 +8,10 @@ use super::collection_core::{UsageCollection, UsageInfo};
 impl UsageCollection {
 	/// Sort usages by file path, then by line number
 	pub fn sort_by_file(&mut self) {
-		self.usages.sort_by(|a, b| {
-			a.file.cmp(&b.file).then(a.line.cmp(&b.line))
+		self.usages.sort_by(|lhs, rhs| {
+			lhs.file
+				.cmp(&rhs.file)
+				.then(lhs.line.cmp(&rhs.line))
 		});
 	}
 

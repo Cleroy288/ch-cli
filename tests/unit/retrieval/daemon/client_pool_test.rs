@@ -4,10 +4,10 @@ use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::PathBuf;
 use std::time::Duration;
 
-use ch_cli::retrieval::daemon::client::pool::{
+use rustean::retrieval::daemon::client::pool::{
 	ConnectionPool,
 };
-use ch_cli::retrieval::daemon::client::pool_ops;
+use rustean::retrieval::daemon::client::pool_ops;
 
 /// Test pool creation with custom parameters
 #[test]

@@ -4,8 +4,8 @@ use std::path::PathBuf;
 
 use tempfile::tempdir;
 
-use ch_cli::indexer::SymbolKind;
-use ch_cli::retrieval::docgen::{DocEntry, DocStore};
+use rustean::indexer::SymbolKind;
+use rustean::retrieval::docgen::{DocEntry, DocStore};
 
 #[test]
 fn test_store_persistence() {

@@ -17,11 +17,14 @@
 mod client_handler;
 mod constructors;
 mod doc_gen_batch;
+mod doc_gen_helpers;
+mod doc_gen_template;
 mod doc_generation;
 #[doc(hidden)]
 pub mod doc_handlers;
 mod doc_handlers_helpers;
 mod doc_lookup;
+mod doc_search;
 mod doc_status;
 #[doc(hidden)]
 pub mod lifecycle;
@@ -40,10 +43,11 @@ use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
-use types::CachedProject;
+use types::{
+	CachedProject, SharedDocGenerator, SharedDocStores,
+};
 
-use crate::retrieval::docgen::{DocGenerator, DocStore};
-use crate::retrieval::hybrid::BgeEmbedder;
+use crate::retrieval::hybrid::embedder_trait::Embedder;
 use crate::retrieval::models::{
 	get_device_info, DeviceInfo,
 };
@@ -52,7 +56,7 @@ use crate::retrieval::rerank::BgeReranker;
 use crate::retrieval::{RetrievalConfig, RetrievalResult};
 
 /// Progress tracking for background doc generation
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct DocGenProgress {
 	/// total entries to process
 	pub total: usize,
@@ -62,17 +66,6 @@ pub struct DocGenProgress {
 	pub failed: usize,
 	/// whether generation is currently running
 	pub is_running: bool,
-}
-
-impl Default for DocGenProgress {
-	fn default() -> Self {
-		Self {
-			total: 0,
-			completed: 0,
-			failed: 0,
-			is_running: false,
-		}
-	}
 }
 
 /// The model daemon that handles ML requests
@@ -88,7 +81,7 @@ pub struct ModelDaemon {
 	pub(crate) shutdown: Arc<AtomicBool>,
 	/// embedding model (loaded on startup)
 	#[doc(hidden)]
-	pub embedder: Option<BgeEmbedder>,
+	pub embedder: Option<Box<dyn Embedder>>,
 	/// reranker model (loaded on startup)
 	#[doc(hidden)]
 	pub reranker: Option<BgeReranker>,
@@ -101,11 +94,9 @@ pub struct ModelDaemon {
 	pub project_cache:
 		HashMap<PathBuf, CachedProject>,
 	/// doc stores per project (shared w/ bg thread)
-	pub(crate) doc_stores:
-		Arc<Mutex<HashMap<PathBuf, DocStore>>>,
+	pub(crate) doc_stores: SharedDocStores,
 	/// doc generator (shared w/ bg thread)
-	pub(crate) doc_generator:
-		Arc<Mutex<Option<DocGenerator>>>,
+	pub(crate) doc_generator: SharedDocGenerator,
 	/// bg doc gen progress (shared w/ bg thread)
 	pub(crate) doc_gen_progress:
 		Arc<Mutex<DocGenProgress>>,

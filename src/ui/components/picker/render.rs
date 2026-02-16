@@ -1,50 +1,13 @@
 use ratatui::{
     layout::{Alignment, Rect},
-    style::{Modifier, Style},
+    style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, Paragraph},
+    widgets::{Block, Borders, Paragraph},
     Frame,
 };
 
-use crate::picker::Picker;
+use crate::picker::{Picker, PickerMode};
 use crate::ui::styles::colors;
-use crate::ui::{layout, styles};
-
-/// Render the type chooser (folder or file selection).
-pub fn render_type_chooser(
-    frame: &mut Frame,
-    input_area: Rect,
-    selected_index: usize,
-) {
-    let picker_area = layout::calculate_type_chooser_area(
-        input_area,
-    );
-
-    let options = ["▸ folder", "◆ file"];
-    let items: Vec<ListItem> = options
-        .iter()
-        .enumerate()
-        .map(|(i, option)| {
-            let style = if i == selected_index {
-                styles::picker_selected_style()
-            } else {
-                Style::default().fg(colors::INPUT_TEXT)
-            };
-            ListItem::new(Line::from(*option)).style(style)
-        })
-        .collect();
-
-    let chooser_title = " Select Type (↑↓, Enter, f/d) ";
-    let list = List::new(items).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .title(chooser_title)
-            .title_alignment(Alignment::Left)
-            .style(Style::default().fg(colors::TITLE)),
-    );
-
-    frame.render_widget(list, picker_area);
-}
 
 /// Render a message when no results are found.
 pub fn render_empty_results(
@@ -60,14 +23,18 @@ pub fn render_empty_results(
     };
 
     let paragraph = Paragraph::new(Line::from(message))
-        .style(Style::default().fg(colors::PLACEHOLDER))
+        .style(
+            Style::default().fg(colors::PLACEHOLDER),
+        )
         .alignment(Alignment::Center)
         .block(
             Block::default()
                 .borders(Borders::ALL)
                 .title(title)
                 .title_alignment(Alignment::Left)
-                .style(Style::default().fg(colors::PICKER)),
+                .style(
+                    Style::default().fg(colors::PICKER),
+                ),
         );
 
     frame.render_widget(paragraph, picker_area);
@@ -78,59 +45,70 @@ pub fn render_picker_help_text(
     frame: &mut Frame,
     picker_area: Rect,
 ) {
-    let help_area = layout::calculate_help_text_area(
-        picker_area,
-    );
+    let help_area = Rect {
+        x: picker_area.x + 2,
+        y: picker_area.y + picker_area.height,
+        width: picker_area.width.saturating_sub(4),
+        height: 1,
+    };
+    let help_text = build_help_spans();
+    let help_style =
+        Style::default().fg(colors::PLACEHOLDER);
+    let paragraph =
+        Paragraph::new(help_text).style(help_style);
+    frame.render_widget(paragraph, help_area);
+}
 
-    let help_text = Line::from(vec![
-        Span::styled(
-            "↑↓",
-            Style::default()
-                .fg(colors::TITLE)
-                .add_modifier(Modifier::BOLD),
-        ),
+/// Build help text spans
+fn build_help_spans() -> Line<'static> {
+    Line::from(vec![
+        bold_key_span("↑↓", colors::TITLE),
         Span::raw(" navigate  "),
-        Span::styled(
-            "Enter",
-            Style::default()
-                .fg(colors::PICKER)
-                .add_modifier(Modifier::BOLD),
-        ),
+        bold_key_span("Enter", colors::PICKER),
         Span::raw(" select  "),
-        Span::styled(
-            "F5",
-            Style::default()
-                .fg(colors::MESSAGE_HEADER)
-                .add_modifier(Modifier::BOLD),
-        ),
+        bold_key_span("F5", colors::MESSAGE_HEADER),
         Span::raw(" refresh  "),
-        Span::styled(
-            "ESC",
-            Style::default()
-                .fg(colors::FILE_REF_BG)
-                .add_modifier(Modifier::BOLD),
-        ),
+        bold_key_span("ESC", colors::FILE_REF_BG),
         Span::raw(" cancel"),
-    ]);
+    ])
+}
 
-    let help_style = Style::default().fg(colors::PLACEHOLDER);
-    let help_paragraph = Paragraph::new(help_text)
-        .style(help_style);
-
-    frame.render_widget(help_paragraph, help_area);
+/// Build a bold key hint span
+fn bold_key_span(
+    key: &'static str,
+    color: Color,
+) -> Span<'static> {
+    Span::styled(
+        key,
+        Style::default()
+            .fg(color)
+            .add_modifier(Modifier::BOLD),
+    )
 }
 
 /// Build the picker title based on mode and query.
 pub fn build_picker_title(picker: &Picker) -> String {
-    use crate::picker::PickerMode;
+    let label = match picker.mode() {
+        PickerMode::Browse { .. } => "Browse",
+        PickerMode::Symbols { .. } => {
+            return build_symbols_title(picker);
+        }
+        PickerMode::Tools => return " Tools ".into(),
+        PickerMode::DocBrowser => "Doc Browser",
+        PickerMode::Inactive => return " Search ".into(),
+    };
+    format!(" {} (query: '{}') ", label, picker.query())
+}
 
-    match picker.mode() {
-        PickerMode::File => {
-            format!(" Files (query: '{}') ", picker.query())
-        }
-        PickerMode::Folder => {
-            format!(" Folders (query: '{}') ", picker.query())
-        }
-        _ => " Search ".to_string(),
-    }
+/// Build title for Symbols mode with parent info
+fn build_symbols_title(picker: &Picker) -> String {
+    let parent = picker
+        .symbol_browser()
+        .and_then(|brow| brow.current_parent())
+        .unwrap_or("top-level");
+    format!(
+        " Symbols [{}] (query: '{}') ",
+        parent,
+        picker.query()
+    )
 }

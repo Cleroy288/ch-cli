@@ -1,4 +1,4 @@
-use ch_cli::retrieval::query::structure_search::{
+use rustean::retrieval::query::structure_search::{
 	find_module_structure, list_source_directories,
 };
 use std::fs;

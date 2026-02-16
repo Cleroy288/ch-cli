@@ -1,6 +1,6 @@
 //! Tests for retrieval::rerank (mod.rs)
 
-use ch_cli::retrieval::rerank::{
+use rustean::retrieval::rerank::{
 	rerank_by_score, RerankedItem,
 };
 

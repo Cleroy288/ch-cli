@@ -24,7 +24,10 @@ pub use feedback::FeedbackLoop;
 pub use feedback_actions::{FeedbackAction, parse_feedback_action};
 pub use output::StructuredOutput;
 pub use output_structured::{CodeResult, DocResult, NotesResult};
-pub use pipeline::{PipelineConfig, PipelineResult, RetrievalPipeline};
+pub use pipeline::{
+	PipelineConfig, PipelineFlags,
+	PipelineResult, RetrievalPipeline,
+};
 
 use crate::retrieval::daemon::protocol::SearchSpec;
 

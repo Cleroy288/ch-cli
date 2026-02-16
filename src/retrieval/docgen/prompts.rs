@@ -249,7 +249,7 @@ pub fn get_prompt_for_kind(kind: SymbolKind) -> &'static str {
 	}
 }
 
-/// Format the user comment section for inclusion in prompt.
+/// Format the user comment section for prompt.
 pub fn format_user_comment_section(
 	user_comment: Option<&str>,
 ) -> String {
@@ -266,25 +266,45 @@ pub fn format_user_comment_section(
 	}
 }
 
-/// Build a complete prompt for a doc entry.
-pub fn build_prompt(
-	kind: SymbolKind,
-	name: &str,
-	signature: Option<&str>,
-	code_snippet: &str,
-	user_comment: Option<&str>,
-	parent: Option<&str>,
-) -> String {
-	let template = get_prompt_for_kind(kind);
-	let user_comment_section =
-		format_user_comment_section(user_comment);
-
-	template
-		.replace("{name}", name)
-		.replace("{kind}", &kind.to_string())
-		.replace("{signature}", signature.unwrap_or("N/A"))
-		.replace("{code_snippet}", code_snippet)
-		.replace("{user_comment_section}", &user_comment_section)
-		.replace("{parent}", parent.unwrap_or("N/A"))
+/// Input fields for building a doc prompt
+pub struct PromptInput<'input> {
+	/// symbol kind (function, struct, etc.)
+	pub kind: SymbolKind,
+	/// symbol name
+	pub name: &'input str,
+	/// optional function signature
+	pub signature: Option<&'input str>,
+	/// code snippet to document
+	pub code_snippet: &'input str,
+	/// existing user comment (if any)
+	pub user_comment: Option<&'input str>,
+	/// parent type name (for methods)
+	pub parent: Option<&'input str>,
 }
 
+/// Build a complete prompt for a doc entry.
+#[allow(clippy::min_ident_chars)]
+pub fn build_prompt(
+	input: PromptInput<'_>,
+) -> String {
+	let template = get_prompt_for_kind(input.kind);
+	let user_comment_section =
+		format_user_comment_section(input.user_comment);
+
+	template
+		.replace("{name}", input.name)
+		.replace("{kind}", &input.kind.to_string())
+		.replace(
+			"{signature}",
+			input.signature.unwrap_or("N/A"),
+		)
+		.replace("{code_snippet}", input.code_snippet)
+		.replace(
+			"{user_comment_section}",
+			&user_comment_section,
+		)
+		.replace(
+			"{parent}",
+			input.parent.unwrap_or("N/A"),
+		)
+}

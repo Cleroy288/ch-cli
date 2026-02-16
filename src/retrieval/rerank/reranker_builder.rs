@@ -12,7 +12,8 @@ use candle_transformers::models::xlm_roberta::{
 };
 
 use crate::retrieval::models::{
-	download_model, get_device, load_tokenizer,
+	download_model, embedding_dtype, get_device,
+	get_device_info, load_tokenizer,
 };
 use crate::retrieval::models::{ModelError, ModelResult};
 
@@ -48,18 +49,20 @@ impl BgeReranker {
 	) -> ModelResult<Self> {
 		let config_str = std::fs::read_to_string(config_path)?;
 		let config: XLMRobertaConfig =
-			serde_json::from_str(&config_str).map_err(|e| {
-				let msg = format!("config: {}", e);
-				ModelError::WeightLoad(msg)
-			})?;
+			serde_json::from_str(&config_str).map_err(
+				|err| {
+					let msg = format!("config: {}", err);
+					ModelError::WeightLoad(msg)
+				},
+			)?;
 
-		let vb = load_weights_for_reranker(
+		let var_builder = load_weights_for_reranker(
 			weights_paths, &device,
 		)?;
 
 		let model =
 			XLMRobertaForSequenceClassification::new(
-				1, &config, vb,
+				1, &config, var_builder,
 			)?;
 
 		let mut tokenizer =
@@ -74,19 +77,19 @@ impl BgeReranker {
 	}
 }
 
-/// Load weights for reranker model
+/// Load weights for reranker model with optimal dtype
 fn load_weights_for_reranker(
 	weights_paths: &[std::path::PathBuf],
 	device: &Device,
 ) -> ModelResult<VarBuilder<'static>> {
-	use candle_core::DType;
-
-	let vb = unsafe {
+	let dtype =
+		embedding_dtype(get_device_info().device_type);
+	let var_builder = unsafe {
 		VarBuilder::from_mmaped_safetensors(
 			weights_paths,
-			DType::F32,
+			dtype,
 			device,
 		)?
 	};
-	Ok(vb)
+	Ok(var_builder)
 }

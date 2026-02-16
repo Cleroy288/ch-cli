@@ -6,19 +6,20 @@
 use std::path::Path;
 
 use crate::indexer::{SearchIndex, Symbol};
-use crate::retrieval::daemon::protocol::SearchSpec;
 use crate::retrieval::daemon::DaemonClient;
 use crate::retrieval::hybrid::{
-	HybridSearch, HybridSearchConfig, HybridSearchResult,
+	HybridSearch, HybridSearchConfig,
 };
 use crate::retrieval::{RetrievalError, RetrievalResult};
-use crate::retrieval::hybrid::{indexing, search, VectorStore};
+use crate::retrieval::hybrid::{indexing, VectorStore};
 
 impl HybridSearch {
 	/// Create a new hybrid search with in-memory indices
 	pub fn new() -> RetrievalResult<Self> {
 		let keyword_index = SearchIndex::in_memory()
-			.map_err(|e| RetrievalError::Embedding(e.to_string()))?;
+			.map_err(|err| {
+				RetrievalError::Embedding(err.to_string())
+			})?;
 		let vector_store = VectorStore::new();
 		let daemon_client = DaemonClient::new();
 
@@ -27,6 +28,7 @@ impl HybridSearch {
 			vector_store,
 			daemon_client,
 			config: HybridSearchConfig::default(),
+			enriched_store: None,
 		})
 	}
 
@@ -35,8 +37,12 @@ impl HybridSearch {
 		tantivy_path: impl AsRef<Path>,
 		vector_path: impl AsRef<Path>,
 	) -> RetrievalResult<Self> {
-		let keyword_index = SearchIndex::open_or_create(tantivy_path.as_ref())
-			.map_err(|e| RetrievalError::Embedding(e.to_string()))?;
+		let keyword_index = SearchIndex::open_or_create(
+			tantivy_path.as_ref(),
+		)
+		.map_err(|err| {
+			RetrievalError::Embedding(err.to_string())
+		})?;
 		let vector_store = VectorStore::with_path(vector_path)?;
 		let daemon_client = DaemonClient::new();
 
@@ -45,6 +51,7 @@ impl HybridSearch {
 			vector_store,
 			daemon_client,
 			config: HybridSearchConfig::default(),
+			enriched_store: None,
 		})
 	}
 
@@ -66,6 +73,10 @@ impl HybridSearch {
 
 	/// Persist indices to disk
 	pub fn persist(&self) -> RetrievalResult<()> {
-		indexing::persist(&self.vector_store)
+		indexing::persist(&self.vector_store)?;
+		if let Some(ref enriched) = self.enriched_store {
+			enriched.persist()?;
+		}
+		Ok(())
 	}
 }

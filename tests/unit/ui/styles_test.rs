@@ -2,8 +2,8 @@
 
 use ratatui::style::{Color, Modifier, Style};
 
-use ch_cli::ui::styles::colors;
-use ch_cli::ui::styles::{
+use rustean::ui::styles::colors;
+use rustean::ui::styles::{
     file_list_selected_style, file_reference_style,
     folder_reference_style, picker_selected_style,
 };

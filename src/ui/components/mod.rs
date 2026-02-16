@@ -12,8 +12,11 @@ pub mod debug;
 #[doc(hidden)]
 pub mod debug_render;
 pub mod input;
+pub(crate) mod input_styling;
 pub mod picker;
 pub mod title;
+#[doc(hidden)]
+pub mod title_progress;
 
 // Re-export commonly used functions
 pub use debug::render_debug_panel;

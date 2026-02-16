@@ -7,30 +7,38 @@ use crate::indexer::{SearchHit, SymbolKind};
 use crate::retrieval::hybrid::fusion::RankedItem;
 use crate::retrieval::hybrid::vector_store::SearchResult as VectorSearchResult;
 
-/// Convert keyword hits to ranked items
+/// Convert keyword hits to ranked items.
+/// Moves hits without cloning (already owned).
 pub fn to_keyword_ranked(
 	hits: Vec<SearchHit>,
 ) -> Vec<RankedItem<SearchHit>> {
 	hits.into_iter()
 		.enumerate()
-		.map(|(i, hit)| RankedItem {
-			item: hit.clone(),
-			rank: i + 1,
-			score: hit.score,
+		.map(|(i, hit)| {
+			let score = hit.score;
+			RankedItem {
+				item: hit,
+				rank: i + 1,
+				score,
+			}
 		})
 		.collect()
 }
 
-/// Convert semantic hits to ranked items
+/// Convert semantic hits to ranked items.
+/// Moves results without cloning (PointMeta is lightweight).
 pub fn to_semantic_ranked(
 	hits: Vec<VectorSearchResult>,
 ) -> Vec<RankedItem<VectorSearchResult>> {
 	hits.into_iter()
 		.enumerate()
-		.map(|(i, result)| RankedItem {
-			item: result.clone(),
-			rank: i + 1,
-			score: result.distance,
+		.map(|(i, result)| {
+			let dist = result.distance;
+			RankedItem {
+				item: result,
+				rank: i + 1,
+				score: dist,
+			}
 		})
 		.collect()
 }

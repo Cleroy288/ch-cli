@@ -2,19 +2,19 @@
 //!
 //! Core struct definition and model management.
 
+use crate::retrieval::docgen::doc_llm::DocLlm;
 use crate::retrieval::models::ModelResult;
-use crate::retrieval::query::Phi3Model;
 
 /// Maximum tokens to generate for documentation.
-pub(crate) const MAX_DOC_TOKENS: usize = 200;
+pub(crate) const MAX_DOC_TOKENS: usize = 60;
 
 /// Number of context lines to extract around a symbol.
-pub(crate) const CONTEXT_LINES: usize = 30;
+pub(crate) const CONTEXT_LINES: usize = 15;
 
 /// Documentation generator using local LLM.
 pub struct DocGenerator {
-	/// the LLM model
-	pub(crate) model: Option<Phi3Model>,
+	/// the LLM model (Qwen2.5-0.5B)
+	pub(crate) model: Option<DocLlm>,
 }
 
 impl DocGenerator {
@@ -23,23 +23,10 @@ impl DocGenerator {
 		Self { model: None }
 	}
 
-	/// Create generator with default Phi-3 model.
+	/// Create generator with default Qwen2.5 model.
 	pub fn with_default_model() -> ModelResult<Self> {
-		let model = Phi3Model::new()?;
+		let model = DocLlm::new()?;
 		Ok(Self { model: Some(model) })
-	}
-
-	/// Create generator with specific model ID.
-	pub fn with_model_id(
-		model_id: &str,
-	) -> ModelResult<Self> {
-		let model = Phi3Model::from_model_id(model_id)?;
-		Ok(Self { model: Some(model) })
-	}
-
-	/// Set the model.
-	pub fn set_model(&mut self, model: Phi3Model) {
-		self.model = Some(model);
 	}
 
 	/// Check if model is loaded.

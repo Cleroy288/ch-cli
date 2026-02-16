@@ -1,7 +1,7 @@
 //! Tests for parser helper functions.
 
-use ch_cli::indexer::parser::{is_rust_keyword, parse_visibility};
-use ch_cli::indexer::symbols::Visibility;
+use rustean::indexer::parser::{is_rust_keyword, parse_visibility};
+use rustean::indexer::symbols::Visibility;
 
 /// Test parse_visibility with "pub"
 #[test]

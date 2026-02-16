@@ -1,71 +1,98 @@
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::path::Path;
 
-use crate::fs::{FileScanner, FsEntry};
+use crate::fs::{FileCache, FsEntry};
 use crate::picker::PickerMode;
 
 /// Filesystem scanner wrapper for the Picker.
 ///
-/// Manages scanning and filtering of files and folders.
+/// Holds a local copy of the shared file cache.
+/// Syncs from cache when the watcher flags it dirty.
 pub struct PickerScanner {
-    /// File system scanner
-    scanner: FileScanner,
-    /// Last time the filesystem was scanned
-    last_scan_time: u64,
+	/// shared file cache (watcher updates this)
+	cache: FileCache,
+	/// local copy of entries for borrowing
+	local_entries: Vec<FsEntry>,
 }
 
 impl PickerScanner {
-    /// Create a new PickerScanner and scan current directory
-    pub fn new() -> Self {
-        let mut scanner = FileScanner::new();
-        let _ = scanner.scan_directory(".");
+	/// Create a new PickerScanner from a shared cache
+	pub fn new(cache: FileCache) -> Self {
+		let local_entries = cache.snapshot();
+		cache.clear_dirty();
+		Self { cache, local_entries }
+	}
 
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
+	/// Sync local entries from cache if dirty.
+	///
+	/// Called from the event loop before rendering.
+	pub fn sync_if_dirty(&mut self) {
+		if !self.cache.is_dirty() {
+			return;
+		}
+		self.local_entries = self.cache.snapshot();
+		self.cache.clear_dirty();
+	}
 
-        Self {
-            scanner,
-            last_scan_time: now,
-        }
-    }
+	/// Get filtered results for current mode.
+	///
+	/// Filters by browse directory and query string.
+	pub fn get_results(
+		&self,
+		mode: &PickerMode,
+		query: &str,
+	) -> Vec<&FsEntry> {
+		match mode {
+			PickerMode::Browse { dir } => {
+				self.search_in_dir(query, dir)
+			}
+			_ => Vec::new(),
+		}
+	}
 
-    /// Get the last scan time
-    pub fn last_scan_time(&self) -> u64 {
-        self.last_scan_time
-    }
+	/// Search entries within a directory by name.
+	///
+	/// Only returns direct children of `dir`.
+	fn search_in_dir(
+		&self,
+		query: &str,
+		dir: &Path,
+	) -> Vec<&FsEntry> {
+		let query_lower = query.to_lowercase();
 
-    /// Rescan the file system
-    pub fn rescan(&mut self) {
-        let _ = self.scanner.scan_directory(".");
-        self.last_scan_time = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
-    }
+		self.local_entries
+			.iter()
+			.filter(|entry| {
+				is_direct_child(entry, dir)
+					&& matches_query(
+						entry, &query_lower,
+					)
+			})
+			.collect()
+	}
+}
 
-    /// Get filtered results based on mode and query
-    pub fn get_results(
-        &self,
-        mode: PickerMode,
-        query: &str,
-    ) -> Vec<&FsEntry> {
-        match mode {
-            PickerMode::Inactive | PickerMode::ChoosingType => {
-                Vec::new()
-            }
-            PickerMode::File => {
-                self.scanner.search(query, true, false)
-            }
-            PickerMode::Folder => {
-                self.scanner.search(query, false, true)
-            }
-        }
-    }
+/// Check if entry is a direct child of the dir
+fn is_direct_child(
+	entry: &FsEntry,
+	dir: &Path,
+) -> bool {
+	entry.path.parent() == Some(dir)
+}
+
+/// Check if entry name matches the search query
+fn matches_query(
+	entry: &FsEntry,
+	query_lower: &str,
+) -> bool {
+	if query_lower.is_empty() {
+		return true;
+	}
+	entry.name.to_lowercase().contains(query_lower)
 }
 
 impl Default for PickerScanner {
-    fn default() -> Self {
-        Self::new()
-    }
+	fn default() -> Self {
+		let cache = FileCache::empty();
+		Self::new(cache)
+	}
 }

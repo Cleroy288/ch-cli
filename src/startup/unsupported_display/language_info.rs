@@ -1,6 +1,6 @@
 //! Language information display
 
-use std::io;
+use std::io::{self, Write};
 
 use crossterm::{execute, style::*};
 
@@ -8,6 +8,15 @@ use crate::indexer::{DetectedLanguage, Language};
 
 /// Show detected language info and supported languages
 pub fn show_language_info(
+    stdout: &mut io::Stdout,
+    primary_lang: &DetectedLanguage,
+) -> io::Result<()> {
+    show_detected_language(stdout, primary_lang)?;
+    show_supported_list(stdout)
+}
+
+/// Show the detected primary language
+fn show_detected_language(
     stdout: &mut io::Stdout,
     primary_lang: &DetectedLanguage,
 ) -> io::Result<()> {
@@ -21,8 +30,13 @@ pub fn show_language_info(
             primary_lang.display_name()
         )),
         ResetColor
-    )?;
+    )
+}
 
+/// Show the list of supported languages
+fn show_supported_list(
+    stdout: &mut io::Stdout,
+) -> io::Result<()> {
     execute!(
         stdout,
         SetForegroundColor(Color::DarkGrey),
@@ -41,7 +55,5 @@ pub fn show_language_info(
             ResetColor
         )?;
     }
-    println!();
-
-    Ok(())
+    writeln!(stdout)
 }

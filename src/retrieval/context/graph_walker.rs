@@ -3,25 +3,26 @@
 //! Uses SemanticGraph to traverse definitions and references,
 //! finding parent scope, related types, and call relationships.
 
-use std::path::PathBuf;
+use std::path::Path;
 
 use crate::indexer::{SemanticGraph, Symbol, SymbolKind};
 
 use super::{ContextConfig, ParentContext};
+use super::file_reader;
 use super::graph_walker_usage::{UsageCollection, UsageInfo};
 
 /// Walks the semantic graph to find context for symbols
-pub struct GraphWalker<'a> {
+pub struct GraphWalker<'graph> {
 	/// the semantic graph
-	graph: &'a SemanticGraph,
+	graph: &'graph SemanticGraph,
 	/// configuration
 	config: ContextConfig,
 }
 
-impl<'a> GraphWalker<'a> {
+impl<'graph> GraphWalker<'graph> {
 	/// Create a new graph walker
 	pub fn new(
-		graph: &'a SemanticGraph,
+		graph: &'graph SemanticGraph,
 		config: ContextConfig,
 	) -> Self {
 		Self { graph, config }
@@ -76,7 +77,7 @@ impl<'a> GraphWalker<'a> {
 	/// Find the symbol that contains a given location
 	pub(super) fn find_containing_symbol(
 		&self,
-		file: &PathBuf,
+		file: &Path,
 		line: usize,
 	) -> Option<&Symbol> {
 		let defs = self.graph.definitions_in_file(file);
@@ -96,29 +97,38 @@ impl<'a> GraphWalker<'a> {
 	}
 }
 
-impl<'a> GraphWalker<'a> {
-	/// Extract a code snippet with context lines
+impl<'graph> GraphWalker<'graph> {
+	/// Extract a code snippet with context lines.
+	/// Uses BufReader to read only the needed line
+	/// range instead of loading the full file.
 	pub fn extract_snippet(
 		&self,
 		file: &std::path::Path,
 		line: usize,
 		context_lines: usize,
 	) -> Option<String> {
-		let content = std::fs::read_to_string(file).ok()?;
-		let lines: Vec<&str> = content.lines().collect();
+		// 0-indexed line range to read
+		let start =
+			line.saturating_sub(context_lines + 1);
+		let end = line + context_lines;
 
-		// calculate start and end with bounds checking
-		let start = line.saturating_sub(context_lines + 1);
-		let end = (line + context_lines).min(lines.len());
+		let lines = file_reader::read_lines_range(
+			file, start, end,
+		).ok()?;
 
-		if start >= lines.len() {
+		if lines.is_empty() {
 			return None;
 		}
 
-		let snippet: String = lines[start..end]
+		let snippet: String = lines
 			.iter()
 			.enumerate()
-			.map(|(i, l)| format!("{:>4} | {}", start + i + 1, l))
+			.map(|(idx, line_str)| {
+				format!(
+					"{:>4} | {}",
+					start + idx + 1, line_str,
+				)
+			})
 			.collect::<Vec<_>>()
 			.join("\n");
 
@@ -150,9 +160,8 @@ impl<'a> GraphWalker<'a> {
 				line: reference.location.line,
 				context: reference.context,
 				snippet,
-				containing_symbol: containing.map(|s| {
-					s.name.clone()
-				}),
+				containing_symbol: containing
+					.map(|sym| sym.name.clone()),
 			});
 		}
 

@@ -38,8 +38,8 @@ pub enum SymbolKind {
 }
 
 impl fmt::Display for SymbolKind {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		let s = match self {
+	fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+		let label = match self {
 			SymbolKind::Function => "fn",
 			SymbolKind::Method => "method",
 			SymbolKind::Struct => "struct",
@@ -55,7 +55,7 @@ impl fmt::Display for SymbolKind {
 			SymbolKind::Field => "field",
 			SymbolKind::DocumentChunk => "doc",
 		};
-		write!(f, "{}", s)
+		write!(fmt, "{}", label)
 	}
 }
 

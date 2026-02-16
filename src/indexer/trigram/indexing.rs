@@ -2,8 +2,6 @@
 //!
 //! Functions to add and remove files from the trigram index
 
-use std::fs;
-use std::io;
 use std::path::{Path, PathBuf};
 
 use crate::indexer::trigram::types::{Trigram, TrigramIndex};
@@ -15,24 +13,28 @@ impl TrigramIndex {
 	}
 
 	/// Index a file's content
-	pub fn index_file(&mut self, path: &Path, content: &str) {
-		// trigrams extracted from content
+	pub fn index_file(
+		&mut self,
+		path: &Path,
+		content: &str,
+	) {
 		let trigrams = Self::extract_trigrams(content);
-
 		for trigram in trigrams {
 			self.index
 				.entry(trigram)
 				.or_default()
 				.insert(path.to_path_buf());
 		}
-
 		self.file_count += 1;
 	}
 
 	/// Index multiple files from disk
-	pub fn index_files(&mut self, files: &[PathBuf]) -> io::Result<()> {
+	pub fn index_files(
+		&mut self,
+		files: &[PathBuf],
+	) -> std::io::Result<()> {
 		for path in files {
-			if let Ok(content) = fs::read_to_string(path) {
+			if let Ok(content) = std::fs::read_to_string(path) {
 				self.index_file(path, &content);
 			}
 		}
@@ -48,13 +50,14 @@ impl TrigramIndex {
 	}
 
 	/// Extract trigrams from a string
-	pub fn extract_trigrams(s: &str) -> Vec<Trigram> {
-		let bytes = s.as_bytes();
-
+	pub fn extract_trigrams(text: &str) -> Vec<Trigram> {
+		let bytes = text.as_bytes();
 		if bytes.len() < 3 {
 			return Vec::new();
 		}
-
-		bytes.windows(3).map(|w| [w[0], w[1], w[2]]).collect()
+		bytes
+			.windows(3)
+			.map(|win| [win[0], win[1], win[2]])
+			.collect()
 	}
 }

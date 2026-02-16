@@ -3,10 +3,10 @@
 //! Tests the full docgen pipeline: indexing -> doc store -> linking.
 
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-use ch_cli::indexer::{IndexManager, SymbolKind};
-use ch_cli::retrieval::docgen::{DocEntry, DocLinker, DocStatus, DocStore};
+use rustean::indexer::{IndexManager, SymbolKind};
+use rustean::retrieval::docgen::{DocEntry, DocLinker, DocStatus, DocStore};
 
 /// Create a temporary test directory with unique name.
 fn setup_test_dir(name: &str) -> PathBuf {
@@ -26,12 +26,12 @@ fn setup_test_dir(name: &str) -> PathBuf {
 }
 
 /// Clean up test directory.
-fn cleanup_test_dir(dir: &PathBuf) {
+fn cleanup_test_dir(dir: &Path) {
     let _ = fs::remove_dir_all(dir);
 }
 
 /// Create a sample Rust file for testing.
-fn create_sample_rust_file(dir: &PathBuf) -> PathBuf {
+fn create_sample_rust_file(dir: &Path) -> PathBuf {
     let src_dir = dir.join("src");
     fs::create_dir_all(&src_dir).expect("Failed to create src directory");
 
@@ -324,7 +324,7 @@ fn test_full_indexing_pipeline() {
 
     // step 3: verify store contains expected symbols (if indexer found them)
     let greet_entry = store.get_by_name("greet");
-    let calc_entry = store.get_by_name("Calculator");
+    let _calc_entry = store.get_by_name("Calculator");
 
     // At least verify the store operations work
     if let Some(greet) = greet_entry {
@@ -425,7 +425,7 @@ fn test_docentry_is_stale() {
 
 #[test]
 fn test_symbol_links_operations() {
-    let mut links = ch_cli::retrieval::docgen::SymbolLinks::new();
+    let mut links = rustean::retrieval::docgen::SymbolLinks::new();
 
     // test adding dependencies
     links.add_depends_on("foo".to_string());

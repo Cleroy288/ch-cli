@@ -1,17 +1,20 @@
 use std::path::PathBuf;
 
-use ch_cli::indexer::{CodeLocation, SearchHit, Symbol, SymbolKind};
-use ch_cli::retrieval::hybrid::converters::{
+use rustean::indexer::{
+	ByteSpan, CodeLocation, SearchHit,
+	Symbol, SymbolKind,
+};
+use rustean::retrieval::hybrid::converters::{
 	to_keyword_ranked, to_semantic_ranked,
 };
-use ch_cli::retrieval::hybrid::vector_store::{
-	SearchResult as VectorSearchResult, VectorPoint,
+use rustean::retrieval::hybrid::vector_store::{
+	PointMeta, SearchResult as VectorSearchResult,
 };
 
 /// Create a test SearchHit with given name and score
 fn make_search_hit(name: &str, score: f32) -> SearchHit {
 	let location =
-		CodeLocation::new(PathBuf::from("test.rs"), 1, 0, 0, 0);
+		CodeLocation::new(PathBuf::from("test.rs"), 1, 0, ByteSpan::ZERO);
 	let symbol =
 		Symbol::new(name.to_string(), SymbolKind::Function, location);
 	SearchHit { symbol, score }
@@ -22,9 +25,8 @@ fn make_vector_result(
 	id: u64,
 	distance: f32,
 ) -> VectorSearchResult {
-	let point = VectorPoint {
+	let point = PointMeta {
 		id,
-		vector: vec![1.0, 0.0, 0.0],
 		file_path: PathBuf::from("test.rs"),
 		line: 1,
 		symbol_name: format!("sym_{}", id),

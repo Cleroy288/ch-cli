@@ -11,9 +11,9 @@ use clap::{Parser, Subcommand};
 
 pub mod commands;
 
-/// ch-cli: A semantic code indexer and TUI assistant
-#[derive(Parser, Debug)]
-#[command(name = "ch-cli")]
+/// rustean: A semantic code indexer and TUI assistant
+#[derive(Parser, Debug, Default)]
+#[command(name = "rustean")]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
     #[command(subcommand)]
@@ -173,6 +173,17 @@ pub enum Commands {
         action: DocsAction,
     },
 
+    /// Manage interaction memory
+    /// (show, search, add, stats)
+    Memory {
+        #[command(subcommand)]
+        action: MemoryAction,
+    },
+
+    /// Run MCP stdio server for Claude Code
+    #[command(name = "mcp-server")]
+    McpServer,
+
     /// Show detailed information about a symbol
     /// (definition, references, callers)
     Info {
@@ -220,6 +231,43 @@ pub enum DaemonAction {
     },
 }
 
+/// Memory subcommand actions
+#[derive(Subcommand, Debug)]
+pub enum MemoryAction {
+    /// Show recent interactions
+    Show {
+        /// Maximum entries to show
+        #[arg(short, long, default_value = "20")]
+        limit: usize,
+
+        /// Filter by session ID
+        #[arg(short, long)]
+        session: Option<String>,
+    },
+    /// Search stored interactions
+    Search {
+        /// Search query
+        query: String,
+        /// Maximum results
+        #[arg(short, long, default_value = "10")]
+        limit: usize,
+    },
+    /// Show memory statistics
+    Stats,
+    /// Add a new interaction manually
+    Add {
+        /// User input text
+        #[arg(short, long)]
+        input: String,
+        /// AI response text
+        #[arg(short, long)]
+        response: String,
+        /// Response type (answer, question, code_change)
+        #[arg(long, default_value = "answer")]
+        response_type: String,
+    },
+}
+
 /// Docs subcommand actions
 #[derive(Subcommand, Debug)]
 pub enum DocsAction {
@@ -246,9 +294,4 @@ pub enum DocsAction {
     },
 }
 
-impl Default for Cli {
-    fn default() -> Self {
-        Self { command: None }
-    }
-}
 

@@ -34,7 +34,7 @@ impl UserMessage {
     pub fn as_display_string(&self) -> String {
         self.segments
             .iter()
-            .map(|s| s.display_text())
+            .map(|seg| seg.display_text())
             .collect::<Vec<_>>()
             .join("")
     }
@@ -43,8 +43,8 @@ impl UserMessage {
     pub fn debug_string(&self) -> String {
         let mut result = String::new();
         result.push_str("Message Segments:\n");
-        for (i, segment) in self.segments.iter().enumerate() {
-            result.push_str(&format!("  [{}] {}\n", i, segment.debug_string()));
+        for (idx, segment) in self.segments.iter().enumerate() {
+            result.push_str(&format!("  [{}] {}\n", idx, segment.debug_string()));
         }
         result
     }
@@ -53,7 +53,7 @@ impl UserMessage {
     pub fn file_count(&self) -> usize {
         self.segments
             .iter()
-            .filter(|s| matches!(s, MessageSegment::FileReference { .. }))
+            .filter(|seg| matches!(seg, MessageSegment::FileReference { .. }))
             .count()
     }
 
@@ -61,7 +61,7 @@ impl UserMessage {
     pub fn folder_count(&self) -> usize {
         self.segments
             .iter()
-            .filter(|s| matches!(s, MessageSegment::FolderReference { .. }))
+            .filter(|seg| matches!(seg, MessageSegment::FolderReference { .. }))
             .count()
     }
 }

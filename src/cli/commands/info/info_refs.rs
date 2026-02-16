@@ -1,5 +1,7 @@
 //! Reference display helpers for info command.
 
+use std::io::Write;
+
 use crate::indexer::semantic::{
 	ReferenceContext, SemanticGraph,
 };
@@ -11,45 +13,66 @@ pub(super) fn display_callers(
 ) {
 	let references =
 		graph.find_references(symbol_name);
-	let callers: Vec<_> = references
-		.iter()
-		.filter(|r| {
-			r.context == ReferenceContext::Call
+	let callers: Vec<&_> = references
+		.into_iter()
+		.filter(|ref_item| {
+			ref_item.context
+				== ReferenceContext::Call
 		})
 		.collect();
 
-	println!(
+	let mut out = std::io::stdout().lock();
+	writeln!(
+		out,
 		"\n\u{1F4DE} Callers ({} call sites):",
 		callers.len()
-	);
+	)
+	.ok();
 
 	if callers.is_empty() {
-		println!("   No callers found");
+		writeln!(out, "   No callers found").ok();
 		return;
 	}
+	print_caller_list(&mut out, &callers);
+}
 
-	for (i, r) in callers.iter().take(10).enumerate()
+/// Print caller locations (max 10)
+fn print_caller_list(
+	out: &mut impl Write,
+	callers: &[&crate::indexer::semantic
+		::SymbolReference],
+) {
+	for (idx, ref_item) in
+		callers.iter().take(10).enumerate()
 	{
-		let file = r
-			.location
-			.file
-			.file_name()
-			.and_then(|f| f.to_str())
-			.unwrap_or("?");
-		println!(
-			"   {}. {}:{}",
-			i + 1,
-			file,
-			r.location.line
-		);
+		let file = ref_file_name(ref_item);
+		writeln!(
+			out, "   {}. {}:{}",
+			idx + 1, file,
+			ref_item.location.line,
+		)
+		.ok();
 	}
-
 	if callers.len() > 10 {
-		println!(
-			"   ... and {} more",
-			callers.len() - 10
-		);
+		writeln!(
+			out, "   ... and {} more",
+			callers.len() - 10,
+		)
+		.ok();
 	}
+}
+
+/// Extract short file name from a reference
+fn ref_file_name(
+	ref_item: &crate::indexer::semantic
+		::SymbolReference,
+) -> &str {
+	ref_item
+		.location
+		.file
+		.file_name()
+		.and_then(|fname| fname.to_str())
+		.unwrap_or("?")
 }
 
 /// Display what functions this symbol calls
@@ -59,48 +82,77 @@ pub(super) fn display_callees(
 ) {
 	let definitions =
 		graph.find_definitions(symbol_name);
+	let mut out = std::io::stdout().lock();
 
 	if definitions.is_empty() {
-		println!("\n\u{1F4E4} Callees:");
-		println!("   (Definition not found)");
+		writeln!(
+			out, "\n\u{1F4E4} Callees:"
+		)
+		.ok();
+		writeln!(
+			out, "   (Definition not found)"
+		)
+		.ok();
 		return;
 	}
 
-	let def = &definitions[0];
+	let callees =
+		find_callees_near_def(definitions[0], graph);
+	print_callee_list(&mut out, &callees);
+}
+
+/// Find call references near a definition
+fn find_callees_near_def<'graph>(
+	def: &crate::indexer::semantic::Definition,
+	graph: &'graph SemanticGraph,
+) -> Vec<&'graph crate::indexer::semantic
+	::SymbolReference>
+{
 	let def_file = &def.symbol.location.file;
 	let def_line = def.symbol.location.line;
-
-	// Calls within ~100 lines of definition
-	let refs_in_file =
-		graph.references_in_file(def_file);
-	let callees: Vec<_> = refs_in_file
+	graph
+		.references_in_file(def_file)
 		.into_iter()
-		.filter(|r| {
-			r.context == ReferenceContext::Call
-				&& r.location.line > def_line
-				&& r.location.line < def_line + 100
+		.filter(|ref_item| {
+			ref_item.context
+				== ReferenceContext::Call
+				&& ref_item.location.line > def_line
+				&& ref_item.location.line
+					< def_line + 100
 		})
-		.collect();
+		.collect()
+}
 
-	println!(
+/// Print callee list, deduplicated by name
+fn print_callee_list(
+	out: &mut impl Write,
+	callees: &[&crate::indexer::semantic
+		::SymbolReference],
+) {
+	writeln!(
+		out,
 		"\n\u{1F4E4} Callees (functions called):"
-	);
+	)
+	.ok();
 
 	if callees.is_empty() {
-		println!("   No function calls found");
+		writeln!(
+			out, "   No function calls found"
+		)
+		.ok();
 		return;
 	}
-
-	// Deduplicate by name
 	let mut seen =
 		std::collections::HashSet::new();
 	for reference in callees.iter() {
 		if seen.insert(&reference.name) {
-			println!(
+			writeln!(
+				out,
 				"   - {} (line {})",
 				reference.name,
 				reference.location.line
-			);
+			)
+			.ok();
 		}
 	}
 }
@@ -112,80 +164,109 @@ pub(super) fn display_references(
 ) {
 	let references =
 		graph.find_references(symbol_name);
+	let mut out = std::io::stdout().lock();
 
-	println!(
+	writeln!(
+		out,
 		"\n\u{1F517} References ({} total):",
 		references.len()
-	);
+	)
+	.ok();
 
 	if references.is_empty() {
-		println!("   No references found");
+		writeln!(out, "   No references found")
+			.ok();
 		return;
 	}
 
-	print_ref_counts(&references);
-	print_first_refs(&references);
+	print_ref_counts(&mut out, &references);
+	print_first_refs(&mut out, &references);
 }
 
 /// Print reference counts grouped by context
 fn print_ref_counts(
-	references: &[&crate::indexer::semantic::SymbolReference],
+	out: &mut impl Write,
+	references: &[&crate::indexer::semantic
+		::SymbolReference],
 ) {
+	let counts = count_by_context(references);
+	print_nonzero(out, "Calls", counts.0);
+	print_nonzero(out, "Type usages", counts.1);
+	print_nonzero(out, "Imports", counts.2);
+	print_nonzero(out, "Other", counts.3);
+}
+
+/// Count references by context type
+/// Returns (calls, types, imports, others)
+fn count_by_context(
+	references: &[&crate::indexer::semantic
+		::SymbolReference],
+) -> (usize, usize, usize, usize) {
 	let calls = references
 		.iter()
-		.filter(|r| {
-			r.context == ReferenceContext::Call
+		.filter(|ref_item| {
+			ref_item.context
+				== ReferenceContext::Call
 		})
 		.count();
 	let types = references
 		.iter()
-		.filter(|r| {
-			r.context == ReferenceContext::Type
+		.filter(|ref_item| {
+			ref_item.context
+				== ReferenceContext::Type
 		})
 		.count();
 	let imports = references
 		.iter()
-		.filter(|r| {
-			r.context == ReferenceContext::Import
+		.filter(|ref_item| {
+			ref_item.context
+				== ReferenceContext::Import
 		})
 		.count();
 	let others =
 		references.len() - calls - types - imports;
+	(calls, types, imports, others)
+}
 
-	if calls > 0 {
-		println!("   Calls: {}", calls);
-	}
-	if types > 0 {
-		println!("   Type usages: {}", types);
-	}
-	if imports > 0 {
-		println!("   Imports: {}", imports);
-	}
-	if others > 0 {
-		println!("   Other: {}", others);
+/// Print a labeled count if non-zero
+fn print_nonzero(
+	out: &mut impl Write,
+	label: &str,
+	count: usize,
+) {
+	if count > 0 {
+		writeln!(
+			out, "   {}: {}", label, count
+		)
+		.ok();
 	}
 }
 
 /// Print first 5 references with locations
 fn print_first_refs(
-	references: &[&crate::indexer::semantic::SymbolReference],
+	out: &mut impl Write,
+	references: &[&crate::indexer::semantic
+		::SymbolReference],
 ) {
-	println!("\n   First 5 references:");
-	for (i, r) in
+	writeln!(out, "\n   First 5 references:")
+		.ok();
+	for (idx, ref_item) in
 		references.iter().take(5).enumerate()
 	{
-		let file = r
+		let file = ref_item
 			.location
 			.file
 			.file_name()
-			.and_then(|f| f.to_str())
+			.and_then(|fname| fname.to_str())
 			.unwrap_or("?");
-		println!(
+		writeln!(
+			out,
 			"   {}. {}:{} ({:?})",
-			i + 1,
+			idx + 1,
 			file,
-			r.location.line,
-			r.context
-		);
+			ref_item.location.line,
+			ref_item.context
+		)
+		.ok();
 	}
 }

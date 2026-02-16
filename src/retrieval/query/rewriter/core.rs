@@ -1,11 +1,11 @@
 //! QueryRewriter core implementation
 
-use crate::retrieval::daemon::DaemonClient;
 use crate::retrieval::RetrievalResult;
 
 use super::decompose::decompose_query;
 use super::extract::extract_symbols;
 use super::mapping::map_concepts;
+use super::prf::{expand_iterative, PrfFeedback};
 
 /// A rewritten query variant
 #[derive(Debug, Clone)]
@@ -29,24 +29,28 @@ pub enum RewriteType {
 	Decomposition,
 	/// Conceptual terms mapped to technical terms
 	ConceptMapping,
+	/// Expanded via pseudo-relevance feedback
+	PseudoRelevanceFeedback,
 }
 
 /// Query rewriter for improving retrieval
-pub struct QueryRewriter<'a> {
-	/// daemon client for LLM operations
-	pub(crate) daemon: &'a DaemonClient,
-}
+#[derive(Default)]
+pub struct QueryRewriter;
 
-impl<'a> QueryRewriter<'a> {
+impl QueryRewriter {
 	/// Create a new query rewriter
-	pub fn new(daemon: &'a DaemonClient) -> Self {
-		Self { daemon }
+	pub fn new() -> Self {
+		Self
 	}
 
-	/// Rewrite a conceptual query into variants
+	/// Rewrite a conceptual query into variants.
+	///
+	/// When `feedback` is provided, adds a PRF expansion
+	/// variant using terms from top keyword results.
 	pub fn rewrite(
 		&self,
 		query: &str,
+		feedback: Option<&PrfFeedback>,
 	) -> RetrievalResult<Vec<RewrittenQuery>> {
 		let mut variants = Vec::new();
 
@@ -60,7 +64,29 @@ impl<'a> QueryRewriter<'a> {
 		add_concept_variant(query, &mut variants);
 		add_decompose_variants(query, &mut variants);
 
+		if let Some(prf_data) = feedback {
+			add_prf_variant(query, prf_data, &mut variants);
+		}
+
 		Ok(variants)
+	}
+}
+
+/// Add PRF expansion variant if available.
+/// Uses iterative expansion capped at MAX_PRF_ITERATIONS.
+fn add_prf_variant(
+	query: &str,
+	prf_data: &PrfFeedback,
+	variants: &mut Vec<RewrittenQuery>,
+) {
+	if let Some(exp) =
+		expand_iterative(query, prf_data)
+	{
+		variants.push(RewrittenQuery {
+			text: exp.expanded_text,
+			rewrite_type: RewriteType::PseudoRelevanceFeedback,
+			confidence: exp.confidence,
+		});
 	}
 }
 
@@ -79,7 +105,7 @@ fn add_symbol_variant(
 	}
 }
 
-/// Add concept mapping variant if different from original
+/// Add concept mapping variant if different
 fn add_concept_variant(
 	query: &str,
 	variants: &mut Vec<RewrittenQuery>,

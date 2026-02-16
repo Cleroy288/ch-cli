@@ -20,6 +20,17 @@ pub enum MessageSegment {
         /// Display name (foldername only)
         display_name: String,
     },
+    /// Symbol reference within a file
+    SymbolReference {
+        /// Full path to the file
+        full_path: String,
+        /// Display name (e.g., "file.rs(Struct::method)")
+        display_name: String,
+        /// Symbol path (e.g., "Struct::method")
+        symbol_path: String,
+        /// Extracted source code (filled lazily)
+        source_code: Option<String>,
+    },
 }
 
 impl MessageSegment {
@@ -41,6 +52,14 @@ impl MessageSegment {
                 "Folder: {} ({})",
                 display_name, full_path
             ),
+            MessageSegment::SymbolReference {
+                display_name,
+                symbol_path,
+                ..
+            } => format!(
+                "Symbol: {} ({})",
+                display_name, symbol_path
+            ),
         }
     }
 
@@ -52,6 +71,9 @@ impl MessageSegment {
                 display_name, ..
             } => display_name.clone(),
             MessageSegment::FolderReference {
+                display_name, ..
+            } => display_name.clone(),
+            MessageSegment::SymbolReference {
                 display_name, ..
             } => display_name.clone(),
         }

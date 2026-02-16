@@ -1,6 +1,6 @@
 use std::env;
 
-use ch_cli::retrieval::models::device::{
+use rustean::retrieval::models::device::{
 	get_device, get_device_info, is_force_cpu_mode,
 	DeviceType,
 };

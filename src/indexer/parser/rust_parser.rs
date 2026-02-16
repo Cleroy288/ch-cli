@@ -2,7 +2,6 @@
 //!
 //! Provides the main RustParser struct for parsing Rust source files.
 
-use std::fs;
 use std::path::Path;
 
 use streaming_iterator::StreamingIterator;
@@ -36,13 +35,13 @@ impl RustParser {
 
 		parser
 			.set_language(&language)
-			.map_err(|e| ParseError::LanguageError(e.to_string()))?;
+			.map_err(|err| ParseError::LanguageError(err.to_string()))?;
 
 		let symbol_query = Query::new(&language, RUST_SYMBOLS_QUERY)
-			.map_err(|e| ParseError::QueryError(format!("{:?}", e)))?;
+			.map_err(|err| ParseError::QueryError(format!("{:?}", err)))?;
 
 		let reference_query = Query::new(&language, RUST_REFERENCES_QUERY)
-			.map_err(|e| ParseError::QueryError(format!("{:?}", e)))?;
+			.map_err(|err| ParseError::QueryError(format!("{:?}", err)))?;
 
 		Ok(Self {
 			parser,
@@ -56,7 +55,7 @@ impl RustParser {
 	/// Reads the file and delegates to parse_source.
 	pub fn parse_file<P: AsRef<Path>>(&mut self, path: P) -> Result<Vec<Symbol>> {
 		let path = path.as_ref();
-		let source_code = fs::read_to_string(path)?;
+		let source_code = std::fs::read_to_string(path)?;
 		self.parse_source(&source_code, path)
 	}
 
@@ -103,7 +102,7 @@ impl RustParser {
 		path: P,
 	) -> Result<Vec<ExtractedReference>> {
 		let path = path.as_ref();
-		let source_code = fs::read_to_string(path)?;
+		let source_code = std::fs::read_to_string(path)?;
 		self.parse_references(&source_code, path)
 	}
 

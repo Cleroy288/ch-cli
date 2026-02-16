@@ -3,6 +3,8 @@
 //! Pure presentation: formats caller/callee
 //! results for CLI output.
 
+use std::io::Write;
+
 use crate::indexer::semantic::{
 	ReferenceContext, SemanticGraph,
 };
@@ -36,41 +38,60 @@ fn display_callers(
 	let refs = graph.find_references(name);
 	let calls: Vec<_> = refs
 		.iter()
-		.filter(|r| {
-			r.context == ReferenceContext::Call
+		.filter(|ref_item| {
+			ref_item.context
+				== ReferenceContext::Call
 		})
 		.collect();
 
+	let mut out = std::io::stdout().lock();
 	if calls.is_empty() {
-		println!(
-			"No callers found for '{}'", name
-		);
-		println!(
+		writeln!(
+			out,
+			"No callers found for '{}'",
+			name,
+		)?;
+		writeln!(
+			out,
 			"\nTip: Make sure the symbol \
 			name is exact (case-sensitive)"
-		);
+		)?;
 		return Ok(());
 	}
+	print_caller_entries(&mut out, name, &calls)
+}
 
-	println!("Callers of '{}':\n", name);
-	for (i, r) in calls.iter().enumerate() {
-		let file = r
+/// Print caller entries with file locations
+fn print_caller_entries(
+	out: &mut impl Write,
+	name: &str,
+	calls: &[&&crate::indexer::semantic
+		::SymbolReference],
+) -> CommandResult {
+	writeln!(out, "Callers of '{}':\n", name)?;
+	for (idx, ref_item) in
+		calls.iter().enumerate()
+	{
+		let file = ref_item
 			.location
 			.file
 			.file_name()
-			.and_then(|f| f.to_str())
+			.and_then(|fname| fname.to_str())
 			.unwrap_or("?");
-		println!(
+		writeln!(
+			out,
 			"  {}. {}:{} ({})",
-			i + 1,
+			idx + 1,
 			file,
-			r.location.line,
-			r.location.file.display()
-		);
+			ref_item.location.line,
+			ref_item.location.file.display()
+		)?;
 	}
-	println!(
-		"\nTotal: {} call site(s)", calls.len()
-	);
+	writeln!(
+		out,
+		"\nTotal: {} call site(s)",
+		calls.len(),
+	)?;
 	Ok(())
 }
 
@@ -80,40 +101,63 @@ fn display_callees(
 	graph: &SemanticGraph,
 ) -> CommandResult {
 	let defs = graph.find_definitions(name);
+	let mut out = std::io::stdout().lock();
 	if defs.is_empty() {
-		println!(
-			"Symbol '{}' not found in definitions",
+		writeln!(
+			out,
+			"Symbol '{}' not found \
+			in definitions",
 			name
-		);
+		)?;
 		return Ok(());
 	}
+	print_callee_header(&mut out, name)?;
+	print_callee_defs(&mut out, &defs)?;
+	Ok(())
+}
 
-	println!(
-		"Callees of '{}' (functions it calls):\n",
+/// Print callee section header
+fn print_callee_header(
+	out: &mut impl Write,
+	name: &str,
+) -> std::io::Result<()> {
+	writeln!(
+		out,
+		"Callees of '{}' \
+		(functions it calls):\n",
 		name
-	);
-	println!(
+	)?;
+	writeln!(
+		out,
 		"Note: Callee tracking requires body \
 		analysis (not yet fully implemented)"
-	);
+	)?;
+	Ok(())
+}
 
-	println!("\nDefinition locations:");
-	for (i, def) in defs.iter().enumerate() {
+/// Print callee definition locations
+fn print_callee_defs(
+	out: &mut impl Write,
+	defs: &[&crate::indexer::semantic
+		::Definition],
+) -> std::io::Result<()> {
+	writeln!(out, "\nDefinition locations:")?;
+	for (idx, def) in defs.iter().enumerate() {
 		let file = def
 			.symbol
 			.location
 			.file
 			.file_name()
-			.and_then(|f| f.to_str())
+			.and_then(|fname| fname.to_str())
 			.unwrap_or("?");
-		println!(
+		writeln!(
+			out,
 			"  {}. {} ({}:{})",
-			i + 1,
+			idx + 1,
 			def.fqn,
 			file,
 			def.symbol.location.line
-		);
+		)?;
 	}
 	Ok(())
 }
-

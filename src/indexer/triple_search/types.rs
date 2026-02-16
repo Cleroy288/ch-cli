@@ -22,6 +22,28 @@ impl TripleIndexStats {
 	}
 }
 
+/// Per-index limits for triple search
+#[derive(Debug, Clone, Copy)]
+pub struct TripleLimits {
+	/// max results from code index
+	pub code: usize,
+	/// max results from doc index
+	pub doc: usize,
+	/// max results from notes index
+	pub notes: usize,
+}
+
+impl TripleLimits {
+	/// All limits set to the same value
+	pub fn uniform(limit: usize) -> Self {
+		Self {
+			code: limit,
+			doc: limit,
+			notes: limit,
+		}
+	}
+}
+
 /// Results from triple search operation
 #[derive(Debug, Default)]
 pub struct TripleSearchResults {

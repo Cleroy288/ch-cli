@@ -2,13 +2,13 @@
 
 use std::path::PathBuf;
 
-use ch_cli::indexer::search::{
+use rustean::indexer::search::{
 	SchemaFields, build_schema, doc_to_symbol, symbol_to_doc,
 };
-use ch_cli::indexer::symbols::{
-	CodeLocation, SymbolKind, Visibility,
+use rustean::indexer::symbols::{
+	ByteSpan, CodeLocation, SymbolKind, Visibility,
 };
-use ch_cli::indexer::Symbol;
+use rustean::indexer::Symbol;
 
 /// Test symbol_to_doc creates correct document for function symbol
 #[test]
@@ -16,7 +16,7 @@ fn test_symbol_to_doc_function() {
 	let schema = build_schema(); // create schema
 	let fields = SchemaFields::from_schema(&schema).unwrap();
 	let file = PathBuf::from("src/main.rs");
-	let location = CodeLocation::new(file, 10, 5, 0, 0);
+	let location = CodeLocation::new(file, 10, 5, ByteSpan::ZERO);
 	let sig = "fn test_fn() -> bool".to_string();
 	let symbol = Symbol::new(
 		"test_fn".to_string(),
@@ -52,7 +52,7 @@ fn test_symbol_to_doc_minimal() {
 	let schema = build_schema(); // create schema
 	let fields = SchemaFields::from_schema(&schema).unwrap();
 	let file = PathBuf::from("lib.rs");
-	let location = CodeLocation::new(file, 1, 0, 0, 0);
+	let location = CodeLocation::new(file, 1, 0, ByteSpan::ZERO);
 	let symbol = Symbol::new(
 		"my_struct".to_string(),
 		SymbolKind::Struct,
@@ -74,7 +74,7 @@ fn test_roundtrip_function() {
 	let schema = build_schema(); // create schema
 	let fields = SchemaFields::from_schema(&schema).unwrap();
 	let file = PathBuf::from("src/lib.rs");
-	let location = CodeLocation::new(file, 42, 8, 0, 0);
+	let location = CodeLocation::new(file, 42, 8, ByteSpan::ZERO);
 	let sig = "fn calculate(x: i32) -> i32".to_string();
 	let original = Symbol::new(
 		"calculate".to_string(),
@@ -106,7 +106,7 @@ fn test_roundtrip_struct() {
 	let fields = SchemaFields::from_schema(&schema).unwrap();
 	// code location
 	let location = CodeLocation::new(
-		PathBuf::from("types.rs"), 5, 0, 0, 0
+		PathBuf::from("types.rs"), 5, 0, ByteSpan::ZERO,
 	);
 	// original struct symbol
 	let original = Symbol::new(
@@ -139,7 +139,7 @@ fn test_symbol_kinds_roundtrip() {
 
 	for (kind, _) in kinds {
 		let location = CodeLocation::new(
-			PathBuf::from("test.rs"), 1, 0, 0, 0
+			PathBuf::from("test.rs"), 1, 0, ByteSpan::ZERO,
 		);
 		let symbol = Symbol::new(
 			"test".to_string(), kind, location

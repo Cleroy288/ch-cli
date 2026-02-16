@@ -16,7 +16,7 @@ pub enum RetrievalError {
 	Embedding(String),
 
 	#[error("IO error: {0}")]
-	Io(#[from] std::io::Error),
+	IoError(#[from] std::io::Error),
 }
 
 /// Result type for retrieval operations

@@ -7,15 +7,20 @@
 //! handlers, never import database/framework code
 //! directly.
 
+pub mod claude;
 pub mod daemon;
 pub mod docgen;
 pub mod index;
+pub mod memory;
 pub mod retrieval;
 pub mod search;
 
 pub use daemon::{DaemonService, DefaultDaemonService};
 pub use docgen::{DefaultDocGenService, DocGenService};
 pub use index::{DefaultIndexService, IndexService};
+pub use memory::{
+	DefaultMemoryService, MemoryService,
+};
 pub use retrieval::{
 	DefaultRetrievalService, RetrievalService,
 };

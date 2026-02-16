@@ -13,29 +13,39 @@ pub fn find_symbol_end(
 	let mut brace_count = 0;
 	let mut found_opening = false;
 
-	for (i, line) in lines[start_idx..].iter().enumerate() {
-		for ch in line.chars() {
-			match ch {
-				'{' => {
-					brace_count += 1;
-					found_opening = true;
-				}
-				'}' => {
-					brace_count -= 1;
-					if found_opening && brace_count == 0 {
-						return start_idx + i + 1;
-					}
-				}
-				_ => {}
-			}
+	for (i, line) in
+		lines[start_idx..].iter().enumerate()
+	{
+		(brace_count, found_opening) =
+			count_braces(
+				line, brace_count, found_opening,
+			);
+		if found_opening && brace_count == 0 {
+			return start_idx + i + 1;
 		}
-
 		if i > 100 {
 			break;
 		}
 	}
 
 	estimate_symbol_end(start_idx, symbol, lines.len())
+}
+
+/// Count braces in a line, returning updated state
+fn count_braces(
+	line: &str,
+	mut count: i32,
+	mut found: bool,
+) -> (i32, bool) {
+	for chr in line.chars() {
+		if chr == '{' {
+			count += 1;
+			found = true;
+		} else if chr == '}' {
+			count -= 1;
+		}
+	}
+	(count, found)
 }
 
 /// Estimate symbol end based on kind

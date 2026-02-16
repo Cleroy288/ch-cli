@@ -5,8 +5,29 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
+/// Byte range in a source file
+#[derive(
+	Debug, Clone, Copy, PartialEq, Eq,
+	Serialize, Deserialize,
+)]
+pub struct ByteSpan {
+	/// Byte offset from start of file
+	pub offset: usize,
+	/// Byte length of the symbol
+	pub length: usize,
+}
+
+impl ByteSpan {
+	/// Zero-length span (no byte info)
+	pub const ZERO: Self =
+		Self { offset: 0, length: 0 };
+}
+
 /// Represents a location in source code.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(
+	Debug, Clone, PartialEq, Eq,
+	Serialize, Deserialize,
+)]
 pub struct CodeLocation {
 	/// Path to the source file
 	pub file: PathBuf,
@@ -26,21 +47,29 @@ impl CodeLocation {
 		file: PathBuf,
 		line: usize,
 		column: usize,
-		byte_offset: usize,
-		byte_length: usize,
+		bytes: ByteSpan,
 	) -> Self {
 		Self {
 			file,
 			line,
 			column,
-			byte_offset,
-			byte_length,
+			byte_offset: bytes.offset,
+			byte_length: bytes.length,
 		}
 	}
 }
 
 impl fmt::Display for CodeLocation {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "{}:{}:{}", self.file.display(), self.line, self.column)
+	fn fmt(
+		&self,
+		f: &mut fmt::Formatter<'_>,
+	) -> fmt::Result {
+		write!(
+			f,
+			"{}:{}:{}",
+			self.file.display(),
+			self.line,
+			self.column,
+		)
 	}
 }

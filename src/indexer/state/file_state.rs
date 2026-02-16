@@ -1,7 +1,5 @@
 //! FileState implementation for tracking individual file metadata.
 
-use std::fs;
-use std::io;
 use std::path::Path;
 use std::time::SystemTime;
 
@@ -9,19 +7,23 @@ use super::types::FileState;
 
 impl FileState {
 	/// Create a new FileState from a file path
-	pub fn from_path(path: &Path, root: &Path) -> io::Result<Self> {
-		// metadata: file system metadata for the given path
-		let metadata = fs::metadata(path)?;
+	pub fn from_path(
+		path: &Path,
+		root: &Path,
+	) -> std::io::Result<Self> {
+		let metadata = std::fs::metadata(path)?;
 
-		// mtime: last modification time as seconds since UNIX epoch
+		// mtime: modification time as seconds since epoch
 		let mtime = metadata
 			.modified()?
 			.duration_since(SystemTime::UNIX_EPOCH)
-			.map(|d| d.as_secs())
+			.map(|dur| dur.as_secs())
 			.unwrap_or(0);
 
-		// relative_path: path relative to the project root
-		let relative_path = path.strip_prefix(root).unwrap_or(path).to_path_buf();
+		let relative_path = path
+			.strip_prefix(root)
+			.unwrap_or(path)
+			.to_path_buf();
 
 		Ok(Self {
 			path: relative_path,
@@ -31,29 +33,29 @@ impl FileState {
 		})
 	}
 
-	/// Check if the file has changed compared to current disk state
+	/// Check if the file has changed compared to disk
 	pub fn has_changed(&self, root: &Path) -> bool {
-		// full_path: absolute path to the file
 		let full_path = root.join(&self.path);
 
-		match fs::metadata(&full_path) {
+		match std::fs::metadata(&full_path) {
 			Ok(metadata) => {
-				// current_mtime: current modification time from disk
-				let modified_time = metadata
+				let mod_time = metadata
 					.modified()
 					.ok()
-					.and_then(|t| {
-						t.duration_since(SystemTime::UNIX_EPOCH).ok()
+					.and_then(|time| {
+						time.duration_since(
+							SystemTime::UNIX_EPOCH,
+						)
+						.ok()
 					})
-					.map(|d| d.as_secs())
+					.map(|dur| dur.as_secs())
 					.unwrap_or(0);
 
-				// current_size: current file size from disk
-				let current_size = metadata.len();
-
-				modified_time != self.mtime || current_size != self.size
+				let cur_size = metadata.len();
+				mod_time != self.mtime
+					|| cur_size != self.size
 			}
-			Err(_) => true, // File doesn't exist or can't be read
+			Err(_) => true,
 		}
 	}
 }

@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use ch_cli::retrieval::daemon::health::{
+use rustean::retrieval::daemon::health::{
 	health_check, HealthStatus,
 };
 
@@ -25,7 +25,7 @@ fn test_health_status_default() {
 #[test]
 fn test_health_check_no_daemon() {
 	let socket_path =
-		Path::new("/tmp/ch-cli-test-nonexistent.sock");
+		Path::new("/tmp/rustean-test-nonexistent.sock");
 
 	let health = health_check(socket_path);
 

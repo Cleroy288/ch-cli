@@ -8,16 +8,19 @@ use crate::retrieval::RetrievalResult;
 
 use super::core::TieredQueryExpander;
 use super::super::result::TieredResult;
-use super::super::validation::try_validated_path;
+use super::super::validation::{
+	try_validated_path, ValidationInput,
+};
 
-impl<'a> TieredQueryExpander<'a> {
+impl<'ctx> TieredQueryExpander<'ctx> {
 	/// Expand query using tiered approach
 	pub fn expand(
 		&self,
 		query: &str,
 	) -> RetrievalResult<TieredResult> {
 		let start = Instant::now();
-		let fast_result = self.parser.extract_symbols(query);
+		let fast_result =
+			self.parser.extract_symbols(query);
 
 		if should_use_llm(&fast_result, &self.config) {
 			return self.expand_with_llm(query, start);
@@ -26,10 +29,11 @@ impl<'a> TieredQueryExpander<'a> {
 		let names: Vec<String> = fast_result
 			.symbols
 			.iter()
-			.map(|s| s.name.clone())
+			.map(|sym| sym.name.clone())
 			.collect();
 
-		try_validated_path(self, query, names, start)
+		let input = ValidationInput { names, start };
+		try_validated_path(self, query, input)
 	}
 
 	/// Expand with LLM (delegates to strategy)
@@ -64,6 +68,7 @@ fn should_use_llm(
 
 	fast_result.intent == FastPathIntent::Conceptual
 		|| fast_result.symbols.is_empty()
-		|| fast_result.confidence < config.confidence_threshold
+		|| fast_result.confidence
+			< config.confidence_threshold
 		|| fast_result.intent == FastPathIntent::Mixed
 }

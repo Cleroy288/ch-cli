@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 
-use ch_cli::indexer::state::{ChangeSet, IndexState, INDEX_VERSION};
+use rustean::indexer::state::{ChangeSet, IndexState, INDEX_VERSION};
 
 /// Test has_changes returns false for an empty changeset
 #[test]

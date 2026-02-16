@@ -10,6 +10,17 @@ use crate::retrieval::daemon::protocol::{
 	DaemonResponse, DocEntryResponse,
 };
 
+/// Build "all complete" status response
+fn all_complete_status(total: usize) -> DaemonResponse {
+	DaemonResponse::DocGenStatus {
+		total,
+		completed: total,
+		pending: 0,
+		is_ready: true,
+		in_progress: false,
+	}
+}
+
 /// Handle StartDocGen request - spawn background thread
 ///
 /// Returns immediately with current status. The actual
@@ -23,51 +34,48 @@ pub fn handle_start_doc_gen(
 	let canonical =
 		path.canonicalize().unwrap_or(path.clone());
 
-	// check if already running
-	let already = super::doc_handlers_helpers
-		::check_already_running(daemon);
-	if let Some(resp) = already {
+	if let Some(resp) = check_preconditions(
+		daemon, &canonical, force,
+	) {
 		return resp;
 	}
 
-	// check if store is ready (skip if not forced)
-	if !force {
-		if let Some(resp) = super::doc_handlers_helpers
-			::check_store_ready(daemon, &canonical)
-		{
-			return resp;
-		}
-	}
-
-	// prepare store and pending entries
 	super::doc_handlers_helpers
 		::prepare_store(daemon, &canonical);
 
-	// get symbols and populate store
 	let (total, pending_ids) =
 		match super::doc_handlers_helpers
 			::populate_store(daemon, &canonical)
 		{
-			Ok(v) => v,
-			Err(resp) => return resp,
+			Ok(val) => val,
+			Err(resp) => return *resp,
 		};
 
 	if pending_ids.is_empty() {
-		return DaemonResponse::DocGenStatus {
-			total,
-			completed: total,
-			pending: 0,
-			is_ready: true,
-			in_progress: false,
-		};
+		return all_complete_status(total);
 	}
 
 	super::doc_handlers_helpers::spawn_background_gen(
-		daemon,
-		canonical,
-		total,
-		pending_ids,
+		daemon, canonical, total, pending_ids,
 	)
+}
+
+/// Check if doc gen is already running or ready
+fn check_preconditions(
+	daemon: &ModelDaemon,
+	canonical: &PathBuf,
+	force: bool,
+) -> Option<DaemonResponse> {
+	if let Some(resp) = super::doc_handlers_helpers
+		::check_already_running(daemon)
+	{
+		return Some(resp);
+	}
+	if !force {
+		return super::doc_handlers_helpers
+			::check_store_ready(daemon, canonical);
+	}
+	None
 }
 
 /// Handle DocGenStatus request
@@ -94,6 +102,21 @@ pub fn handle_get_doc(
 	)
 }
 
+/// Handle GetDocByFile — lookup by file + name
+pub fn handle_get_doc_by_file(
+	daemon: &ModelDaemon,
+	project_path: &str,
+	file_path: &str,
+	symbol_name: &str,
+) -> DaemonResponse {
+	super::doc_lookup::handle_get_doc_by_file(
+		daemon,
+		project_path,
+		file_path,
+		symbol_name,
+	)
+}
+
 /// Handle SearchDocs request
 pub fn handle_search_docs(
 	daemon: &ModelDaemon,
@@ -101,7 +124,7 @@ pub fn handle_search_docs(
 	query: &str,
 	limit: usize,
 ) -> DaemonResponse {
-	super::doc_lookup::handle_search_docs(
+	super::doc_search::handle_search_docs(
 		daemon,
 		project_path,
 		query,

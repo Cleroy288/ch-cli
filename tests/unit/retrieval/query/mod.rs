@@ -14,3 +14,4 @@ mod tiered_strategies_test;
 mod tiered_test;
 mod validator_scoring_test;
 mod validator_test;
+mod prf_test;

@@ -4,7 +4,7 @@ use std::fs;
 
 use tempfile::tempdir;
 
-use ch_cli::fs::FileScanner;
+use rustean::fs::FileScanner;
 
 /// directories() returns only directory entries
 #[test]

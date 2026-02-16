@@ -23,8 +23,8 @@ impl FeedbackLoop {
 				self.handle_refine_search(&query)
 			}
 			FeedbackAction::ExpandRelated { symbols } => {
-				let q = symbols.join(" OR ");
-				self.handle_refine_search(&q)
+				let joined = symbols.join(" OR ");
+				self.handle_refine_search(&joined)
 			}
 			FeedbackAction::FilterFiles { patterns } => {
 				self.handle_filter_files(&patterns)

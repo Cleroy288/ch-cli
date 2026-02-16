@@ -38,53 +38,51 @@ impl Default for HealthStatus {
 ///
 /// Starts daemon in background if not running, waits
 /// up to 30 seconds for models to load via ping.
+#[allow(clippy::print_stderr)]
 pub fn ensure_daemon_ready() -> bool {
 	let config = RetrievalConfig::default();
 	let socket_path = &config.socket_path;
 
-	// Check if already running
 	let status = daemon_status(socket_path);
 	if status.running {
 		return true;
 	}
 
-	// Not running, start it
 	eprintln!(
 		"[daemon] Starting daemon in background..."
 	);
-	if let Err(e) = start_daemon(socket_path) {
-		eprintln!("[daemon] Failed to start: {}", e);
+	if let Err(err) = start_daemon(socket_path) {
+		eprintln!("[daemon] Failed to start: {}", err);
 		return false;
 	}
 
-	// Wait for daemon to be ready (ping loop)
 	eprintln!("[daemon] Waiting for models to load...");
-	let client = super::DaemonClient::new();
+	wait_for_daemon_ping()
+}
 
+/// Poll daemon ping until ready or timeout (30s)
+#[allow(clippy::print_stderr)]
+fn wait_for_daemon_ping() -> bool {
+	let client = super::DaemonClient::new();
+	let poll_interval =
+		std::time::Duration::from_millis(500);
 	// Wait up to 30 seconds (60 * 500ms)
-	for i in 0..60 {
-		std::thread::sleep(
-			std::time::Duration::from_millis(500),
-		);
-		match client.ping() {
-			Ok(true) => {
-				eprintln!(
-					"[daemon] Ready after {}s",
-					(i + 1) / 2
-				);
-				return true;
-			}
-			_ => {
-				if i % 4 == 0 && i > 0 {
-					eprintln!(
-						"[daemon] Still loading... ({}s)",
-						(i + 1) / 2
-					);
-				}
-			}
+	for idx in 0..60 {
+		std::thread::sleep(poll_interval);
+		if let Ok(true) = client.ping() {
+			eprintln!(
+				"[daemon] Ready after {}s",
+				(idx + 1) / 2
+			);
+			return true;
+		}
+		if idx % 4 == 0 && idx > 0 {
+			eprintln!(
+				"[daemon] Still loading... ({}s)",
+				(idx + 1) / 2
+			);
 		}
 	}
-
 	eprintln!(
 		"[daemon] Timeout waiting for daemon to be ready"
 	);
@@ -118,6 +116,7 @@ pub fn health_check(socket_path: &Path) -> HealthStatus {
 /// Auto-recover daemon if unhealthy
 ///
 /// Stops existing daemon, starts fresh, waits for ready.
+#[allow(clippy::print_stderr)]
 pub fn ensure_healthy_daemon(
 	socket_path: &Path,
 ) -> bool {
@@ -129,33 +128,31 @@ pub fn ensure_healthy_daemon(
 	eprintln!("[daemon] Unhealthy: {:?}", health.error);
 	eprintln!("[daemon] Attempting recovery...");
 
-	// Stop existing daemon (if any)
-	if let Err(e) = stop_daemon(socket_path) {
+	if let Err(err) = stop_daemon(socket_path) {
 		eprintln!(
 			"[daemon] Stop failed (may not be running): {}",
-			e
+			err
 		);
 	}
 
-	// Wait for cleanup
 	std::thread::sleep(
 		std::time::Duration::from_millis(500),
 	);
 
-	// Start fresh daemon
-	if let Err(e) = start_daemon(socket_path) {
-		eprintln!("[daemon] Start failed: {}", e);
+	if let Err(err) = start_daemon(socket_path) {
+		eprintln!("[daemon] Start failed: {}", err);
 		return false;
 	}
 
-	let timeout = std::time::Duration::from_secs(60);
-	ensure_daemon_ready_with_timeout(socket_path, timeout)
+	let dur = std::time::Duration::from_secs(60);
+	ensure_daemon_ready_with_timeout(socket_path, dur)
 }
 
 /// Wait for daemon to be ready with a timeout
 ///
 /// Polls health_check at 500ms intervals until healthy
 /// or timeout expires.
+#[allow(clippy::print_stderr)]
 pub fn ensure_daemon_ready_with_timeout(
 	socket_path: &Path,
 	timeout: std::time::Duration,

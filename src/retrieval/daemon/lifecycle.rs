@@ -3,9 +3,8 @@
 //! Functions to start, stop, and check daemon status.
 
 
-use std::fs;
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 use nix::sys::signal::Signal;
 
@@ -16,37 +15,10 @@ use crate::retrieval::{
 
 #[doc(hidden)]
 pub use super::lifecycle_helpers::process_running;
+pub use super::lifecycle_helpers::log_file_from_socket;
 
-/// Get the status of the daemon
-pub fn daemon_status(
-	socket_path: &Path,
-) -> DaemonStatus {
-	let pid_file =
-		crate::retrieval::daemon::lifecycle_helpers::pid_file_from_socket(
-			socket_path,
-		);
-
-	// check if PID file exists
-	let pid = match super::lifecycle_helpers::read_pid(&pid_file)
-	{
-		Some(p) => p,
-		None => {
-			return super::lifecycle_helpers::
-				default_stopped_status();
-		}
-	};
-
-	// check if process is running
-	if !process_running(pid) {
-		super::lifecycle_helpers::cleanup_stale_daemon(
-			socket_path,
-			&pid_file,
-		);
-		return super::lifecycle_helpers::
-			default_stopped_status();
-	}
-
-	// daemon is running
+/// Build running status for a given PID
+fn running_status(pid: u32) -> DaemonStatus {
 	DaemonStatus {
 		running: true,
 		pid: Some(pid),
@@ -57,47 +29,103 @@ pub fn daemon_status(
 	}
 }
 
-/// Start the daemon if not already running
-pub fn start_daemon(
+/// Get the status of the daemon
+pub fn daemon_status(
+	socket_path: &Path,
+) -> DaemonStatus {
+	let pid_file =
+		super::lifecycle_helpers::pid_file_from_socket(
+			socket_path,
+		);
+	let pid = match super::lifecycle_helpers::read_pid(
+		&pid_file,
+	) {
+		Some(val) => val,
+		None => {
+			return super::lifecycle_helpers::
+				default_stopped_status();
+		}
+	};
+
+	if !process_running(pid) {
+		super::lifecycle_helpers::cleanup_stale_daemon(
+			socket_path,
+			&pid_file,
+		);
+		return super::lifecycle_helpers::
+			default_stopped_status();
+	}
+
+	running_status(pid)
+}
+
+/// Prepare filesystem for daemon startup
+fn prepare_daemon_paths(
 	socket_path: &Path,
 ) -> RetrievalResult<()> {
-	// check if already running
-	let status = daemon_status(socket_path);
-	if status.running {
-		return Ok(());
-	}
-
-	// ensure parent directory exists
 	if let Some(parent) = socket_path.parent() {
-		fs::create_dir_all(parent)?;
+		std::fs::create_dir_all(parent)?;
 	}
+	let _ = std::fs::remove_file(socket_path);
+	Ok(())
+}
 
-	// clean up stale socket
-	let _ = fs::remove_file(socket_path);
-
-	// get the path to the current executable
+/// Spawn daemon as child process with log redirection
+fn spawn_daemon_process(
+	socket_path: &Path,
+) -> RetrievalResult<()> {
 	let exe = std::env::current_exe()?;
-
-	// spawn daemon process
+	let log_path = log_file_from_socket(socket_path);
+	let log_file = std::fs::File::create(&log_path)?;
+	let log_err = log_file.try_clone()?;
 	let _child = Command::new(&exe)
 		.arg("daemon")
 		.arg("run")
 		.arg("--socket")
 		.arg(socket_path)
+		.stdout(Stdio::from(log_file))
+		.stderr(Stdio::from(log_err))
 		.spawn()
-		.map_err(|e| {
+		.map_err(|err| {
 			RetrievalError::DaemonNotRunning(format!(
 				"failed to spawn: {}",
-				e
+				err
 			))
 		})?;
+	Ok(())
+}
 
-	// wait a bit for daemon to start
+/// Start the daemon if not already running
+pub fn start_daemon(
+	socket_path: &Path,
+) -> RetrievalResult<()> {
+	let status = daemon_status(socket_path);
+	if status.running {
+		return Ok(());
+	}
+	prepare_daemon_paths(socket_path)?;
+	spawn_daemon_process(socket_path)?;
 	std::thread::sleep(
 		std::time::Duration::from_millis(100),
 	);
-
 	Ok(())
+}
+
+/// Wait for process to exit, then force kill if needed
+fn wait_and_kill(pid: u32) {
+	let poll = std::time::Duration::from_millis(100);
+	for _ in 0..50 {
+		if !process_running(pid) {
+			return;
+		}
+		std::thread::sleep(poll);
+	}
+	if process_running(pid) {
+		let _ = super::lifecycle_helpers::signal_daemon(
+			pid,
+			Signal::SIGKILL,
+		);
+	}
 }
 
 /// Stop the daemon
@@ -105,47 +133,47 @@ pub fn stop_daemon(
 	socket_path: &Path,
 ) -> RetrievalResult<()> {
 	let pid_file =
-		crate::retrieval::daemon::lifecycle_helpers::pid_file_from_socket(
+		super::lifecycle_helpers::pid_file_from_socket(
 			socket_path,
 		);
-
-	// read PID
-	let pid = match super::lifecycle_helpers::read_pid(&pid_file)
-	{
-		Some(p) => p,
-		None => return Ok(()), // not running
+	let pid = match super::lifecycle_helpers::read_pid(
+		&pid_file,
+	) {
+		Some(val) => val,
+		None => return Ok(()),
 	};
-
-	// send SIGTERM
 	let _ = super::lifecycle_helpers::signal_daemon(
 		pid,
 		Signal::SIGTERM,
 	);
-
-	// wait for exit (up to 5 seconds)
-	for _ in 0..50 {
-		if !process_running(pid) {
-			break;
-		}
-		std::thread::sleep(
-			std::time::Duration::from_millis(100),
-		);
-	}
-
-	// force kill if still running
-	if process_running(pid) {
-		let _ = super::lifecycle_helpers::signal_daemon(
-			pid,
-			Signal::SIGKILL,
-		);
-	}
-
-	// clean up files
+	wait_and_kill(pid);
 	super::lifecycle_helpers::cleanup_stale_daemon(
 		socket_path,
 		&pid_file,
 	);
+	Ok(())
+}
 
+/// Send SIGTERM to daemon without waiting.
+///
+/// Fire-and-forget: the daemon will shut itself down.
+/// Used at TUI exit for instant quit.
+pub fn signal_daemon_stop(
+	socket_path: &Path,
+) -> RetrievalResult<()> {
+	let pid_file =
+		super::lifecycle_helpers::pid_file_from_socket(
+			socket_path,
+		);
+	let Some(pid) =
+		super::lifecycle_helpers::read_pid(&pid_file)
+	else {
+		return Ok(());
+	};
+	let _ = super::lifecycle_helpers::signal_daemon(
+		pid,
+		Signal::SIGTERM,
+	);
 	Ok(())
 }
 

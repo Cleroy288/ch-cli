@@ -1,9 +1,9 @@
 //! Unit tests for cli::commands::search_callers
 //! — migrated from inline tests
 
-use ch_cli::cli::commands::search_callers::handle_caller_query;
-use ch_cli::indexer::semantic::SemanticGraph;
-use ch_cli::retrieval::query::{
+use rustean::cli::commands::search_callers::handle_caller_query;
+use rustean::indexer::semantic::SemanticGraph;
+use rustean::retrieval::query::{
     CallerDirection, CallerQuery,
 };
 

@@ -3,49 +3,79 @@
 //! Thin handlers that delegate to DaemonService
 //! for all lifecycle operations.
 
+use std::io::Write;
+
+use crate::retrieval::daemon::log_file_from_socket;
+use crate::retrieval::RetrievalConfig;
+use crate::service::daemon::types::DaemonStatusInfo;
 use crate::service::{
 	DaemonService, DefaultDaemonService,
 };
 
 use super::error::CommandResult;
 
+/// Convert any Display error to io::Error
+fn to_io_error(
+	err: impl std::fmt::Display,
+) -> std::io::Error {
+	std::io::Error::other(format!("{}", err))
+}
+
 /// Execute the `daemon start` command
 pub fn daemon_start_command() -> CommandResult {
 	let svc = DefaultDaemonService::new();
-	let to_io = |e| {
-		std::io::Error::new(
-			std::io::ErrorKind::Other,
-			format!("{}", e),
-		)
-	};
+	let mut out = std::io::stdout().lock();
 
-	let status = svc.status().map_err(to_io)?;
+	let status =
+		svc.status().map_err(to_io_error)?;
 	if status.is_running {
-		println!(
+		writeln!(
+			out,
 			"Daemon is already running (PID: {})",
 			status.pid.unwrap_or(0)
-		);
+		)?;
 		return Ok(());
 	}
 
-	println!("Starting model daemon...");
-	svc.start().map_err(to_io)?;
-
+	writeln!(out, "Starting model daemon...")?;
+	svc.start().map_err(to_io_error)?;
 	std::thread::sleep(
 		std::time::Duration::from_millis(500),
 	);
 
-	let status = svc.status().map_err(to_io)?;
+	let status =
+		svc.status().map_err(to_io_error)?;
+	print_start_result(&mut out, &status)?;
+	Ok(())
+}
+
+/// Print the result of a daemon start attempt
+fn print_start_result(
+	out: &mut impl Write,
+	status: &DaemonStatusInfo,
+) -> std::io::Result<()> {
 	if status.is_running {
-		println!(
+		let config = RetrievalConfig::default();
+		let log_path =
+			log_file_from_socket(&config.socket_path);
+		writeln!(
+			out,
 			"Daemon started (PID: {})",
 			status.pid.unwrap_or(0)
-		);
-		println!("Models loading in background...");
+		)?;
+		writeln!(
+			out, "Models loading in background..."
+		)?;
+		writeln!(
+			out,
+			"Daemon logs: {}",
+			log_path.display()
+		)?;
 	} else {
-		println!(
+		writeln!(
+			out,
 			"Warning: Daemon may not have started"
-		);
+		)?;
 	}
 	Ok(())
 }
@@ -53,66 +83,119 @@ pub fn daemon_start_command() -> CommandResult {
 /// Execute the `daemon stop` command
 pub fn daemon_stop_command() -> CommandResult {
 	let svc = DefaultDaemonService::new();
-	let to_io = |e| {
-		std::io::Error::new(
-			std::io::ErrorKind::Other,
-			format!("{}", e),
-		)
-	};
+	let mut out = std::io::stdout().lock();
 
-	let status = svc.status().map_err(to_io)?;
+	let status =
+		svc.status().map_err(to_io_error)?;
 	if !status.is_running {
-		println!("Daemon is not running");
+		writeln!(out, "Daemon is not running")?;
 		return Ok(());
 	}
 
 	let pid = status.pid.unwrap_or(0);
-	println!("Stopping daemon (PID: {})...", pid);
-	svc.stop().map_err(to_io)?;
-	println!("Daemon stopped");
+	writeln!(
+		out, "Stopping daemon (PID: {})...", pid
+	)?;
+	svc.stop().map_err(to_io_error)?;
+	writeln!(out, "Daemon stopped")?;
 	Ok(())
 }
 
 /// Execute the `daemon status` command
 pub fn daemon_status_command() -> CommandResult {
 	let svc = DefaultDaemonService::new();
-	let err = |e| std::io::Error::new(
-		std::io::ErrorKind::Other, format!("{e}"),
-	);
-	let s = svc.status().map_err(err)?;
-	if !s.is_running {
-		println!("Daemon Status: Not running");
+	let mut out = std::io::stdout().lock();
+	let status =
+		svc.status().map_err(to_io_error)?;
+
+	if !status.is_running {
+		writeln!(
+			out, "Daemon Status: Not running"
+		)?;
 		return Ok(());
 	}
-	if !s.is_reachable {
-		println!("Daemon Status: Running (unreachable)");
-		let pid = s.pid.unwrap_or(0);
-		println!("PID:           {}", pid);
-		if let Some(ref e) = s.error {
-			println!("Error:         {}", e);
-		}
+	if !status.is_reachable {
+		print_unreachable(&mut out, &status)?;
 		return Ok(());
 	}
-	let pid = s.pid.unwrap_or(0);
-	println!("Daemon Status: Running");
-	println!("PID:           {}", pid);
-	if let (Some(d), Some(dd)) =
-		(&s.device, &s.device_detail)
+	print_running_status(&mut out, &status)?;
+	Ok(())
+}
+
+/// Print status when daemon is running but
+/// unreachable
+fn print_unreachable(
+	out: &mut impl Write,
+	status: &DaemonStatusInfo,
+) -> std::io::Result<()> {
+	writeln!(
+		out,
+		"Daemon Status: Running (unreachable)"
+	)?;
+	let pid = status.pid.unwrap_or(0);
+	writeln!(out, "PID:           {}", pid)?;
+	if let Some(ref err_msg) = status.error {
+		writeln!(
+			out, "Error:         {}", err_msg
+		)?;
+	}
+	Ok(())
+}
+
+/// Print full status when daemon is running
+fn print_running_status(
+	out: &mut impl Write,
+	status: &DaemonStatusInfo,
+) -> std::io::Result<()> {
+	let pid = status.pid.unwrap_or(0);
+	writeln!(out, "Daemon Status: Running")?;
+	writeln!(out, "PID:           {}", pid)?;
+	print_device_info(out, status)?;
+	print_loaded_models(out, status)?;
+	Ok(())
+}
+
+/// Print device and resource details
+fn print_device_info(
+	out: &mut impl Write,
+	status: &DaemonStatusInfo,
+) -> std::io::Result<()> {
+	if let (Some(dev), Some(detail)) =
+		(&status.device, &status.device_detail)
 	{
-		println!("Device:        {} ({})", d, dd);
+		writeln!(
+			out,
+			"Device:        {} ({})",
+			dev, detail
+		)?;
 	}
-	if let Some(mem) = s.gpu_memory_mb {
-		println!("GPU Memory:    {} MB", mem);
+	if let Some(mem) = status.gpu_memory_mb {
+		writeln!(
+			out, "GPU Memory:    {} MB", mem
+		)?;
 	}
-	if let Some(up) = s.uptime_secs {
-		println!("Uptime:        {} seconds", up);
+	if let Some(uptime) = status.uptime_secs {
+		writeln!(
+			out,
+			"Uptime:        {} seconds",
+			uptime
+		)?;
 	}
-	println!("\nLoaded Models:");
-	for model in &s.loaded_models {
-		println!("  - {}", model);
+	Ok(())
+}
+
+/// Print the list of loaded models
+fn print_loaded_models(
+	out: &mut impl Write,
+	status: &DaemonStatusInfo,
+) -> std::io::Result<()> {
+	writeln!(out, "\nLoaded Models:")?;
+	if status.loaded_models.is_empty() {
+		writeln!(out, "  (none)")?;
+		return Ok(());
 	}
-	if s.loaded_models.is_empty() {
-		println!("  (none)");
+	for model in &status.loaded_models {
+		writeln!(out, "  - {}", model)?;
 	}
 	Ok(())
 }
@@ -131,11 +214,11 @@ pub fn daemon_run_command(
 	socket: Option<&str>,
 ) -> CommandResult {
 	let svc = DefaultDaemonService::new();
-	svc.run_foreground(socket).map_err(|e| {
-		std::io::Error::new(
-			std::io::ErrorKind::Other,
-			format!("{}", e),
-		)
-	})?;
+	svc.run_foreground(socket)
+		.map_err(|err| {
+			std::io::Error::other(
+				format!("{}", err),
+			)
+		})?;
 	Ok(())
 }

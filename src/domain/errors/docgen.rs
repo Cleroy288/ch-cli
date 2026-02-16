@@ -13,5 +13,5 @@ pub enum DocGenError {
 	SymbolNotFound(String),
 
 	#[error("IO error: {0}")]
-	Io(#[from] std::io::Error),
+	IoError(#[from] std::io::Error),
 }

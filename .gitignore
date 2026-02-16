@@ -1,2 +1,4 @@
 /target
+.ch-index/
 .rustean-index/
+.rustean-memory/

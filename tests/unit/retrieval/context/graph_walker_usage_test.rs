@@ -2,8 +2,8 @@
 
 use std::path::PathBuf;
 
-use ch_cli::indexer::ReferenceContext;
-use ch_cli::retrieval::context::graph_walker_usage::{
+use rustean::indexer::ReferenceContext;
+use rustean::retrieval::context::graph_walker_usage::{
 	UsageCollection, UsageInfo,
 };
 

@@ -12,5 +12,7 @@ pub mod startup;
 pub mod ui;
 
 pub use app::App;
-pub use cli::{Cli, Commands, DaemonAction};
+pub use cli::{
+	Cli, Commands, DaemonAction, MemoryAction,
+};
 pub use retrieval::RetrievalConfig;

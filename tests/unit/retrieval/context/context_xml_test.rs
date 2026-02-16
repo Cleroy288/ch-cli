@@ -2,10 +2,11 @@
 
 use std::path::PathBuf;
 
-use ch_cli::indexer::{
-	CodeLocation, ReferenceContext, SymbolKind,
+use rustean::indexer::{
+	ByteSpan, CodeLocation,
+	ReferenceContext, SymbolKind,
 };
-use ch_cli::retrieval::context::{
+use rustean::retrieval::context::{
 	ContextualBlock,
 	graph_walker_usage::UsageInfo,
 };
@@ -14,12 +15,12 @@ use ch_cli::retrieval::context::{
 fn create_test_block(
 	usages: Vec<UsageInfo>,
 ) -> ContextualBlock {
-	let symbol = ch_cli::indexer::Symbol::new(
+	let symbol = rustean::indexer::Symbol::new(
 		"test_fn".to_string(),
 		SymbolKind::Function,
 		CodeLocation::new(
 			PathBuf::from("/test/main.rs"),
-			10, 1, 0, 0,
+			10, 1, ByteSpan::ZERO,
 		),
 	);
 	let usage_count = usages.len();
@@ -109,12 +110,12 @@ fn test_token_count() {
 	let text = "fn example() -> i32 { 42 }";
 	let doc = "Returns an integer";
 
-	let symbol = ch_cli::indexer::Symbol::new(
+	let symbol = rustean::indexer::Symbol::new(
 		"example".to_string(),
 		SymbolKind::Function,
 		CodeLocation::new(
 			PathBuf::from("/test/main.rs"),
-			1, 1, 0, 0,
+			1, 1, ByteSpan::ZERO,
 		),
 	);
 

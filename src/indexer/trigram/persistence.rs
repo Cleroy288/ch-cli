@@ -2,8 +2,6 @@
 //!
 //! Functions to save and load the index from disk
 
-use std::fs;
-use std::io;
 use std::path::Path;
 
 use crate::indexer::trigram::conversion::{
@@ -13,40 +11,52 @@ use crate::indexer::trigram::types::{SerializableIndex, TrigramIndex};
 
 impl TrigramIndex {
 	/// Save index to disk as JSON
-	pub fn save(&self, path: &Path) -> io::Result<()> {
+	pub fn save(
+		&self,
+		path: &Path,
+	) -> std::io::Result<()> {
 		// convert to serializable format
 		let converted = self
 			.index
 			.iter()
-			.map(|(k, v)| (trigram_to_string(k), v.clone()));
+			.map(|(key, files)| {
+				(trigram_to_string(key), files.clone())
+			});
 		let serializable = SerializableIndex {
 			index: converted.collect(),
 			file_count: self.file_count,
 		};
 
 		let content = serde_json::to_string(&serializable)
-			.map_err(|e| {
-				io::Error::new(io::ErrorKind::InvalidData, e)
+			.map_err(|err| {
+				std::io::Error::new(
+					std::io::ErrorKind::InvalidData,
+					err,
+				)
 			})?;
 
-		fs::write(path, content)
+		std::fs::write(path, content)
 	}
 
 	/// Load index from disk JSON file
-	pub fn load(path: &Path) -> io::Result<Self> {
-		let content = fs::read_to_string(path)?;
+	pub fn load(path: &Path) -> std::io::Result<Self> {
+		let content = std::fs::read_to_string(path)?;
 
 		let serializable: SerializableIndex =
-			serde_json::from_str(&content).map_err(|e| {
-				io::Error::new(io::ErrorKind::InvalidData, e)
+			serde_json::from_str(&content).map_err(|err| {
+				std::io::Error::new(
+					std::io::ErrorKind::InvalidData,
+					err,
+				)
 			})?;
 
 		// convert back from serializable format
 		let index = serializable
 			.index
 			.into_iter()
-			.filter_map(|(k, v)| {
-				string_to_trigram(&k).map(|t| (t, v))
+			.filter_map(|(key, files)| {
+				string_to_trigram(&key)
+					.map(|tri| (tri, files))
 			})
 			.collect();
 

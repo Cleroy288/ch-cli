@@ -2,7 +2,6 @@
 //!
 //! Internal helpers for daemon lifecycle management.
 
-use std::fs;
 use std::path::Path;
 
 use nix::sys::signal::Signal;
@@ -31,8 +30,8 @@ pub fn cleanup_stale_daemon(
 	socket_path: &Path,
 	pid_file: &Path,
 ) {
-	let _ = fs::remove_file(&pid_file);
-	let _ = fs::remove_file(socket_path);
+	let _ = std::fs::remove_file(pid_file);
+	let _ = std::fs::remove_file(socket_path);
 }
 
 /// Send signal to daemon process
@@ -41,6 +40,13 @@ pub fn signal_daemon(
 	signal: Signal,
 ) -> Result<(), nix::errno::Errno> {
 	super::lifecycle_pid::signal_daemon(pid, signal)
+}
+
+/// Get daemon log file path from socket path
+pub fn log_file_from_socket(
+	socket_path: &Path,
+) -> std::path::PathBuf {
+	socket_path.with_extension("log")
 }
 
 /// Create default stopped daemon status

@@ -1,5 +1,5 @@
-use ch_cli::retrieval::daemon::protocol::QueryIntent;
-use ch_cli::retrieval::query::{
+use rustean::retrieval::daemon::protocol::QueryIntent;
+use rustean::retrieval::query::{
 	tiered_detect_intent, build_fast_path_spec_impl,
 };
 

@@ -13,7 +13,7 @@ impl Default for ModelCache {
 		let cache_dir = detect_cache_directory();
 
 		Self::new(cache_dir).unwrap_or_else(|_| Self {
-			cache_dir: PathBuf::from(".ch-cli/models"),
+			cache_dir: PathBuf::from(".rustean/models"),
 			models: HashMap::new(),
 		})
 	}
@@ -21,7 +21,9 @@ impl Default for ModelCache {
 
 /// Detect platform-specific cache directory
 fn detect_cache_directory() -> PathBuf {
-	directories::ProjectDirs::from("com", "ch-cli", "ch-cli")
-		.map(|d| d.cache_dir().join("models"))
-		.unwrap_or_else(|| PathBuf::from(".ch-cli/models"))
+	directories::ProjectDirs::from(
+		"com", "rustean", "rustean",
+	)
+	.map(|dirs| dirs.cache_dir().join("models"))
+	.unwrap_or_else(|| PathBuf::from(".rustean/models"))
 }

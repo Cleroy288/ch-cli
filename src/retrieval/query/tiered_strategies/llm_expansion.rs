@@ -19,8 +19,8 @@ pub(crate) fn expand_with_llm_impl(
 	query: &str,
 	start: Instant,
 ) -> RetrievalResult<TieredResult> {
-	let rewriter = QueryRewriter::new(expander.daemon);
-	let rewrites = rewriter.rewrite(query)?;
+	let rewriter = QueryRewriter::new();
+	let rewrites = rewriter.rewrite(query, None)?;
 
 	let all_symbols =
 		collect_rewrite_symbols(expander, &rewrites);
@@ -43,8 +43,10 @@ fn fallback_direct_llm(
 	query: &str,
 	start: Instant,
 ) -> RetrievalResult<TieredResult> {
-	let spec = expander.daemon.expand(query.to_string())?;
-	let time_ms = start.elapsed().as_millis() as u64;
+	let spec =
+		expander.daemon.expand(query.to_string())?;
+	let time_ms =
+		start.elapsed().as_millis() as u64;
 
 	Ok(TieredResult {
 		spec,
@@ -60,8 +62,9 @@ fn collect_rewrite_symbols(
 ) -> Vec<String> {
 	let mut all_symbols: Vec<String> = Vec::new();
 	for rewrite in rewrites {
-		let fast_result =
-			expander.parser.extract_symbols(&rewrite.text);
+		let fast_result = expander
+			.parser
+			.extract_symbols(&rewrite.text);
 		for sym in fast_result.symbols {
 			if !all_symbols.contains(&sym.name) {
 				all_symbols.push(sym.name);
@@ -78,8 +81,10 @@ fn build_rewrite_result(
 	rewrites: &[RewrittenQuery],
 	start: Instant,
 ) -> RetrievalResult<TieredResult> {
-	let hints: Vec<String> =
-		rewrites.iter().map(|r| r.text.clone()).collect();
+	let hints: Vec<String> = rewrites
+		.iter()
+		.map(|rewrite| rewrite.text.clone())
+		.collect();
 
 	let spec = SearchSpec {
 		original_query: query.to_string(),
@@ -88,7 +93,8 @@ fn build_rewrite_result(
 		file_filters: Vec::new(),
 		context_hints: hints,
 	};
-	let time_ms = start.elapsed().as_millis() as u64;
+	let time_ms =
+		start.elapsed().as_millis() as u64;
 
 	Ok(TieredResult {
 		spec,

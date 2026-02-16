@@ -24,7 +24,9 @@ impl FileWatcher {
     ) -> WatcherResult<Option<FileChangeEvent>> {
         match self.receiver.recv_timeout(timeout) {
             Ok(Ok(event)) => Ok(filter_rust_paths(event)),
-            Ok(Err(e)) => Err(WatcherError::NotifyError(e)),
+            Ok(Err(err)) => {
+                Err(WatcherError::NotifyError(err))
+            }
             Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
                 Ok(None)
             }

@@ -1,4 +1,4 @@
-use ch_cli::retrieval::query::detect_structure_query;
+use rustean::retrieval::query::detect_structure_query;
 
 #[test]
 fn test_detect_modules_in_pattern() {

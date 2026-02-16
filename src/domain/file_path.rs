@@ -14,8 +14,8 @@ impl FilePath {
     }
 
     /// Create a FilePath from a string slice
-    pub fn from_string(s: &str) -> Self {
-        Self(PathBuf::from(s))
+    pub fn from_string(val: &str) -> Self {
+        Self(PathBuf::from(val))
     }
 
     /// Get the underlying PathBuf
@@ -32,7 +32,7 @@ impl FilePath {
     pub fn file_name(&self) -> Option<String> {
         self.0
             .file_name()
-            .and_then(|n| n.to_str())
-            .map(|s| s.to_string())
+            .and_then(|os_name| os_name.to_str())
+            .map(|str_name| str_name.to_string())
     }
 }

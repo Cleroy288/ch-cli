@@ -19,7 +19,7 @@ pub enum DaemonError {
 	Communication(String),
 
 	#[error("IO error: {0}")]
-	Io(#[from] std::io::Error),
+	IoError(#[from] std::io::Error),
 
 	#[error("Model error: {0}")]
 	Model(#[from] super::model::ModelError),

@@ -1,14 +1,9 @@
 //! DTOs for the retrieval service.
 
-/// Request parameters for retrieval
-#[derive(Debug, Clone)]
-pub struct RetrievalRequest {
-	/// The natural language query
-	pub query: String,
-	/// Maximum results
-	pub limit: usize,
-	/// Maximum tokens in output
-	pub max_tokens: usize,
+#[allow(clippy::struct_excessive_bools)]
+/// Boolean flags for retrieval requests
+#[derive(Debug, Clone, Default)]
+pub struct RetrievalFlags {
 	/// Disable query expansion
 	pub no_expand: bool,
 	/// Disable reranking
@@ -19,6 +14,19 @@ pub struct RetrievalRequest {
 	pub xml: bool,
 	/// Use structured output
 	pub structured: bool,
+}
+
+/// Request parameters for retrieval
+#[derive(Debug, Clone)]
+pub struct RetrievalRequest {
+	/// The natural language query
+	pub query: String,
+	/// Maximum results
+	pub limit: usize,
+	/// Maximum tokens in output
+	pub max_tokens: usize,
+	/// Boolean flags
+	pub flags: RetrievalFlags,
 	/// RRF score threshold
 	pub threshold: f32,
 	/// Minimum results per type
@@ -33,11 +41,7 @@ impl Default for RetrievalRequest {
 			query: String::new(),
 			limit: 10,
 			max_tokens: 8000,
-			no_expand: false,
-			no_rerank: false,
-			no_context: false,
-			xml: false,
-			structured: false,
+			flags: RetrievalFlags::default(),
 			threshold: 0.015,
 			min_results: 1,
 			project_path: ".".to_string(),

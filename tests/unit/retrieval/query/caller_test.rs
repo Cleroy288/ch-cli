@@ -1,4 +1,4 @@
-use ch_cli::retrieval::query::{
+use rustean::retrieval::query::{
 	detect_caller_query, CallerDirection,
 };
 

@@ -27,10 +27,10 @@ impl CodebaseAnalysis {
 			.language_counts
 			.iter()
 			.filter_map(|(lang, count)| {
-				lang.as_supported().map(|l| (l, *count))
+				lang.as_supported().map(|sup| (sup, *count))
 			})
 			.collect();
-		supported.sort_by(|a, b| b.1.cmp(&a.1));
+		supported.sort_by(|lhs, rhs| rhs.1.cmp(&lhs.1));
 		supported
 	}
 
@@ -44,7 +44,7 @@ impl CodebaseAnalysis {
 			.filter(|(lang, _)| !lang.is_supported())
 			.map(|(lang, count)| (*lang, *count))
 			.collect();
-		unsupported.sort_by(|a, b| b.1.cmp(&a.1));
+		unsupported.sort_by(|lhs, rhs| rhs.1.cmp(&lhs.1));
 		unsupported
 	}
 

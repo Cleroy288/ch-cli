@@ -1,16 +1,17 @@
-//! Unit tests for ui::components::debug — migrated from inline tests
+//! Unit tests for ui::components::debug
 
-use ch_cli::message::{
+use rustean::message::{
     ConversationHistory, MessageSegment, UserMessage,
 };
-use ch_cli::ui::components::debug::DebugInfoType;
-use ch_cli::ui::components::debug_render::build_message_history_lines;
+use rustean::ui::components::debug::DebugInfoType;
+use rustean::ui::components::debug_render
+	::build_message_history_lines;
 
-/// DebugInfoType::MessageHistory has correct name
+/// MessageHistory panel title is " output "
 #[test]
-fn test_debug_info_type_name() {
-    let debug_type = DebugInfoType::MessageHistory;
-    assert_eq!(debug_type.name(), "Message History");
+fn test_debug_info_type_panel_title() {
+    let info_type = DebugInfoType::MessageHistory;
+    assert_eq!(info_type.panel_title(), " output ");
 }
 
 /// DebugInfoType::default returns MessageHistory
@@ -47,4 +48,20 @@ fn test_build_message_history_lines_messages() {
     let lines = build_message_history_lines(&history);
 
     assert!(lines.len() > 2);
+}
+
+/// Doc-related variants use " doc preview " title
+#[test]
+fn test_doc_variants_panel_title() {
+    let preview = DebugInfoType::DocPreview;
+    let not_found = DebugInfoType::DocNotFound;
+
+    assert_eq!(
+        preview.panel_title(),
+        " doc preview ",
+    );
+    assert_eq!(
+        not_found.panel_title(),
+        " doc preview ",
+    );
 }

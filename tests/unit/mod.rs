@@ -9,4 +9,5 @@ pub mod message;
 pub mod picker;
 pub mod retrieval;
 pub mod startup;
+pub mod service;
 pub mod ui;

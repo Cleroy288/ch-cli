@@ -6,21 +6,30 @@ use super::super::fast_path_patterns::{
 	PatternType, SymbolCandidate, STOP_WORDS,
 };
 
+/// Parameters for a single regex extraction pass
+pub(crate) struct ExtractionParams<'pat> {
+	/// compiled regex to match symbols
+	pub regex: &'pat Regex,
+	/// pattern type tag for matched candidates
+	pub pattern_type: PatternType,
+	/// confidence score for matched candidates
+	pub confidence: f32,
+}
+
 /// Extract matches of a single regex pattern
+#[allow(clippy::min_ident_chars)]
 pub(crate) fn extract_by_regex(
-	regex: &Regex,
+	params: &ExtractionParams<'_>,
 	query: &str,
-	pattern_type: PatternType,
-	confidence: f32,
 	symbols: &mut Vec<SymbolCandidate>,
 ) {
-	for cap in regex.find_iter(query) {
+	for cap in params.regex.find_iter(query) {
 		let name = cap.as_str().to_string();
 		if !is_stop_word(&name) {
 			symbols.push(SymbolCandidate {
 				name,
-				pattern_type,
-				confidence,
+				pattern_type: params.pattern_type,
+				confidence: params.confidence,
 			});
 		}
 	}

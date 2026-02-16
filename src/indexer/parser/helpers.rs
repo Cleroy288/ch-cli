@@ -9,17 +9,17 @@ use crate::indexer::symbols::Visibility;
 pub fn parse_visibility(text: &str) -> Visibility {
 	match text.trim() {
 		"pub" => Visibility::Public,
-		s if s.starts_with("pub(crate)") => Visibility::PublicCrate,
-		s if s.starts_with("pub(super)") => Visibility::PublicSuper,
+		vis if vis.starts_with("pub(crate)") => Visibility::PublicCrate,
+		vis if vis.starts_with("pub(super)") => Visibility::PublicSuper,
 		_ => Visibility::Private,
 	}
 }
 
 /// Check if a string is a Rust keyword.
 /// Used to filter out keywords from reference extraction.
-pub fn is_rust_keyword(s: &str) -> bool {
+pub fn is_rust_keyword(word: &str) -> bool {
 	matches!(
-		s,
+		word,
 		"as" | "break" | "const" | "continue" | "crate" | "else" | "enum" | "extern"
 			| "false" | "fn" | "for" | "if" | "impl" | "in" | "let" | "loop" | "match"
 			| "mod" | "move" | "mut" | "pub" | "ref" | "return" | "self" | "Self"

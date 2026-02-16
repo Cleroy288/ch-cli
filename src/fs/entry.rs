@@ -17,7 +17,7 @@ impl FsEntry {
     pub fn new(path: PathBuf, is_dir: bool) -> Self {
         let name = path
             .file_name()
-            .and_then(|n| n.to_str())
+            .and_then(|os_name| os_name.to_str())
             .unwrap_or("")
             .to_string();
 

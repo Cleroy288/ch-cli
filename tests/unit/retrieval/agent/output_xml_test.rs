@@ -1,8 +1,8 @@
 //! Tests for retrieval::agent::output_xml
 
-use ch_cli::retrieval::agent::output::StructuredOutput;
-use ch_cli::retrieval::agent::output_structured::CodeResult;
-use ch_cli::retrieval::agent::output_xml::escape_xml;
+use rustean::retrieval::agent::output::StructuredOutput;
+use rustean::retrieval::agent::output_structured::CodeResult;
+use rustean::retrieval::agent::output_xml::escape_xml;
 
 #[test]
 fn test_escape_xml() {

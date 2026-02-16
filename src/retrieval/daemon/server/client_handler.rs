@@ -28,8 +28,8 @@ pub fn handle_status(daemon: &ModelDaemon) -> DaemonResponse {
 	})
 }
 
-/// Handle a single client request - dispatches to handler
-pub fn handle_request(
+/// Dispatch core requests (ping, status, shutdown, ML)
+fn dispatch_core(
 	daemon: &mut ModelDaemon,
 	request: DaemonRequest,
 ) -> DaemonResponse {
@@ -40,92 +40,153 @@ pub fn handle_request(
 			daemon.shutdown.store(true, Ordering::SeqCst);
 			DaemonResponse::Ok
 		}
-		DaemonRequest::Embed { texts } => handle_embed(daemon, texts),
+		DaemonRequest::Embed { texts } => {
+			super::request_handlers::handle_embed(
+				daemon, texts,
+			)
+		}
 		DaemonRequest::Rerank { query, documents } => {
-			handle_rerank(daemon, &query, documents)
-		}
-		DaemonRequest::Expand { query } => handle_expand(daemon, &query),
-		DaemonRequest::IndexProject {
-			project_path, force,
-		} => {
-			super::project_handlers::handle_index_project(
-				daemon, &project_path, force,
+			super::request_handlers::handle_rerank(
+				daemon, &query, documents,
 			)
 		}
-		DaemonRequest::SearchProject {
-			project_path, query, limit,
-		} => {
-			super::project_handlers::handle_search_project(
-				daemon, &project_path, &query, limit,
+		DaemonRequest::Expand { query } => {
+			super::request_handlers::handle_expand(
+				daemon, &query,
 			)
 		}
-		DaemonRequest::ProjectStatus { project_path } => {
-			super::project_handlers::handle_project_status(
-				daemon, &project_path,
-			)
-		}
-		DaemonRequest::EvictProject { project_path } => {
-			super::project_handlers::handle_evict_project(
-				daemon, &project_path,
-			)
-		}
-		DaemonRequest::StartDocGen {
-			project_path, force,
-		} => {
-			super::doc_handlers::handle_start_doc_gen(
-				daemon, &project_path, force,
-			)
-		}
-		DaemonRequest::DocGenStatus { project_path } => {
-			super::doc_handlers::handle_doc_gen_status(
-				daemon, &project_path,
-			)
-		}
-		DaemonRequest::GetDoc {
-			project_path, symbol_name,
-		} => {
-			super::doc_handlers::handle_get_doc(
-				daemon, &project_path, &symbol_name,
-			)
-		}
-		DaemonRequest::SearchDocs {
-			project_path, query, limit,
-		} => {
-			super::doc_handlers::handle_search_docs(
-				daemon, &project_path, &query, limit,
-			)
-		}
+		other => dispatch_project_or_doc(daemon, other),
 	}
 }
 
-/// Handle embed request
-fn handle_embed(
-	daemon: &ModelDaemon,
-	texts: Vec<String>,
-) -> DaemonResponse {
-	super::request_handlers::handle_embed(daemon, texts)
-}
-
-/// Handle rerank request
-fn handle_rerank(
-	daemon: &ModelDaemon,
-	query: &str,
-	documents: Vec<String>,
-) -> DaemonResponse {
-	super::request_handlers::handle_rerank(
-		daemon, query, documents,
-	)
-}
-
-/// Handle expand request (query expansion via LLM)
-fn handle_expand(
+/// Dispatch project and doc requests
+fn dispatch_project_or_doc(
 	daemon: &mut ModelDaemon,
-	query: &str,
+	request: DaemonRequest,
 ) -> DaemonResponse {
-	super::request_handlers::handle_expand(daemon, query)
+	match request {
+		DaemonRequest::IndexProject {
+			project_path, force,
+		} => super::project_handlers::handle_index_project(
+			daemon, &project_path, force,
+		),
+		DaemonRequest::SearchProject {
+			project_path, query, limit,
+		} => super::project_handlers::handle_search_project(
+			daemon, &project_path, &query, limit,
+		),
+		DaemonRequest::ProjectStatus { project_path } =>
+			super::project_handlers::handle_project_status(
+				daemon, &project_path,
+			),
+		DaemonRequest::EvictProject { project_path } =>
+			super::project_handlers::handle_evict_project(
+				daemon, &project_path,
+			),
+		other => dispatch_doc(daemon, other),
+	}
 }
 
-/// Handle a client connection - reads requests and sends responses
+/// Dispatch documentation requests
+#[allow(clippy::too_many_lines)]
+fn dispatch_doc(
+	daemon: &mut ModelDaemon,
+	request: DaemonRequest,
+) -> DaemonResponse {
+	use super::doc_handlers as docs;
+	match request {
+		DaemonRequest::StartDocGen {
+			project_path, force,
+		} => docs::handle_start_doc_gen(
+			daemon, &project_path, force,
+		),
+		DaemonRequest::DocGenStatus {
+			project_path,
+		} => docs::handle_doc_gen_status(
+			daemon, &project_path,
+		),
+		DaemonRequest::GetDoc {
+			project_path, symbol_name,
+		} => docs::handle_get_doc(
+			daemon, &project_path, &symbol_name,
+		),
+		DaemonRequest::GetDocByFile {
+			project_path, file_path, symbol_name,
+		} => docs::handle_get_doc_by_file(
+			daemon, &project_path,
+			&file_path, &symbol_name,
+		),
+		DaemonRequest::SearchDocs {
+			project_path, query, limit,
+		} => docs::handle_search_docs(
+			daemon, &project_path, &query, limit,
+		),
+		_ => DaemonResponse::Error(
+			"unknown request type".into(),
+		),
+	}
+}
+
+/// Handle a single client request - dispatches to handler
+pub fn handle_request(
+	daemon: &mut ModelDaemon,
+	request: DaemonRequest,
+) -> DaemonResponse {
+	dispatch_core(daemon, request)
+}
+
+/// Send error response for a malformed request
+fn send_parse_error(
+	writer: &mut &UnixStream,
+	err: serde_json::Error,
+) -> std::io::Result<()> {
+	let msg = format!("parse error: {}", err);
+	let resp = DaemonResponse::Error(msg);
+	let bytes = serialize_response(&resp).unwrap();
+	writer.write_all(&bytes)
+}
+
+/// Process a single request and send response
+fn process_and_respond(
+	daemon: &mut ModelDaemon,
+	writer: &mut &UnixStream,
+	request: DaemonRequest,
+) -> RetrievalResult<()> {
+	let response = handle_request(daemon, request);
+	let bytes = serialize_response(&response)
+		.map_err(|err| {
+			let msg = err.to_string();
+			RetrievalError::DaemonCommunication(msg)
+		})?;
+	writer.write_all(&bytes)?;
+	writer.flush()?;
+	Ok(())
+}
+
+/// Process a single line from the client stream
+#[allow(clippy::print_stderr)]
+fn process_line(
+	daemon: &mut ModelDaemon,
+	writer: &mut &UnixStream,
+	line: &str,
+) -> RetrievalResult<bool> {
+	let raw = line.trim().as_bytes();
+	match deserialize_request(raw) {
+		Ok(req) => {
+			process_and_respond(daemon, writer, req)?;
+		}
+		Err(err) => {
+			send_parse_error(writer, err)?;
+			return Ok(false); // continue loop
+		}
+	}
+	let should_stop =
+		daemon.shutdown.load(Ordering::SeqCst);
+	Ok(should_stop)
+}
+
+/// Handle a client connection - read/respond loop
+#[allow(clippy::print_stderr)]
 pub fn handle_client(
 	daemon: &mut ModelDaemon,
 	stream: UnixStream,
@@ -134,44 +195,23 @@ pub fn handle_client(
 	let mut writer = &stream;
 
 	loop {
-		let mut line = String::new(); // incoming request line
+		let mut line = String::new();
 		match reader.read_line(&mut line) {
-			Ok(0) => break, // client disconnected
+			Ok(0) => break,
 			Ok(_) => {
-				// parse request
-				let raw = line.trim().as_bytes();
-				let request = match deserialize_request(raw) {
-					Ok(r) => r,
-					Err(e) => {
-						let msg = format!("parse error: {}", e);
-						let resp = DaemonResponse::Error(msg);
-						let bytes = serialize_response(&resp).unwrap();
-						writer.write_all(&bytes)?;
-						continue;
-					}
-				};
-
-				// handle request
-				let response = handle_request(daemon, request);
-				let bytes = serialize_response(&response)
-					.map_err(|e| {
-						let msg = e.to_string();
-						RetrievalError::DaemonCommunication(msg)
-					})?;
-				writer.write_all(&bytes)?;
-				writer.flush()?;
-
-				// check for shutdown
-				if daemon.shutdown.load(Ordering::SeqCst) {
+				if process_line(
+					daemon, &mut writer, &line,
+				)? {
 					break;
 				}
 			}
-			Err(e) => {
-				eprintln!("[daemon] read error: {}", e);
+			Err(err) => {
+				eprintln!(
+					"[daemon] read error: {}", err
+				);
 				break;
 			}
 		}
 	}
-
 	Ok(())
 }

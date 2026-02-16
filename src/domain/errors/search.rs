@@ -15,7 +15,7 @@ pub enum SearchError {
 	IndexNotFound(PathBuf),
 
 	#[error("IO error: {0}")]
-	Io(#[from] std::io::Error),
+	IoError(#[from] std::io::Error),
 
 	#[error("Schema field not found: {0}")]
 	FieldNotFound(String),

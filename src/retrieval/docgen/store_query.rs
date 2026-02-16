@@ -15,7 +15,9 @@ impl DocStore {
 	pub fn get_pending(&self) -> Vec<&DocEntry> {
 		self.entries
 			.values()
-			.filter(|e| e.status == DocStatus::Pending)
+			.filter(|entry| {
+				entry.status == DocStatus::Pending
+			})
 			.collect()
 	}
 
@@ -23,8 +25,10 @@ impl DocStore {
 	pub fn get_pending_ids(&self) -> Vec<String> {
 		self.entries
 			.values()
-			.filter(|e| e.status == DocStatus::Pending)
-			.map(|e| e.id.clone())
+			.filter(|entry| {
+				entry.status == DocStatus::Pending
+			})
+			.map(|entry| entry.id.clone())
 			.collect()
 	}
 
@@ -40,8 +44,25 @@ impl DocStore {
 	) -> Vec<&DocEntry> {
 		self.entries
 			.values()
-			.filter(|e| e.file_path == file_path)
+			.filter(|entry| {
+				entry.file_path == file_path
+			})
 			.collect()
+	}
+
+	/// Get entry by file path and symbol name.
+	///
+	/// More precise than get_by_name when multiple
+	/// symbols share the same name across files.
+	pub fn get_by_file_and_name(
+		&self,
+		file_path: &Path,
+		name: &str,
+	) -> Option<&DocEntry> {
+		self.entries.values().find(|entry| {
+			entry.file_path == file_path
+				&& entry.name == name
+		})
 	}
 
 	/// Search entries by name pattern.
@@ -52,12 +73,12 @@ impl DocStore {
 		let pattern_lower = pattern.to_lowercase();
 		self.entries
 			.values()
-			.filter(|e| {
-				e.name
+			.filter(|entry| {
+				entry
+					.name
 					.to_lowercase()
 					.contains(&pattern_lower)
 			})
 			.collect()
 	}
 }
-

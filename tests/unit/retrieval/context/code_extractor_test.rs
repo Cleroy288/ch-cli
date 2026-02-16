@@ -2,8 +2,10 @@
 
 use std::path::PathBuf;
 
-use ch_cli::indexer::{CodeLocation, SymbolKind, Symbol};
-use ch_cli::retrieval::context::code_extractor::{
+use rustean::indexer::{
+	ByteSpan, CodeLocation, Symbol, SymbolKind,
+};
+use rustean::retrieval::context::code_extractor::{
 	find_symbol_end,
 };
 
@@ -22,7 +24,8 @@ fn test_find_symbol_end_function() {
 		"foo".to_string(),
 		SymbolKind::Function,
 		CodeLocation::new(
-			PathBuf::from("test.rs"), 1, 1, 0, 0,
+			PathBuf::from("test.rs"),
+			1, 1, ByteSpan::ZERO,
 		),
 	);
 

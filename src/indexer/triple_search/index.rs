@@ -61,40 +61,19 @@ impl TripleSearchIndex {
 	/// Index symbols, routing each to the appropriate index
 	pub fn index_symbols(
 		&self,
-		symbols: &[Symbol]
+		symbols: &[Symbol],
 	) -> SearchResult<TripleIndexStats> {
-		let mut code_symbols = Vec::new(); // symbols for code index
-		let mut doc_symbols = Vec::new(); // symbols for doc index
-		let mut notes_symbols = Vec::new(); // symbols for notes index
+		let (code, doc, notes) = route_by_content(symbols);
 
-		// Route symbols by content type
-		for symbol in symbols {
-			let content_type = ContentType::from_path(&symbol.location.file);
-			match content_type {
-				ContentType::Code => code_symbols.push(symbol.clone()),
-				ContentType::Doc => doc_symbols.push(symbol.clone()),
-				ContentType::Notes => notes_symbols.push(symbol.clone()),
-			}
-		}
-
-		// Index each set
-		let code_count = if !code_symbols.is_empty() {
-			self.code_index.index_symbols(&code_symbols)?
-		} else {
-			0
-		};
-
-		let doc_count = if !doc_symbols.is_empty() {
-			self.doc_index.index_symbols(&doc_symbols)?
-		} else {
-			0
-		};
-
-		let notes_count = if !notes_symbols.is_empty() {
-			self.notes_index.index_symbols(&notes_symbols)?
-		} else {
-			0
-		};
+		let code_count = index_if_nonempty(
+			&self.code_index, &code,
+		)?;
+		let doc_count = index_if_nonempty(
+			&self.doc_index, &doc,
+		)?;
+		let notes_count = index_if_nonempty(
+			&self.notes_index, &notes,
+		)?;
 
 		Ok(TripleIndexStats {
 			code_count,
@@ -110,8 +89,39 @@ impl TripleSearchIndex {
 
 	/// Get total symbol count across all indexes
 	pub fn total_count(&self) -> usize {
-		// Note: This requires reader access which may not be available
-		// For now, return 0 as a placeholder
+		// Note: reader access may not be available
 		0
 	}
+}
+
+/// Route symbols into code, doc, notes buckets
+#[allow(clippy::type_complexity)]
+fn route_by_content(
+	symbols: &[Symbol],
+) -> (Vec<Symbol>, Vec<Symbol>, Vec<Symbol>) {
+	let mut code = Vec::new(); // source code symbols
+	let mut doc = Vec::new(); // documentation symbols
+	let mut notes = Vec::new(); // notes symbols
+
+	for sym in symbols {
+		let kind = ContentType::from_path(&sym.location.file);
+		match kind {
+			ContentType::Code => code.push(sym.clone()),
+			ContentType::Doc => doc.push(sym.clone()),
+			ContentType::Notes => notes.push(sym.clone()),
+		}
+	}
+
+	(code, doc, notes)
+}
+
+/// Index symbols into a SearchIndex only if non-empty
+fn index_if_nonempty(
+	idx: &SearchIndex,
+	symbols: &[Symbol],
+) -> SearchResult<usize> {
+	if symbols.is_empty() {
+		return Ok(0);
+	}
+	idx.index_symbols(symbols)
 }

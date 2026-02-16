@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "rustean-memory": {
+      "type": "stdio",
+      "command": "/Users/charlesleroy/Documents/LOCAL/PERSO/code-cli-ch/ch-cli/target/release/rustean",
+      "args": ["mcp-server"]
+    }
+  }
+}

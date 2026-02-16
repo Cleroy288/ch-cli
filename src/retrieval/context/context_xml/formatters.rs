@@ -60,11 +60,11 @@ pub(super) fn format_related_types_xml(
 	}
 
 	let mut xml = String::from("  <related-types>\n");
-	for rt in &block.related_types {
+	for rel_type in &block.related_types {
 		xml.push_str(&format!(
 			"    <type name=\"{}\" \
 			relationship=\"{:?}\"/>\n",
-			rt.name, rt.relationship,
+			rel_type.name, rel_type.relationship,
 		));
 	}
 	xml.push_str("  </related-types>\n");

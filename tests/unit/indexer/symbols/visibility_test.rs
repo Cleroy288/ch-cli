@@ -1,6 +1,6 @@
 //! Tests for Visibility Display implementation.
 
-use ch_cli::indexer::symbols::Visibility;
+use rustean::indexer::symbols::Visibility;
 
 /// Test Display for Public visibility
 #[test]

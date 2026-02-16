@@ -2,14 +2,14 @@
 
 use std::path::{Path, PathBuf};
 
-use ch_cli::indexer::semantic::{AllUsages, ReferenceContext, SemanticGraph, SymbolReference};
-use ch_cli::indexer::symbols::{CodeLocation, Symbol, SymbolKind};
+use rustean::indexer::semantic::{AllUsages, ReferenceContext, SemanticGraph, SymbolReference};
+use rustean::indexer::symbols::{ByteSpan, CodeLocation, Symbol, SymbolKind};
 
 fn create_test_symbol(name: &str, kind: SymbolKind, file: &str, line: usize) -> Symbol {
     Symbol::new(
         name.to_string(),
         kind,
-        CodeLocation::new(PathBuf::from(file), line, 0, 0, 10),
+        CodeLocation::new(PathBuf::from(file), line, 0, ByteSpan { offset: 0, length: 10 }),
     )
 }
 
@@ -31,7 +31,7 @@ fn test_add_and_find_references() {
 
     let reference = SymbolReference {
         name: "my_function".to_string(),
-        location: CodeLocation::new(PathBuf::from("src/main.rs"), 5, 0, 0, 10),
+        location: CodeLocation::new(PathBuf::from("src/main.rs"), 5, 0, ByteSpan { offset: 0, length: 10 }),
         context: ReferenceContext::Call,
     };
     graph.add_reference(reference);
@@ -53,7 +53,7 @@ fn test_find_all_usages() {
     for line in [20, 30, 40] {
         graph.add_reference(SymbolReference {
             name: "process".to_string(),
-            location: CodeLocation::new(PathBuf::from("src/main.rs"), line, 0, 0, 7),
+            location: CodeLocation::new(PathBuf::from("src/main.rs"), line, 0, ByteSpan { offset: 0, length: 7 }),
             context: ReferenceContext::Call,
         });
     }
@@ -75,7 +75,7 @@ fn test_resolve_reference() {
     // Create reference
     let reference = SymbolReference {
         name: "MyStruct".to_string(),
-        location: CodeLocation::new(PathBuf::from("src/main.rs"), 10, 0, 0, 8),
+        location: CodeLocation::new(PathBuf::from("src/main.rs"), 10, 0, ByteSpan { offset: 0, length: 8 }),
         context: ReferenceContext::Type,
     };
 
@@ -91,7 +91,7 @@ fn test_resolve_unresolved_reference() {
     // Reference to non-existent symbol
     let reference = SymbolReference {
         name: "NonExistent".to_string(),
-        location: CodeLocation::new(PathBuf::from("src/main.rs"), 10, 0, 0, 11),
+        location: CodeLocation::new(PathBuf::from("src/main.rs"), 10, 0, ByteSpan { offset: 0, length: 11 }),
         context: ReferenceContext::Type,
     };
 
@@ -114,7 +114,7 @@ fn test_resolve_ambiguous_reference() {
 
     let reference = SymbolReference {
         name: "new".to_string(),
-        location: CodeLocation::new(PathBuf::from("src/main.rs"), 5, 0, 0, 3),
+        location: CodeLocation::new(PathBuf::from("src/main.rs"), 5, 0, ByteSpan { offset: 0, length: 3 }),
         context: ReferenceContext::Call,
     };
 
@@ -215,17 +215,17 @@ fn test_references_in_file() {
     // Add references in different files
     graph.add_reference(SymbolReference {
         name: "foo".to_string(),
-        location: CodeLocation::new(PathBuf::from("src/main.rs"), 5, 0, 0, 3),
+        location: CodeLocation::new(PathBuf::from("src/main.rs"), 5, 0, ByteSpan { offset: 0, length: 3 }),
         context: ReferenceContext::Call,
     });
     graph.add_reference(SymbolReference {
         name: "bar".to_string(),
-        location: CodeLocation::new(PathBuf::from("src/main.rs"), 10, 0, 0, 3),
+        location: CodeLocation::new(PathBuf::from("src/main.rs"), 10, 0, ByteSpan { offset: 0, length: 3 }),
         context: ReferenceContext::Call,
     });
     graph.add_reference(SymbolReference {
         name: "baz".to_string(),
-        location: CodeLocation::new(PathBuf::from("src/other.rs"), 1, 0, 0, 3),
+        location: CodeLocation::new(PathBuf::from("src/other.rs"), 1, 0, ByteSpan { offset: 0, length: 3 }),
         context: ReferenceContext::Call,
     });
 
@@ -288,7 +288,7 @@ fn test_stats() {
     // Add references
     graph.add_reference(SymbolReference {
         name: "foo".to_string(),
-        location: CodeLocation::new(PathBuf::from("src/main.rs"), 5, 0, 0, 3),
+        location: CodeLocation::new(PathBuf::from("src/main.rs"), 5, 0, ByteSpan { offset: 0, length: 3 }),
         context: ReferenceContext::Call,
     });
 
@@ -384,7 +384,7 @@ fn test_reference_contexts() {
     for (i, ctx) in contexts.iter().enumerate() {
         graph.add_reference(SymbolReference {
             name: format!("symbol_{}", i),
-            location: CodeLocation::new(PathBuf::from("src/main.rs"), i + 1, 0, 0, 5),
+            location: CodeLocation::new(PathBuf::from("src/main.rs"), i + 1, 0, ByteSpan { offset: 0, length: 5 }),
             context: *ctx,
         });
     }
@@ -411,13 +411,13 @@ fn test_all_usages_total() {
     let usages = AllUsages {
         name: "test".to_string(),
         definitions: vec![
-            CodeLocation::new(PathBuf::from("a.rs"), 1, 0, 0, 4),
-            CodeLocation::new(PathBuf::from("b.rs"), 1, 0, 0, 4),
+            CodeLocation::new(PathBuf::from("a.rs"), 1, 0, ByteSpan { offset: 0, length: 4 }),
+            CodeLocation::new(PathBuf::from("b.rs"), 1, 0, ByteSpan { offset: 0, length: 4 }),
         ],
         references: vec![
-            CodeLocation::new(PathBuf::from("c.rs"), 1, 0, 0, 4),
-            CodeLocation::new(PathBuf::from("d.rs"), 1, 0, 0, 4),
-            CodeLocation::new(PathBuf::from("e.rs"), 1, 0, 0, 4),
+            CodeLocation::new(PathBuf::from("c.rs"), 1, 0, ByteSpan { offset: 0, length: 4 }),
+            CodeLocation::new(PathBuf::from("d.rs"), 1, 0, ByteSpan { offset: 0, length: 4 }),
+            CodeLocation::new(PathBuf::from("e.rs"), 1, 0, ByteSpan { offset: 0, length: 4 }),
         ],
     };
 
@@ -496,34 +496,34 @@ fn test_find_type_usages() {
     // add type-related references for "MyType"
     graph.add_reference(SymbolReference {
         name: "MyType".to_string(),
-        location: CodeLocation::new(PathBuf::from("src/lib.rs"), 10, 0, 0, 6),
+        location: CodeLocation::new(PathBuf::from("src/lib.rs"), 10, 0, ByteSpan { offset: 0, length: 6 }),
         context: ReferenceContext::Type,
     });
     graph.add_reference(SymbolReference {
         name: "MyType".to_string(),
-        location: CodeLocation::new(PathBuf::from("src/lib.rs"), 20, 0, 0, 6),
+        location: CodeLocation::new(PathBuf::from("src/lib.rs"), 20, 0, ByteSpan { offset: 0, length: 6 }),
         context: ReferenceContext::FieldType,
     });
     graph.add_reference(SymbolReference {
         name: "MyType".to_string(),
-        location: CodeLocation::new(PathBuf::from("src/lib.rs"), 30, 0, 0, 6),
+        location: CodeLocation::new(PathBuf::from("src/lib.rs"), 30, 0, ByteSpan { offset: 0, length: 6 }),
         context: ReferenceContext::ReturnType,
     });
     graph.add_reference(SymbolReference {
         name: "MyType".to_string(),
-        location: CodeLocation::new(PathBuf::from("src/lib.rs"), 40, 0, 0, 6),
+        location: CodeLocation::new(PathBuf::from("src/lib.rs"), 40, 0, ByteSpan { offset: 0, length: 6 }),
         context: ReferenceContext::ParameterType,
     });
 
     // add non-type references for "MyType"
     graph.add_reference(SymbolReference {
         name: "MyType".to_string(),
-        location: CodeLocation::new(PathBuf::from("src/lib.rs"), 50, 0, 0, 6),
+        location: CodeLocation::new(PathBuf::from("src/lib.rs"), 50, 0, ByteSpan { offset: 0, length: 6 }),
         context: ReferenceContext::Call,
     });
     graph.add_reference(SymbolReference {
         name: "MyType".to_string(),
-        location: CodeLocation::new(PathBuf::from("src/lib.rs"), 60, 0, 0, 6),
+        location: CodeLocation::new(PathBuf::from("src/lib.rs"), 60, 0, ByteSpan { offset: 0, length: 6 }),
         context: ReferenceContext::Identifier,
     });
 
@@ -596,32 +596,32 @@ fn test_find_usages_by_context() {
     // add references with various contexts for "foo"
     graph.add_reference(SymbolReference {
         name: "foo".to_string(),
-        location: CodeLocation::new(PathBuf::from("src/a.rs"), 1, 0, 0, 3),
+        location: CodeLocation::new(PathBuf::from("src/a.rs"), 1, 0, ByteSpan { offset: 0, length: 3 }),
         context: ReferenceContext::Call,
     });
     graph.add_reference(SymbolReference {
         name: "foo".to_string(),
-        location: CodeLocation::new(PathBuf::from("src/a.rs"), 10, 0, 0, 3),
+        location: CodeLocation::new(PathBuf::from("src/a.rs"), 10, 0, ByteSpan { offset: 0, length: 3 }),
         context: ReferenceContext::Call,
     });
     graph.add_reference(SymbolReference {
         name: "foo".to_string(),
-        location: CodeLocation::new(PathBuf::from("src/b.rs"), 5, 0, 0, 3),
+        location: CodeLocation::new(PathBuf::from("src/b.rs"), 5, 0, ByteSpan { offset: 0, length: 3 }),
         context: ReferenceContext::Type,
     });
     graph.add_reference(SymbolReference {
         name: "foo".to_string(),
-        location: CodeLocation::new(PathBuf::from("src/c.rs"), 20, 0, 0, 3),
+        location: CodeLocation::new(PathBuf::from("src/c.rs"), 20, 0, ByteSpan { offset: 0, length: 3 }),
         context: ReferenceContext::Import,
     });
     graph.add_reference(SymbolReference {
         name: "foo".to_string(),
-        location: CodeLocation::new(PathBuf::from("src/c.rs"), 25, 0, 0, 3),
+        location: CodeLocation::new(PathBuf::from("src/c.rs"), 25, 0, ByteSpan { offset: 0, length: 3 }),
         context: ReferenceContext::Import,
     });
     graph.add_reference(SymbolReference {
         name: "foo".to_string(),
-        location: CodeLocation::new(PathBuf::from("src/c.rs"), 30, 0, 0, 3),
+        location: CodeLocation::new(PathBuf::from("src/c.rs"), 30, 0, ByteSpan { offset: 0, length: 3 }),
         context: ReferenceContext::Import,
     });
 

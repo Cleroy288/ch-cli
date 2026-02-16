@@ -1,63 +1,65 @@
 //! Search and reranking logic for the pipeline.
 
+use std::io::Write;
 use std::sync::mpsc;
 use std::time::Duration;
 
 use crate::indexer::DocumentType;
-use crate::retrieval::context::{ContextConfig, ContextExpander};
 use crate::retrieval::daemon::protocol::SearchSpec;
 use crate::retrieval::daemon::DaemonClient;
 use crate::retrieval::hybrid::HybridSearchResult;
 use crate::retrieval::query::fallback_parse;
-use crate::retrieval::{RetrievalError, RetrievalResult};
+use crate::retrieval::RetrievalResult;
 
 use super::core::RetrievalPipeline;
 
 impl RetrievalPipeline {
-	/// Perform hybrid search using SearchSpec with intent-aware boosting
+	/// Perform hybrid search using SearchSpec
 	pub(super) fn search(
 		&self,
 		spec: &SearchSpec,
 		limit: usize,
 	) -> RetrievalResult<Vec<HybridSearchResult>> {
 		if let Some(ref hybrid) = self.hybrid {
-			// use search_with_spec for intent-aware boost
 			hybrid.search_with_spec(spec, limit)
 		} else {
-			// Fallback: no results if hybrid not initialized
 			Ok(Vec::new())
 		}
 	}
 
-	/// Safe query expansion with timeout
-	/// Returns fallback SearchSpec if daemon fails or times out
-	pub(super) fn expand_query_safe(&self, query: &str) -> SearchSpec {
-		let (tx, rx) = mpsc::channel(); // channel for result communication
-		let query_clone = query.to_string(); // owned copy for thread
+	/// Safe query expansion with timeout.
+	/// Returns fallback SearchSpec if daemon fails.
+	pub(super) fn expand_query_safe(
+		&self,
+		query: &str,
+	) -> SearchSpec {
+		let result =
+			spawn_daemon_expand(query);
+		let timeout = Duration::from_secs(10);
 
-		std::thread::spawn(move || {
-			// Create new daemon client in thread (avoids Clone requirement)
-			let daemon = DaemonClient::new();
-			let result = daemon.expand(query_clone);
-			let _ = tx.send(result);
-		});
-
-		// Wait with 10 second timeout
-		match rx.recv_timeout(Duration::from_secs(10)) {
+		match result.recv_timeout(timeout) {
 			Ok(Ok(spec)) => spec,
-			Ok(Err(e)) => {
-				eprintln!("[pipeline] Query expansion failed: {}, using fallback", e);
+			Ok(Err(err)) => {
+				let _ = writeln!(
+					std::io::stderr().lock(),
+					"[pipeline] Expansion \
+					failed: {}, fallback",
+					err
+				);
 				self.fallback_query_expansion(query)
 			}
 			Err(_) => {
-				eprintln!("[pipeline] Query expansion timed out, using fallback");
+				let _ = writeln!(
+					std::io::stderr().lock(),
+					"[pipeline] Expansion timed out"
+				);
 				self.fallback_query_expansion(query)
 			}
 		}
 	}
 
-	/// Safe reranking with timeout
-	/// Returns original results (sorted by RRF) if daemon fails or times out
+	/// Safe reranking with timeout.
+	/// Returns original results if daemon fails.
 	pub(super) fn rerank_safe(
 		&self,
 		query: &str,
@@ -68,63 +70,22 @@ impl RetrievalPipeline {
 			return results;
 		}
 
-		let (tx, rx) = mpsc::channel(); // channel for result communication
-		let query_clone = query.to_string(); // owned copy for thread
+		let documents = build_rerank_documents(&results);
+		let scores = fetch_rerank_scores(
+			query, documents,
+		);
 
-		// Create documents for reranking (before spawning thread)
-		let documents: Vec<String> = results
-			.iter()
-			.map(|r| {
-				format!(
-					"{} {} {}",
-					r.symbol.kind,
-					r.symbol.name,
-					r.symbol.signature.as_deref().unwrap_or("")
+		match scores {
+			Some(scores) => {
+				apply_rerank_scores(
+					query, spec, results, &scores,
 				)
-			})
-			.collect();
-
-		std::thread::spawn(move || {
-			// Create new daemon client in thread (avoids Clone requirement)
-			let daemon = DaemonClient::new();
-			let rerank_result = daemon.rerank(query_clone, documents);
-			let _ = tx.send(rerank_result);
-		});
-
-		// Wait with 15 second timeout (reranking can be slower)
-		match rx.recv_timeout(Duration::from_secs(15)) {
-			Ok(Ok(scores)) => {
-				// Apply scores and sort
-				let mut reranked = results;
-				for (result, score) in reranked.iter_mut().zip(scores.iter()) {
-					// Apply query-aware and intent-aware boosts
-					let doc_type = DocumentType::from_path(&result.symbol.location.file);
-					let doc_query_boost = doc_type.boost_factor_for_query(query);
-					let doc_intent_boost = doc_type.boost_factor_for_intent(&spec.intent);
-					let kind_boost = result.symbol.kind.boost_factor_for_intent(&spec.intent);
-					let combined_boost = doc_query_boost * doc_intent_boost * kind_boost;
-					result.rerank_score = Some(*score * combined_boost);
-				}
-				reranked.sort_by(|a, b| {
-					b.rerank_score
-						.partial_cmp(&a.rerank_score)
-						.unwrap_or(std::cmp::Ordering::Equal)
-				});
-				reranked
 			}
-			Ok(Err(e)) => {
-				eprintln!("[pipeline] Reranking failed: {}, using RRF scores", e);
-				results // Already sorted by RRF
-			}
-			Err(_) => {
-				eprintln!("[pipeline] Reranking timed out, using RRF scores");
-				results // Already sorted by RRF
-			}
+			None => results,
 		}
 	}
 
-	/// Fallback query expansion when daemon is unavailable
-	/// Uses fast-path parser for basic symbol extraction
+	/// Fallback query expansion when daemon unavailable
 	#[doc(hidden)]
 	pub fn fallback_query_expansion(
 		&self,
@@ -132,4 +93,119 @@ impl RetrievalPipeline {
 	) -> SearchSpec {
 		fallback_parse(query)
 	}
+}
+
+/// Spawn daemon expand query on background thread
+fn spawn_daemon_expand(
+	query: &str,
+) -> mpsc::Receiver<RetrievalResult<SearchSpec>> {
+	let (sender, receiver) = mpsc::channel();
+	let query_clone = query.to_string();
+
+	std::thread::spawn(move || {
+		let daemon = DaemonClient::new();
+		let result = daemon.expand(query_clone);
+		let _ = sender.send(result);
+	});
+	receiver
+}
+
+/// Build document strings for reranking
+fn build_rerank_documents(
+	results: &[HybridSearchResult],
+) -> Vec<String> {
+	results
+		.iter()
+		.map(|res| {
+			format!(
+				"{} {} {}",
+				res.symbol.kind,
+				res.symbol.name,
+				res.symbol
+					.signature
+					.as_deref()
+					.unwrap_or("")
+			)
+		})
+		.collect()
+}
+
+/// Fetch rerank scores from daemon with timeout
+fn fetch_rerank_scores(
+	query: &str,
+	documents: Vec<String>,
+) -> Option<Vec<f32>> {
+	let receiver =
+		spawn_daemon_rerank(query, documents);
+	let timeout = Duration::from_secs(15);
+
+	match receiver.recv_timeout(timeout) {
+		Ok(Ok(scores)) => Some(scores),
+		Ok(Err(err)) => {
+			let _ = writeln!(
+				std::io::stderr().lock(),
+				"[pipeline] Reranking failed: {}",
+				err
+			);
+			None
+		}
+		Err(_) => {
+			let _ = writeln!(
+				std::io::stderr().lock(),
+				"[pipeline] Reranking timed out"
+			);
+			None
+		}
+	}
+}
+
+/// Spawn daemon rerank on background thread
+fn spawn_daemon_rerank(
+	query: &str,
+	documents: Vec<String>,
+) -> mpsc::Receiver<RetrievalResult<Vec<f32>>> {
+	let (sender, receiver) = mpsc::channel();
+	let query_clone = query.to_string();
+
+	std::thread::spawn(move || {
+		let daemon = DaemonClient::new();
+		let result =
+			daemon.rerank(query_clone, documents);
+		let _ = sender.send(result);
+	});
+	receiver
+}
+
+/// Apply rerank scores with intent-aware boosting
+fn apply_rerank_scores(
+	query: &str,
+	spec: &SearchSpec,
+	mut results: Vec<HybridSearchResult>,
+	scores: &[f32],
+) -> Vec<HybridSearchResult> {
+	for (result, score) in
+		results.iter_mut().zip(scores.iter())
+	{
+		let doc_type = DocumentType::from_path(
+			&result.symbol.location.file,
+		);
+		let query_boost =
+			doc_type.boost_factor_for_query(query);
+		let intent_boost =
+			doc_type.boost_factor_for_intent(&spec.intent);
+		let kind_boost = result
+			.symbol
+			.kind
+			.boost_factor_for_intent(&spec.intent);
+		let combined =
+			query_boost * intent_boost * kind_boost;
+		result.rerank_score = Some(*score * combined);
+	}
+
+	results.sort_by(|lhs, rhs| {
+		rhs.rerank_score
+			.partial_cmp(&lhs.rerank_score)
+			.unwrap_or(std::cmp::Ordering::Equal)
+	});
+	results
 }

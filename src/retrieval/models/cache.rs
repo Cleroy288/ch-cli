@@ -4,7 +4,6 @@
 //! re-downloading. Stores metadata in cache.json.
 
 use std::collections::HashMap;
-use std::fs;
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
@@ -43,7 +42,7 @@ impl ModelCache {
 		cache_dir: impl AsRef<Path>,
 	) -> ModelResult<Self> {
 		let cache_dir = cache_dir.as_ref().to_path_buf();
-		fs::create_dir_all(&cache_dir)?;
+		std::fs::create_dir_all(&cache_dir)?;
 
 		let mut cache = Self {
 			cache_dir,
@@ -94,12 +93,13 @@ impl ModelCache {
 	fn load_metadata(&mut self) -> ModelResult<()> {
 		let path = self.cache_dir.join("cache.json");
 		if path.exists() {
-			let content = fs::read_to_string(&path)?;
+			let content =
+				std::fs::read_to_string(&path)?;
 			self.models = serde_json::from_str(&content)
-				.map_err(|e| {
+				.map_err(|err| {
 					ModelError::Hub(format!(
 						"cache metadata: {}",
-						e
+						err
 					))
 				})?;
 		}
@@ -113,13 +113,13 @@ impl ModelCache {
 		let path = self.cache_dir.join("cache.json");
 		let content =
 			serde_json::to_string_pretty(&self.models)
-				.map_err(|e| {
+				.map_err(|err| {
 					ModelError::Hub(format!(
 						"serialize cache: {}",
-						e
+						err
 					))
 				})?;
-		fs::write(&path, content)?;
+		std::fs::write(&path, content)?;
 		Ok(())
 	}
 

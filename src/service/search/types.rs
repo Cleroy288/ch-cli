@@ -7,15 +7,12 @@ use crate::indexer::{
 };
 use crate::retrieval::daemon::protocol::QueryIntent;
 
-/// Options for search operations
+#[allow(clippy::struct_excessive_bools)]
+/// Boolean flags for search operations
 #[derive(Debug, Clone, Default)]
-pub struct SearchOptions {
-	/// Maximum results to return
-	pub limit: usize,
+pub struct SearchFlags {
 	/// Use fuzzy matching
 	pub fuzzy: bool,
-	/// Filter by symbol kind
-	pub kind: Option<SymbolKind>,
 	/// Enable semantic (hybrid) search
 	pub semantic: bool,
 	/// Expand with context info
@@ -24,6 +21,17 @@ pub struct SearchOptions {
 	pub rerank: bool,
 	/// Show full file content
 	pub full: bool,
+}
+
+/// Options for search operations
+#[derive(Debug, Clone, Default)]
+pub struct SearchOptions {
+	/// Maximum results to return
+	pub limit: usize,
+	/// Filter by symbol kind
+	pub kind: Option<SymbolKind>,
+	/// Boolean flags
+	pub flags: SearchFlags,
 }
 
 /// Result from a search operation

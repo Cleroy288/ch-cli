@@ -3,7 +3,6 @@
 //! Detects added, modified, deleted, and unchanged files.
 
 use std::collections::HashSet;
-use std::io;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
@@ -15,7 +14,7 @@ impl IndexState {
 		&mut self,
 		path: &Path,
 		symbol_count: usize,
-	) -> io::Result<()> {
+	) -> std::io::Result<()> {
 		// canonicalized path to match the root
 		let canonical_path = path
 			.canonicalize()
@@ -51,35 +50,16 @@ impl IndexState {
 
 		// Check for added and modified files
 		for file_path in current_files {
-			// canonicalized path to match stored paths
-			let canonical_path = file_path
-				.canonicalize()
-				.unwrap_or_else(|_| file_path.clone());
-
-			// path relative to the root
-			let relative = canonical_path
-				.strip_prefix(&self.root)
-				.unwrap_or(&canonical_path);
-
-			match self.files.get(relative) {
-				Some(file_state) => {
-					if file_state.has_changed(&self.root) {
-						changes.modified.push(file_path.clone());
-					} else {
-						changes.unchanged.push(file_path.clone());
-					}
-				}
-				None => {
-					changes.added.push(file_path.clone());
-				}
-			}
+			self.classify_file(
+				file_path, &mut changes,
+			);
 		}
 
 		// current_set: set of current file paths for lookup
 		let current_set: HashSet<_> = current_files
 			.iter()
-			.filter_map(|p| {
-				let canonical = p.canonicalize().ok()?;
+			.filter_map(|path| {
+				let canonical = path.canonicalize().ok()?;
 				let relative = canonical
 					.strip_prefix(&self.root)
 					.ok()?
@@ -98,11 +78,37 @@ impl IndexState {
 		changes
 	}
 
+	/// Classify a single file as added, modified, or unchanged
+	fn classify_file(
+		&self,
+		file_path: &Path,
+		changes: &mut ChangeSet,
+	) {
+		let canonical = file_path
+			.canonicalize()
+			.unwrap_or_else(|_| file_path.to_path_buf());
+		let relative = canonical
+			.strip_prefix(&self.root)
+			.unwrap_or(&canonical);
+
+		match self.files.get(relative) {
+			Some(state) if state.has_changed(&self.root) => {
+				changes.modified.push(file_path.to_path_buf());
+			}
+			Some(_) => {
+				changes.unchanged.push(file_path.to_path_buf());
+			}
+			None => {
+				changes.added.push(file_path.to_path_buf());
+			}
+		}
+	}
+
 	/// Update the last_updated timestamp
 	pub fn touch(&mut self) {
 		self.last_updated = SystemTime::now()
 			.duration_since(SystemTime::UNIX_EPOCH)
-			.map(|d| d.as_secs())
+			.map(|dur| dur.as_secs())
 			.unwrap_or(0);
 	}
 }

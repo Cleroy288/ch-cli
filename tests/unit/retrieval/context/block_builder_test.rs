@@ -1,8 +1,8 @@
 //! Tests for retrieval::context::block_builder
 
-use ch_cli::indexer::SemanticGraph;
-use ch_cli::retrieval::context::block_builder::BlockBuilder;
-use ch_cli::retrieval::context::ContextConfig;
+use rustean::indexer::SemanticGraph;
+use rustean::retrieval::context::block_builder::BlockBuilder;
+use rustean::retrieval::context::ContextConfig;
 
 /// Verify BlockBuilder::with_config stores config
 #[test]

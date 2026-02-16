@@ -1,6 +1,6 @@
 //! Tests for retrieval::rerank::cross_encoder
 
-use ch_cli::retrieval::rerank::BgeReranker;
+use rustean::retrieval::rerank::BgeReranker;
 
 #[test]
 #[ignore] // requires model download
@@ -12,7 +12,7 @@ fn test_score_single() {
 			"Machine learning is a subset of AI.",
 		)
 		.unwrap();
-	assert!(score >= 0.0 && score <= 1.0);
+	assert!((0.0..=1.0).contains(&score));
 }
 
 #[test]

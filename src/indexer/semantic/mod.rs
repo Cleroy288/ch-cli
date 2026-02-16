@@ -29,7 +29,6 @@ use types::Definition as Def;
 use types::SymbolReference as SymRef;
 
 /// The semantic graph for a project
-#[derive(Clone)]
 pub struct SemanticGraph {
 	/// All definitions indexed by name
 	definitions_by_name: FxHashMap<String, Vec<Def>>,
@@ -60,10 +59,10 @@ impl SemanticGraph {
 		SemanticStats {
 			total_definitions:
 				self.definitions_by_name.values()
-				.map(|v| v.len()).sum(),
+				.map(|defs| defs.len()).sum(),
 			total_references:
 				self.references_by_name.values()
-				.map(|v| v.len()).sum(),
+				.map(|refs| refs.len()).sum(),
 			unique_symbols: self.definitions_by_name.len(),
 			files_analyzed: self.definitions_by_file.len(),
 		}

@@ -6,6 +6,7 @@ mod connection;
 #[doc(hidden)]
 pub mod pool_ops;
 mod core_requests;
+mod doc_gen_requests;
 mod doc_requests;
 mod embedding_methods;
 pub mod pool;
@@ -19,9 +20,18 @@ use std::path::Path;
 use std::time::Duration;
 
 use crate::retrieval::daemon::protocol::{
-	CachedSearchResult, DaemonStatus, DocEntryResponse, SearchSpec,
+	CachedSearchResult, DaemonStatus,
+	DocEntryResponse, SearchSpec,
 };
 use crate::retrieval::{RetrievalConfig, RetrievalResult};
+
+/// Index result: (symbol_count, cached, index_time_ms)
+type IndexProjectResult =
+	RetrievalResult<(usize, bool, u64)>;
+
+/// Status result: (cached, symbol_count, last_indexed)
+type ProjectStatusResult =
+	RetrievalResult<(bool, usize, u64)>;
 
 // Re-export public types for backward compatibility
 pub use doc_requests::DocGenStatus;
@@ -128,7 +138,7 @@ impl DaemonClient {
 		&self,
 		project_path: &str,
 		force: bool,
-	) -> RetrievalResult<(usize, bool, u64)> {
+	) -> IndexProjectResult {
 		project_requests::index_project(
 			&self.socket_path,
 			self.timeout,
@@ -147,9 +157,11 @@ impl DaemonClient {
 		project_requests::search_project(
 			&self.socket_path,
 			self.timeout,
-			project_path,
-			query,
-			limit,
+			project_requests::ProjectSearchQuery {
+				project_path,
+				query,
+				limit,
+			},
 		)
 	}
 
@@ -158,7 +170,7 @@ impl DaemonClient {
 	pub fn project_status(
 		&self,
 		project_path: &str,
-	) -> RetrievalResult<(bool, usize, u64)> {
+	) -> ProjectStatusResult {
 		project_requests::project_status(
 			&self.socket_path,
 			self.timeout,
@@ -218,6 +230,24 @@ impl DaemonClient {
 		)
 	}
 
+	/// Get doc for a symbol in a specific file
+	pub fn get_doc_by_file(
+		&self,
+		project_path: String,
+		file_path: String,
+		symbol_name: String,
+	) -> RetrievalResult<Option<DocEntryResponse>> {
+		doc_requests::get_doc_by_file(
+			&self.socket_path,
+			self.timeout,
+			doc_requests::DocByFileQuery {
+				project_path,
+				file_path,
+				symbol_name,
+			},
+		)
+	}
+
 	/// Search documentation
 	pub fn search_docs(
 		&self,
@@ -228,9 +258,11 @@ impl DaemonClient {
 		doc_requests::search_docs(
 			&self.socket_path,
 			self.timeout,
-			project_path,
-			query,
-			limit,
+			doc_requests::DocSearchQuery {
+				project_path,
+				query,
+				limit,
+			},
 		)
 	}
 }

@@ -4,6 +4,7 @@ pub mod analyzer;
 pub mod crawler;
 pub mod doc_parser;
 pub mod manager;
+pub mod memory;
 pub mod parser;
 pub mod search;
 pub mod semantic;

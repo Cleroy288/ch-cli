@@ -1,6 +1,6 @@
 //! Tests for retrieval::agent::feedback_actions
 
-use ch_cli::retrieval::agent::feedback_actions::{
+use rustean::retrieval::agent::feedback_actions::{
 	parse_feedback_action, FeedbackAction,
 };
 

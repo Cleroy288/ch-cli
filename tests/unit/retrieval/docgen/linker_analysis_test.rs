@@ -1,8 +1,8 @@
 //! Tests for retrieval::docgen::linker_analysis
 
-use ch_cli::indexer::semantic::ReferenceContext;
-use ch_cli::retrieval::docgen::entry_types::ReferenceKind;
-use ch_cli::retrieval::docgen::linker_analysis::{
+use rustean::indexer::semantic::ReferenceContext;
+use rustean::retrieval::docgen::entry_types::ReferenceKind;
+use rustean::retrieval::docgen::linker_analysis::{
 	convert_reference_context, is_std_module,
 };
 

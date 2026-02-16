@@ -1,6 +1,6 @@
 //! Tests for retrieval::docgen::entry_types
 
-use ch_cli::retrieval::docgen::entry_types::ReferenceKind;
+use rustean::retrieval::docgen::entry_types::ReferenceKind;
 
 /// Verify Display impl for all ReferenceKind variants.
 #[test]

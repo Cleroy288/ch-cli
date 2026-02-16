@@ -26,9 +26,9 @@ pub fn status(
 	// daemon is running, get detailed status
 	let request = DaemonRequest::Status;
 	match send_request(socket_path, timeout, &request)? {
-		DaemonResponse::Status(s) => Ok(s),
-		DaemonResponse::Error(e) => {
-			Err(RetrievalError::DaemonCommunication(e))
+		DaemonResponse::Status(status) => Ok(status),
+		DaemonResponse::Error(msg) => {
+			Err(RetrievalError::DaemonCommunication(msg))
 		}
 		other => Err(RetrievalError::DaemonCommunication(
 			format!("unexpected response: {:?}", other),

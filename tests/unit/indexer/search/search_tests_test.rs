@@ -2,15 +2,17 @@
 
 use std::path::PathBuf;
 
-use ch_cli::indexer::search::SearchIndex;
-use ch_cli::indexer::symbols::{CodeLocation, Symbol, SymbolKind};
+use rustean::indexer::search::SearchIndex;
+use rustean::indexer::symbols::{
+    ByteSpan, CodeLocation, Symbol, SymbolKind,
+};
 
 /// Helper to create a test symbol with default path
 fn create_test_symbol(name: &str, kind: SymbolKind) -> Symbol {
     Symbol::new(
         name.to_string(),
         kind,
-        CodeLocation::new(PathBuf::from("test.rs"), 1, 0, 0, 10),
+        CodeLocation::new(PathBuf::from("test.rs"), 1, 0, ByteSpan { offset: 0, length: 10 }),
     )
 }
 
@@ -19,7 +21,7 @@ fn create_test_symbol_with_path(name: &str, kind: SymbolKind, path: &str) -> Sym
     Symbol::new(
         name.to_string(),
         kind,
-        CodeLocation::new(PathBuf::from(path), 1, 0, 0, 10),
+        CodeLocation::new(PathBuf::from(path), 1, 0, ByteSpan { offset: 0, length: 10 }),
     )
 }
 

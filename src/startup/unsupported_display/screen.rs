@@ -1,10 +1,10 @@
 //! Screen management utilities
 
-use std::io;
+use std::io::{self, Write};
 
 use crossterm::{cursor, execute, terminal};
 
-/// Clear screen and move cursor to top
+/// Clear screen and show the unsupported header
 pub fn clear_screen_and_show_header(
     stdout: &mut io::Stdout,
 ) -> io::Result<()> {
@@ -13,14 +13,20 @@ pub fn clear_screen_and_show_header(
         terminal::Clear(terminal::ClearType::All),
         cursor::MoveTo(0, 0)
     )?;
+    writeln!(stdout)?;
+    show_title_and_warning(stdout)
+}
 
-    println!();
+/// Display the title and warning lines
+fn show_title_and_warning(
+    stdout: &mut io::Stdout,
+) -> io::Result<()> {
     execute!(
         stdout,
         crossterm::style::SetForegroundColor(
             crossterm::style::Color::Cyan
         ),
-        crossterm::style::Print("  ch-cli"),
+        crossterm::style::Print("  rustean"),
         crossterm::style::ResetColor,
         crossterm::style::Print(
             " - Semantic Code Indexer\n\n"
@@ -36,13 +42,13 @@ pub fn clear_screen_and_show_header(
             "  Language Not Supported\n\n"
         ),
         crossterm::style::ResetColor
-    )?;
-
-    Ok(())
+    )
 }
 
 /// Clear screen
-pub fn clear_screen(stdout: &mut io::Stdout) -> io::Result<()> {
+pub fn clear_screen(
+    stdout: &mut io::Stdout,
+) -> io::Result<()> {
     execute!(
         stdout,
         terminal::Clear(terminal::ClearType::All),

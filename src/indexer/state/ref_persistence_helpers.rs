@@ -24,9 +24,9 @@ pub(crate) fn ref_file_key(
 	let safe: String = relative
 		.to_string_lossy()
 		.chars()
-		.map(|c| match c {
+		.map(|chr| match chr {
 			'/' | '\\' | '.' => '_',
-			_ => c,
+			_ => chr,
 		})
 		.collect();
 
@@ -79,10 +79,10 @@ pub(crate) fn save_grouped_refs(
 		let path = refs_dir.join(key);
 		let json =
 			serde_json::to_string(file_refs).map_err(
-				|e| {
+				|err| {
 					std::io::Error::new(
 						std::io::ErrorKind::InvalidData,
-						e,
+						err,
 					)
 				},
 			)?;
@@ -103,10 +103,10 @@ pub(crate) fn migrate_if_needed(
 
 	let content = std::fs::read_to_string(&legacy)?;
 	let refs: Vec<SymbolReference> =
-		serde_json::from_str(&content).map_err(|e| {
+		serde_json::from_str(&content).map_err(|err| {
 			std::io::Error::new(
 				std::io::ErrorKind::InvalidData,
-				e,
+				err,
 			)
 		})?;
 
@@ -129,16 +129,16 @@ pub(crate) fn load_all_refs(
 		let path = entry?.path();
 		if path
 			.extension()
-			.is_some_and(|e| e == "json")
+			.is_some_and(|ext| ext == "json")
 		{
 			let content =
 				std::fs::read_to_string(&path)?;
 			let refs: Vec<SymbolReference> =
 				serde_json::from_str(&content).map_err(
-					|e| {
+					|err| {
 						std::io::Error::new(
 							std::io::ErrorKind::InvalidData,
-							e,
+							err,
 						)
 					},
 				)?;

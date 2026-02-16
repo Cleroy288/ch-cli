@@ -10,12 +10,12 @@ use super::intent::classify_intent;
 pub(crate) fn deduplicate_symbols(
 	symbols: &mut Vec<SymbolCandidate>,
 ) {
-	symbols.sort_by(|a, b| {
-		b.confidence
-			.partial_cmp(&a.confidence)
+	symbols.sort_by(|lhs, rhs| {
+		rhs.confidence
+			.partial_cmp(&lhs.confidence)
 			.unwrap()
 	});
-	symbols.dedup_by(|a, b| a.name == b.name);
+	symbols.dedup_by(|lhs, rhs| lhs.name == rhs.name);
 }
 
 /// Build FastPathResult from extracted symbols
@@ -28,7 +28,7 @@ pub(crate) fn build_result(
 	} else {
 		let sum: f32 = symbols
 			.iter()
-			.map(|s| s.confidence)
+			.map(|sym| sym.confidence)
 			.sum();
 		sum / symbols.len() as f32
 	};
@@ -37,8 +37,9 @@ pub(crate) fn build_result(
 		is_conceptual,
 		symbols.is_empty(),
 	);
-	let use_fast_path = intent == FastPathIntent::Explicit
-		&& confidence >= 0.7;
+	let use_fast_path =
+		intent == FastPathIntent::Explicit
+			&& confidence >= 0.7;
 
 	FastPathResult {
 		symbols,

@@ -20,6 +20,16 @@ pub const DEFAULT_RERANKER: &str = "BAAI/bge-reranker-base";
 /// Maximum sequence length for reranker
 pub const MAX_SEQ_LEN: usize = 512;
 
+/// Bundled input tensors for the cross-encoder
+struct InputTensors {
+	/// token ID tensor
+	ids: Tensor,
+	/// attention mask tensor
+	mask: Tensor,
+	/// token type ID tensor
+	type_ids: Tensor,
+}
+
 /// BGE Reranker for scoring query-document pairs
 pub struct BgeReranker {
 	/// the XLM-RoBERTa model with classification head
@@ -65,61 +75,107 @@ impl BgeReranker {
 			return Ok(Vec::new());
 		}
 
-		// tokenize pairs (query [SEP] document)
-		let texts: Vec<(String, String)> = pairs.to_vec();
-		let tokens = self
-			.tokenizer
-			.encode_batch(texts, true)
-			.map_err(|e| ModelError::Tokenizer(e.to_string()))?;
+		let tokens = self.tokenize_pairs(pairs)?;
+		let tensors =
+			self.build_tensors(&tokens, pairs.len())?;
 
-		// prepare tensors
-		let token_ids: Vec<Vec<u32>> = tokens
-			.iter()
-			.map(|t| t.get_ids().to_vec())
-			.collect();
-		let attention_mask: Vec<Vec<u32>> = tokens
-			.iter()
-			.map(|t| t.get_attention_mask().to_vec())
-			.collect();
-		let token_type_ids: Vec<Vec<u32>> = tokens
-			.iter()
-			.map(|t| t.get_type_ids().to_vec())
-			.collect();
-
-		let batch_size = pairs.len();
-		let seq_len = token_ids[0].len();
-
-		// flatten and create tensors
-		let token_ids_flat: Vec<u32> =
-			token_ids.into_iter().flatten().collect();
-		let attention_mask_flat: Vec<u32> =
-			attention_mask.into_iter().flatten().collect();
-		let token_type_ids_flat: Vec<u32> =
-			token_type_ids.into_iter().flatten().collect();
-
-		let dims = (batch_size, seq_len);
-		let token_ids_tensor =
-			Tensor::from_vec(token_ids_flat, dims, &self.device)?;
-		let attention_mask_tensor =
-			Tensor::from_vec(attention_mask_flat, dims, &self.device)?;
-		let token_type_ids_tensor =
-			Tensor::from_vec(token_type_ids_flat, dims, &self.device)?;
-
-		// forward pass through XLM-RoBERTa (returns logits directly)
-		let logits = self.model.forward(
-			&token_ids_tensor,
-			&attention_mask_tensor,
-			&token_type_ids_tensor,
-		)?;
-
-		// apply sigmoid for probability score
-		let scores = candle_nn::ops::sigmoid(&logits)?;
-
-		// convert to Vec<f32> - squeeze the last dimension
-		let scores_squeezed = scores.squeeze(1)?;
-		let result = scores_squeezed.to_vec1::<f32>()?;
-		Ok(result)
+		self.forward_pass(&tensors)
 	}
+
+	/// Tokenize (query, document) pairs for the model
+	fn tokenize_pairs(
+		&self,
+		pairs: &[(String, String)],
+	) -> ModelResult<Vec<tokenizers::Encoding>> {
+		let texts: Vec<(String, String)> = pairs.to_vec();
+		self.tokenizer
+			.encode_batch(texts, true)
+			.map_err(|err| {
+				ModelError::Tokenizer(err.to_string())
+			})
+	}
+
+	/// Build input tensors from tokenized encodings
+	fn build_tensors(
+		&self,
+		tokens: &[tokenizers::Encoding],
+		batch_size: usize,
+	) -> ModelResult<InputTensors> {
+		let token_ids = extract_ids(tokens);
+		let masks = extract_masks(tokens);
+		let type_ids = extract_type_ids(tokens);
+
+		let seq_len = token_ids[0].len();
+		let dims = (batch_size, seq_len);
+
+		Ok(InputTensors {
+			ids: flatten_to_tensor(
+				token_ids, dims, &self.device,
+			)?,
+			mask: flatten_to_tensor(
+				masks, dims, &self.device,
+			)?,
+			type_ids: flatten_to_tensor(
+				type_ids, dims, &self.device,
+			)?,
+		})
+	}
+
+	/// Run forward pass and extract scores
+	fn forward_pass(
+		&self,
+		tensors: &InputTensors,
+	) -> ModelResult<Vec<f32>> {
+		let logits = self.model.forward(
+			&tensors.ids,
+			&tensors.mask,
+			&tensors.type_ids,
+		)?;
+		let scores = candle_nn::ops::sigmoid(&logits)?;
+		let squeezed = scores.squeeze(1)?;
+		Ok(squeezed.to_vec1::<f32>()?)
+	}
+}
+
+/// Extract token IDs from encodings
+fn extract_ids(
+	tokens: &[tokenizers::Encoding],
+) -> Vec<Vec<u32>> {
+	tokens
+		.iter()
+		.map(|enc| enc.get_ids().to_vec())
+		.collect()
+}
+
+/// Extract attention masks from encodings
+fn extract_masks(
+	tokens: &[tokenizers::Encoding],
+) -> Vec<Vec<u32>> {
+	tokens
+		.iter()
+		.map(|enc| enc.get_attention_mask().to_vec())
+		.collect()
+}
+
+/// Extract token type IDs from encodings
+fn extract_type_ids(
+	tokens: &[tokenizers::Encoding],
+) -> Vec<Vec<u32>> {
+	tokens
+		.iter()
+		.map(|enc| enc.get_type_ids().to_vec())
+		.collect()
+}
+
+/// Flatten 2D vec and create a tensor
+fn flatten_to_tensor(
+	data: Vec<Vec<u32>>,
+	dims: (usize, usize),
+	device: &Device,
+) -> ModelResult<Tensor> {
+	let flat: Vec<u32> =
+		data.into_iter().flatten().collect();
+	Ok(Tensor::from_vec(flat, dims, device)?)
 }
 
 /// Configure tokenizer for pair encoding

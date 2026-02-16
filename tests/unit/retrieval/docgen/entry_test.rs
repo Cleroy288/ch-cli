@@ -2,9 +2,9 @@
 
 use std::path::PathBuf;
 
-use ch_cli::indexer::SymbolKind;
-use ch_cli::retrieval::docgen::entry_types::DocStatus;
-use ch_cli::retrieval::docgen::DocEntry;
+use rustean::indexer::SymbolKind;
+use rustean::retrieval::docgen::entry_types::DocStatus;
+use rustean::retrieval::docgen::DocEntry;
 
 #[test]
 fn test_doc_entry_id_generation() {

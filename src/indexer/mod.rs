@@ -17,7 +17,7 @@
 //! # Example - Parse a single file
 //!
 //! ```ignore
-//! use ch_cli::indexer::RustParser;
+//! use rustean::indexer::RustParser;
 //!
 //! let mut parser = RustParser::new()?;
 //! let symbols = parser.parse_file("src/main.rs")?;
@@ -32,7 +32,7 @@
 //! # Example - Index and search a project
 //!
 //! ```ignore
-//! use ch_cli::indexer::{IndexManager, SearchIndex};
+//! use rustean::indexer::{IndexManager, SearchIndex};
 //!
 //! let manager = IndexManager::new();
 //! let result = manager.index_project(".");
@@ -54,6 +54,7 @@ pub mod analyzer;
 pub mod crawler;
 pub mod doc_parser;
 pub mod manager;
+pub mod memory;
 pub mod parser;
 pub mod queries;
 pub mod search;
@@ -84,16 +85,20 @@ pub use semantic::{
 };
 pub use state::{ChangeSet, FileState, IndexState, INDEX_DIR_NAME};
 pub use symbols::{
-	CodeLocation, ContentType, DocumentType,
-	Symbol, SymbolKind, Visibility,
+	ByteSpan, CodeLocation, ContentType,
+	DocumentType, Symbol, SymbolKind, Visibility,
 };
 pub use trigram::{TrigramIndex, TrigramStats};
 pub use triple_search::{
-	TripleIndexStats, TripleSearchIndex,
-	TripleSearchResults,
+	TripleIndexStats, TripleLimits,
+	TripleSearchIndex, TripleSearchResults,
 };
 pub use watcher::{
 	ChangeKind, FileChangeEvent, FileWatcher,
 	WatcherError, WatcherResult,
+};
+pub use memory::{
+	MemoryFields, MemoryHit, MemorySearchIndex,
+	MemoryStats,
 };
 

@@ -1,6 +1,6 @@
 //! Tests for retrieval::agent::output_structured
 
-use ch_cli::retrieval::agent::output_structured::{
+use rustean::retrieval::agent::output_structured::{
 	CodeResult, DocResult, NotesResult,
 };
 

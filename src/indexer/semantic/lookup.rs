@@ -32,7 +32,7 @@ impl SemanticGraph {
 		self.definitions_by_name
 			.values()
 			.flatten()
-			.filter(|d| d.symbol.kind == kind)
+			.filter(|def| def.symbol.kind == kind)
 			.collect()
 	}
 }

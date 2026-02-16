@@ -1,6 +1,6 @@
 //! Tests for retrieval::docgen::generator
 
-use ch_cli::retrieval::docgen::DocGenerator;
+use rustean::retrieval::docgen::DocGenerator;
 
 #[test]
 fn test_generator_not_ready() {

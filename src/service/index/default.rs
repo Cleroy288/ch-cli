@@ -13,6 +13,12 @@ use super::IndexService;
 /// Default index service backed by IndexManager
 pub struct DefaultIndexService;
 
+impl Default for DefaultIndexService {
+	fn default() -> Self {
+		Self
+	}
+}
+
 impl DefaultIndexService {
 	/// Create a new default index service
 	pub fn new() -> Self {
@@ -27,12 +33,12 @@ impl IndexService for DefaultIndexService {
 		opts: &IndexOptions,
 	) -> Result<IndexResult, IndexError> {
 		let mut manager = IndexManager::new();
-		if opts.semantic {
+		if opts.flags.semantic {
 			manager = manager
 				.with_semantic_analysis()
 				.with_reference_extraction();
 		}
-		if opts.persistence {
+		if opts.flags.persistence {
 			manager = manager.with_persistence();
 		}
 		manager.index_project(path)

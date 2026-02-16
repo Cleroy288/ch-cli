@@ -30,7 +30,9 @@ fn read_entries_from_store(
 	canonical: &PathBuf,
 	chunk: &[String],
 ) -> Vec<(String, DocEntry)> {
-	let lock = stores.lock().unwrap();
+	let Ok(lock) = stores.lock() else {
+		return Vec::new();
+	};
 	let Some(store) = lock.get(canonical) else {
 		return Vec::new();
 	};

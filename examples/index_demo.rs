@@ -1,4 +1,4 @@
-//! Demo: Index the ch-cli project with semantic analysis
+//! Demo: Index the rustean project with semantic analysis
 //!
 //! Run with: cargo run --example index_demo
 
@@ -6,11 +6,11 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 
-use ch_cli::indexer::{IndexManager, SearchIndex, SymbolKind, Visibility};
+use rustean::indexer::{IndexManager, SearchIndex, SymbolKind, Visibility};
 
 fn main() {
     println!("🔍 Semantic Code Indexer Demo - Phase 4\n");
-    println!("Indexing ch-cli project with semantic analysis...\n");
+    println!("Indexing rustean project with semantic analysis...\n");
 
     // Create index manager with progress tracking and semantic analysis enabled
     let files_processed = Arc::new(AtomicUsize::new(0));

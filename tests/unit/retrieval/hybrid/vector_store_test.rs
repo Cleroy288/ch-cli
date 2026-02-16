@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use ch_cli::retrieval::hybrid::vector_store::{
+use rustean::retrieval::hybrid::vector_store::{
 	VectorPoint, VectorStore,
 };
 

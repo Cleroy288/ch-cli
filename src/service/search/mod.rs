@@ -1,5 +1,9 @@
 //! Search service — symbol search use cases.
 
+#[doc(hidden)]
+pub mod cache;
+#[doc(hidden)]
+pub mod cache_helpers;
 mod default;
 mod navigation_impl;
 mod search_impl;

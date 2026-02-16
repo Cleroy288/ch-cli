@@ -17,6 +17,7 @@ mod helpers;
 mod parser_methods;
 mod reference_processing;
 mod rust_parser;
+mod symbol_building;
 mod symbol_processing;
 mod types;
 

@@ -1,228 +1,113 @@
-//! User prompts for indexing decisions.
+//! User prompts for update and first-time indexing.
 
 use std::io::{self, Write};
-use std::time::Duration;
 
 use crossterm::{
-	cursor,
-	event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
-	execute,
-	style::{Color, Print, ResetColor, SetForegroundColor},
-	terminal::{self, ClearType},
+    execute,
+    style::{
+        Color, Print, ResetColor, SetForegroundColor,
+    },
+    terminal,
 };
 
 use crate::indexer::ChangeSet;
 
+use super::key_reader::{read_ynq_key, KeyAction};
+use super::prompts_shared::{
+    clear_and_show_header, display_loading_hint,
+    display_ynq_buttons,
+};
 use super::StartupAction;
 
-/// Prompt the user to decide whether to update the index (changes detected)
-pub fn prompt_for_update(changes: &ChangeSet) -> io::Result<StartupAction> {
-	let mut stdout = io::stdout();
-
-	// Clear screen and show prompt
-	execute!(stdout, terminal::Clear(ClearType::All), cursor::MoveTo(0, 0))?;
-
-	// Display the prompt
-	println!();
-	execute!(
-		stdout,
-		SetForegroundColor(Color::Cyan),
-		Print("  ch-cli"),
-		ResetColor,
-		Print(" - Semantic Code Indexer\n\n")
-	)?;
-
-	execute!(
-		stdout,
-		SetForegroundColor(Color::Yellow),
-		Print("  Changes detected in your codebase!\n\n"),
-		ResetColor
-	)?;
-
-	// Show change summary
-	execute!(stdout, SetForegroundColor(Color::DarkGrey))?;
-
-	if !changes.added.is_empty() {
-		execute!(
-			stdout,
-			SetForegroundColor(Color::Green),
-			Print(format!("    + {} new file(s)\n", changes.added.len())),
-		)?;
-	}
-	if !changes.modified.is_empty() {
-		execute!(
-			stdout,
-			SetForegroundColor(Color::Yellow),
-			Print(format!("    ~ {} modified file(s)\n", changes.modified.len())),
-		)?;
-	}
-	if !changes.deleted.is_empty() {
-		execute!(
-			stdout,
-			SetForegroundColor(Color::Red),
-			Print(format!("    - {} deleted file(s)\n", changes.deleted.len())),
-		)?;
-	}
-
-	execute!(stdout, ResetColor, Print("\n"))?;
-
-	execute!(
-		stdout,
-		Print("  Would you like to update your index?\n\n"),
-		SetForegroundColor(Color::White),
-		Print("    ["),
-		SetForegroundColor(Color::Green),
-		Print("Y"),
-		SetForegroundColor(Color::White),
-		Print("]es  "),
-		Print("["),
-		SetForegroundColor(Color::Red),
-		Print("N"),
-		SetForegroundColor(Color::White),
-		Print("]o  "),
-		Print("["),
-		SetForegroundColor(Color::Yellow),
-		Print("Q"),
-		SetForegroundColor(Color::White),
-		Print("]uit\n\n"),
-		ResetColor
-	)?;
-
-	execute!(
-		stdout,
-		SetForegroundColor(Color::DarkGrey),
-		Print("  Press Y, N, or Q: "),
-		ResetColor
-	)?;
-	stdout.flush()?;
-
-	// Enable raw mode to capture single key press
-	terminal::enable_raw_mode()?;
-
-	let result = loop {
-		if event::poll(Duration::from_millis(100))? {
-			if let Event::Key(KeyEvent {
-				code,
-				kind: KeyEventKind::Press,
-				..
-			}) = event::read()?
-			{
-				match code {
-					KeyCode::Char('y') | KeyCode::Char('Y') | KeyCode::Enter => {
-						break StartupAction::Update(changes.clone());
-					}
-					KeyCode::Char('n') | KeyCode::Char('N') => {
-						break StartupAction::Skip;
-					}
-					KeyCode::Char('q') | KeyCode::Char('Q') | KeyCode::Esc => {
-						break StartupAction::Quit;
-					}
-					_ => {}
-				}
-			}
-		}
-	};
-
-	terminal::disable_raw_mode()?;
-	println!();
-
-	Ok(result)
+/// Prompt user to decide whether to update the index
+pub fn prompt_for_update(
+    changes: &ChangeSet,
+) -> io::Result<StartupAction> {
+    let mut stdout = io::stdout();
+    display_update_prompt(&mut stdout, changes)?;
+    read_update_choice(&mut stdout, changes)
 }
 
-/// Prompt the user to decide whether to index the codebase
-pub fn prompt_for_indexing() -> io::Result<StartupAction> {
-	let mut stdout = io::stdout();
+/// Display the update prompt screen
+fn display_update_prompt(
+    stdout: &mut io::Stdout,
+    changes: &ChangeSet,
+) -> io::Result<()> {
+    clear_and_show_header(stdout)?;
 
-	// Clear screen and show prompt
-	execute!(stdout, terminal::Clear(ClearType::All), cursor::MoveTo(0, 0))?;
+    execute!(
+        stdout,
+        SetForegroundColor(Color::Yellow),
+        Print(
+            "  Changes detected in your codebase!\n\n",
+        ),
+        ResetColor
+    )?;
 
-	// Display the prompt
-	println!();
-	execute!(
-		stdout,
-		SetForegroundColor(Color::Cyan),
-		Print("  ch-cli"),
-		ResetColor,
-		Print(" - Semantic Code Indexer\n\n")
-	)?;
+    display_change_summary(stdout, changes)?;
+    display_ynq_buttons(
+        stdout,
+        "  Would you like to update your index?\n\n",
+    )?;
+    display_loading_hint(stdout)
+}
 
-	execute!(
-		stdout,
-		SetForegroundColor(Color::Yellow),
-		Print("  No code index found for this project.\n\n"),
-		ResetColor
-	)?;
+/// Show change summary (added/modified/deleted)
+fn display_change_summary(
+    stdout: &mut io::Stdout,
+    changes: &ChangeSet,
+) -> io::Result<()> {
+    print_change_if_nonempty(
+        stdout, &changes.added,
+        Color::Green, "+ {} new file(s)",
+    )?;
+    print_change_if_nonempty(
+        stdout, &changes.modified,
+        Color::Yellow, "~ {} modified file(s)",
+    )?;
+    print_change_if_nonempty(
+        stdout, &changes.deleted,
+        Color::Red, "- {} deleted file(s)",
+    )?;
+    execute!(stdout, ResetColor, Print("\n"))
+}
 
-	println!("  Indexing your codebase enables:");
-	execute!(
-		stdout,
-		SetForegroundColor(Color::Green),
-		Print("    - Fast symbol search across all files\n"),
-		Print("    - Go-to-definition functionality\n"),
-		Print("    - Find all references to a symbol\n"),
-		Print("    - Semantic code understanding\n\n"),
-		ResetColor
-	)?;
+/// Print a change line if the list is non-empty
+fn print_change_if_nonempty<T>(
+    stdout: &mut io::Stdout,
+    items: &[T],
+    color: Color,
+    fmt: &str,
+) -> io::Result<()> {
+    if items.is_empty() {
+        return Ok(());
+    }
+    let msg = fmt.replacen(
+        "{}", &items.len().to_string(), 1,
+    );
+    execute!(
+        stdout,
+        SetForegroundColor(color),
+        Print(format!("    {}\n", msg)),
+    )
+}
 
-	execute!(
-		stdout,
-		Print("  Would you like to index your codebase now?\n\n"),
-		SetForegroundColor(Color::White),
-		Print("    ["),
-		SetForegroundColor(Color::Green),
-		Print("Y"),
-		SetForegroundColor(Color::White),
-		Print("]es  "),
-		Print("["),
-		SetForegroundColor(Color::Red),
-		Print("N"),
-		SetForegroundColor(Color::White),
-		Print("]o  "),
-		Print("["),
-		SetForegroundColor(Color::Yellow),
-		Print("Q"),
-		SetForegroundColor(Color::White),
-		Print("]uit\n\n"),
-		ResetColor
-	)?;
+/// Read the user's Y/N/Q choice for update
+fn read_update_choice(
+    stdout: &mut io::Stdout,
+    changes: &ChangeSet,
+) -> io::Result<StartupAction> {
+    terminal::enable_raw_mode()?;
 
-	execute!(
-		stdout,
-		SetForegroundColor(Color::DarkGrey),
-		Print("  Press Y, N, or Q: "),
-		ResetColor
-	)?;
-	stdout.flush()?;
+    let result = match read_ynq_key()? {
+        KeyAction::Yes => {
+            StartupAction::Update(changes.clone())
+        }
+        KeyAction::No => StartupAction::Skip,
+        KeyAction::Quit => StartupAction::Quit,
+    };
 
-	// Enable raw mode to capture single key press
-	terminal::enable_raw_mode()?;
-
-	let result = loop {
-		if event::poll(Duration::from_millis(100))? {
-			if let Event::Key(KeyEvent {
-				code,
-				kind: KeyEventKind::Press,
-				..
-			}) = event::read()?
-			{
-				match code {
-					KeyCode::Char('y') | KeyCode::Char('Y') | KeyCode::Enter => {
-						break StartupAction::Index;
-					}
-					KeyCode::Char('n') | KeyCode::Char('N') => {
-						break StartupAction::Skip;
-					}
-					KeyCode::Char('q') | KeyCode::Char('Q') | KeyCode::Esc => {
-						break StartupAction::Quit;
-					}
-					_ => {}
-				}
-			}
-		}
-	};
-
-	terminal::disable_raw_mode()?;
-	println!();
-
-	Ok(result)
+    terminal::disable_raw_mode()?;
+    writeln!(stdout)?;
+    Ok(result)
 }

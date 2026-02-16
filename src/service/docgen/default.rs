@@ -16,6 +16,12 @@ use super::DocGenService;
 /// Default doc gen service with daemon fallback
 pub struct DefaultDocGenService;
 
+impl Default for DefaultDocGenService {
+	fn default() -> Self {
+		Self
+	}
+}
+
 impl DefaultDocGenService {
 	/// Create a new default doc gen service
 	pub fn new() -> Self {
@@ -33,9 +39,9 @@ impl DocGenService for DefaultDocGenService {
 		let path_str = path_to_string(path);
 		client
 			.start_doc_gen(path_str, force)
-			.map_err(|e| {
+			.map_err(|err| {
 				DocGenError::DaemonUnavailable(
-					e.to_string(),
+					err.to_string(),
 				)
 			})?;
 		Ok(())
@@ -48,12 +54,12 @@ impl DocGenService for DefaultDocGenService {
 		let client = DaemonClient::new();
 		let path_str = path_to_string(path);
 		match client.doc_gen_status(path_str) {
-			Ok(s) => Ok(DocStatusInfo {
-				total: s.total,
-				completed: s.completed,
-				pending: s.pending,
-				is_generating: s.in_progress,
-				is_ready: s.is_ready,
+			Ok(status) => Ok(DocStatusInfo {
+				total: status.total,
+				completed: status.completed,
+				pending: status.pending,
+				is_generating: status.in_progress,
+				is_ready: status.is_ready,
 			}),
 			Err(_) => status_from_local(path),
 		}

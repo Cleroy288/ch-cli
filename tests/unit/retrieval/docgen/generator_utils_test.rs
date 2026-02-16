@@ -1,6 +1,6 @@
 //! Tests for retrieval::docgen::generator_utils
 
-use ch_cli::retrieval::docgen::generator_utils::clean_generated_doc;
+use rustean::retrieval::docgen::generator_utils::clean_generated_doc;
 
 #[test]
 fn test_clean_generated_doc() {

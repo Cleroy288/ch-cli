@@ -2,7 +2,7 @@
 
 use tempfile::tempdir;
 
-use ch_cli::indexer::state::IndexState;
+use rustean::indexer::state::IndexState;
 
 /// Test update_file adds a new file to the index
 #[test]

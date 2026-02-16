@@ -1,6 +1,6 @@
 //! Tests for retrieval::context::graph_walker_types
 
-use ch_cli::retrieval::context::graph_walker_types::{
+use rustean::retrieval::context::graph_walker_types::{
 	extract_types_from_signature,
 };
 

@@ -1,6 +1,7 @@
 //! Types for index manager results and statistics.
 
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use crate::indexer::crawler::{CrawlStats, FileResult};
 use crate::indexer::parser::ExtractedReference;
@@ -27,8 +28,8 @@ pub struct IndexResult {
 	pub file_results: Vec<FileResult>,
 	/// Statistics about the indexing operation
 	pub stats: CrawlStats,
-	/// Semantic graph for name resolution (if semantic analysis was enabled)
-	pub semantic_graph: Option<SemanticGraph>,
+	/// Semantic graph for name resolution (wrapped in Arc for zero-cost sharing)
+	pub semantic_graph: Option<Arc<SemanticGraph>>,
 	/// Whether this was an incremental index
 	pub incremental: bool,
 	/// Change set if incremental indexing was used
@@ -47,7 +48,12 @@ impl std::fmt::Debug for IndexResult {
 			.field("stats", &self.stats)
 			.field("semantic_graph", &self.semantic_graph.is_some())
 			.field("incremental", &self.incremental)
-			.field("changes", &self.changes.as_ref().map(|c| c.total_changes()))
+			.field(
+				"changes",
+				&self.changes.as_ref().map(
+					|change_set| change_set.total_changes(),
+				),
+			)
 			.field("search_index", &self.search_index.is_some())
 			.finish()
 	}

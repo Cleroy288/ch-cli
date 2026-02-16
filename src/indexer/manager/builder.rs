@@ -6,6 +6,18 @@ use crate::indexer::crawler::CrawlerConfig;
 
 use super::types::ProgressCallback;
 
+#[allow(clippy::struct_excessive_bools)]
+/// Boolean feature toggles for IndexManager
+#[derive(Debug, Clone, Default)]
+pub struct IndexManagerFlags {
+	/// Build a semantic graph for name resolution
+	pub semantic_analysis: bool,
+	/// Extract references from AST
+	pub reference_extraction: bool,
+	/// Persist the index to disk (incremental)
+	pub persistence: bool,
+}
+
 /// The main index manager for semantic code indexing
 pub struct IndexManager {
 	/// Crawler configuration
@@ -14,37 +26,29 @@ pub struct IndexManager {
 	/// Optional progress callback
 	#[doc(hidden)]
 	pub progress_callback: Option<ProgressCallback>,
-	/// Whether to build a semantic graph for name resolution
+	/// Feature toggles
 	#[doc(hidden)]
-	pub enable_semantic_analysis: bool,
-	/// Whether to extract references from AST
-	#[doc(hidden)]
-	pub enable_reference_extraction: bool,
-	/// Whether to persist the index to disk (enables incremental indexing)
-	#[doc(hidden)]
-	pub enable_persistence: bool,
+	pub flags: IndexManagerFlags,
 }
 
 impl IndexManager {
-	/// Create a new IndexManager with default configuration
+	/// Create a new IndexManager with default config
 	pub fn new() -> Self {
 		Self {
 			crawler_config: CrawlerConfig::default(),
 			progress_callback: None,
-			enable_semantic_analysis: false,
-			enable_reference_extraction: false,
-			enable_persistence: false,
+			flags: IndexManagerFlags::default(),
 		}
 	}
 
-	/// Create an IndexManager with custom crawler configuration
-	pub fn with_config(config: CrawlerConfig) -> Self {
+	/// Create IndexManager with custom crawler config
+	pub fn with_config(
+		config: CrawlerConfig,
+	) -> Self {
 		Self {
 			crawler_config: config,
 			progress_callback: None,
-			enable_semantic_analysis: false,
-			enable_reference_extraction: false,
-			enable_persistence: false,
+			flags: IndexManagerFlags::default(),
 		}
 	}
 

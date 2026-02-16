@@ -9,6 +9,7 @@
 /// - `cursor`: CursorPosition newtype
 /// - `errors`: Per-domain error enums
 /// - `file_ref`: FilePath, FileName, and FileReference
+pub mod claude;
 pub mod constants;
 pub mod cursor;
 mod cursor_conversions;
@@ -19,6 +20,10 @@ mod file_name_conversions;
 pub mod file_path;
 mod file_path_conversions;
 pub mod file_ref;
+pub mod memory;
+pub mod symbol_ref;
+pub mod memory_helpers;
+pub mod memory_id;
 
 // Re-export commonly used types for convenience
 pub use constants::*;
@@ -26,4 +31,5 @@ pub use cursor::CursorPosition;
 pub use errors::*;
 pub use file_name::FileName;
 pub use file_path::FilePath;
-pub use file_ref::FileReference;
+pub use file_ref::{FileReference, InputSpan};
+pub use symbol_ref::SymbolSelector;

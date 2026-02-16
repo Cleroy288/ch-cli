@@ -32,18 +32,18 @@ impl FileScanner {
 		self.entries.clear();
 		self.scan_recursive(path.as_ref(), 0)?;
 
-		self.entries.sort_by(|a, b| {
-			match (a.is_dir, b.is_dir) {
+		self.entries.sort_by(|lhs, rhs| {
+			match (lhs.is_dir, rhs.is_dir) {
 				(true, false) => {
 					std::cmp::Ordering::Less
 				}
 				(false, true) => {
 					std::cmp::Ordering::Greater
 				}
-				_ => a
+				_ => lhs
 					.name
 					.to_lowercase()
-					.cmp(&b.name.to_lowercase()),
+					.cmp(&rhs.name.to_lowercase()),
 			}
 		});
 
@@ -71,36 +71,39 @@ impl FileScanner {
 			return Ok(());
 		}
 
-		let entries = fs::read_dir(path)?;
-
-		for entry in entries {
-			let Ok(entry) = entry else {
+		for dir_entry in fs::read_dir(path)? {
+			let Ok(dir_entry) = dir_entry else {
 				continue;
 			};
-
-			let entry_path = entry.path();
-
-			let Ok(metadata) = entry.metadata()
-			else {
-				continue;
-			};
-
-			if metadata.is_dir() {
-				self.entries.push(FsEntry::new(
-					entry_path.clone(),
-					true,
-				));
-				let _ = self.scan_recursive(
-					&entry_path,
-					depth + 1,
-				);
-			} else if metadata.is_file() {
-				self.entries
-					.push(FsEntry::new(entry_path, false));
-			}
+			self.process_entry(&dir_entry, depth);
 		}
 
 		Ok(())
+	}
+
+	/// Process a single directory entry,
+	/// adding it and recursing into subdirs.
+	fn process_entry(
+		&mut self,
+		dir_entry: &fs::DirEntry,
+		depth: usize,
+	) {
+		let entry_path = dir_entry.path();
+		let Ok(metadata) = dir_entry.metadata()
+		else {
+			return;
+		};
+
+		if metadata.is_dir() {
+			self.entries.push(
+				FsEntry::new(entry_path.clone(), true),
+			);
+			let _ = self
+				.scan_recursive(&entry_path, depth + 1);
+		} else if metadata.is_file() {
+			self.entries
+				.push(FsEntry::new(entry_path, false));
+		}
 	}
 }
 

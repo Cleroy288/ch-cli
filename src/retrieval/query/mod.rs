@@ -52,6 +52,12 @@ pub use rewriter::{
 	decompose_query, extract_symbols as rewriter_extract_symbols,
 	map_concepts,
 };
+#[doc(hidden)]
+pub use rewriter::{
+	expand_iterative, expand_with_feedback,
+	extract_feedback_terms, prf_split_to_words,
+	PrfExpansion, PrfFeedback, MAX_PRF_ITERATIONS,
+};
 pub use structure::{
 	detect_structure_query, StructureQuery,
 };

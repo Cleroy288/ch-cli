@@ -5,9 +5,9 @@ use std::path::PathBuf;
 
 use tempfile::NamedTempFile;
 
-use ch_cli::indexer::SymbolKind;
-use ch_cli::retrieval::docgen::generator_utils::extract_code_snippet;
-use ch_cli::retrieval::docgen::{DocEntry, DocGenerator};
+use rustean::indexer::SymbolKind;
+use rustean::retrieval::docgen::generator_utils::extract_code_snippet;
+use rustean::retrieval::docgen::{DocEntry, DocGenerator};
 
 #[test]
 fn test_generate_from_prompt_no_model() {

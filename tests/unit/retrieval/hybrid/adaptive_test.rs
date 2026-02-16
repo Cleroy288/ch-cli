@@ -1,4 +1,4 @@
-use ch_cli::retrieval::hybrid::adaptive::{
+use rustean::retrieval::hybrid::adaptive::{
 	classify_query, compute_weights,
 	AdaptiveWeights, QueryType,
 };

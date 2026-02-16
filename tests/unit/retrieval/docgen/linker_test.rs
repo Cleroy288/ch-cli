@@ -1,6 +1,6 @@
 //! Tests for retrieval::docgen::linker
 
-use ch_cli::retrieval::docgen::DocLinker;
+use rustean::retrieval::docgen::DocLinker;
 
 #[test]
 fn test_extract_crates() {

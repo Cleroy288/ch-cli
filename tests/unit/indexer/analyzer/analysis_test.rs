@@ -2,8 +2,8 @@
 
 use std::collections::HashMap;
 
-use ch_cli::indexer::analyzer::CodebaseAnalysis;
-use ch_cli::indexer::crawler::{DetectedLanguage, Language};
+use rustean::indexer::analyzer::CodebaseAnalysis;
+use rustean::indexer::crawler::{DetectedLanguage, Language};
 
 /// Helper to create an empty CodebaseAnalysis
 fn make_empty_analysis() -> CodebaseAnalysis {

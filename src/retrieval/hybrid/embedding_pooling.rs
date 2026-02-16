@@ -3,7 +3,7 @@
 //! Helper functions for mean pooling and L2 normalization
 //! of BERT embeddings.
 
-use candle_core::{DType, Tensor};
+use candle_core::Tensor;
 use crate::retrieval::models::ModelResult;
 
 /// Mean pooling: average token embeddings weighted by attention mask
@@ -15,7 +15,7 @@ pub fn mean_pooling(
 	// attention_mask: [batch, seq_len]
 
 	// expand attention mask to hidden dim
-	let mask = attention_mask.unsqueeze(2)?.to_dtype(DType::F32)?;
+	let mask = attention_mask.unsqueeze(2)?.to_dtype(embeddings.dtype())?;
 	let mask_expanded = mask.broadcast_as(embeddings.shape())?;
 
 	// apply mask and sum

@@ -15,7 +15,7 @@ impl SemanticGraph {
 			.get(type_name)
 			.map(|refs| {
 				refs.iter()
-					.filter(|r| r.context.is_type_usage())
+					.filter(|sym_ref| sym_ref.context.is_type_usage())
 					.cloned()
 					.collect()
 			})
@@ -37,7 +37,7 @@ impl SemanticGraph {
 						.symbol
 						.signature
 						.as_ref()
-						.map(|s| s.contains(trait_name))
+						.map(|sig| sig.contains(trait_name))
 						.unwrap_or(false)
 			})
 			.cloned()

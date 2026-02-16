@@ -4,7 +4,7 @@ use std::fs;
 use std::io::Read;
 use std::path::PathBuf;
 
-use ch_cli::retrieval::daemon::server::lifecycle::{
+use rustean::retrieval::daemon::server::lifecycle::{
 	loaded_models, new_daemon, with_socket_path,
 	write_pid_file,
 };
@@ -45,7 +45,8 @@ fn test_loaded_models_empty() {
 	let daemon = with_socket_path(&socket);
 
 	let models = loaded_models(&daemon);
-	assert_eq!(models.len(), 0);
+	// Phi-3 shows as lazy (not loaded) but still listed
+	assert_eq!(models.len(), 1);
 }
 
 /// Test new_daemon creates daemon with defaults

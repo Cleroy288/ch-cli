@@ -32,16 +32,20 @@ impl ContextualBlock {
 		let usage_chars: usize = self
 			.usages
 			.iter()
-			.map(|u| {
-				u.snippet
+			.map(|usage| {
+				usage
+					.snippet
 					.as_ref()
-					.map(|s| s.len())
+					.map(|snip| snip.len())
 					.unwrap_or(50)
 			})
 			.sum();
 
-		let doc_len =
-			self.doc_comment.as_ref().map(|d| d.len()).unwrap_or(0);
+		let doc_len = self
+			.doc_comment
+			.as_ref()
+			.map(|doc| doc.len())
+			.unwrap_or(0);
 
 		let total = self.code_snippet.len()
 			+ doc_len
@@ -55,8 +59,8 @@ impl ContextualBlock {
 }
 
 /// Escape XML special characters
-pub fn escape_xml(s: &str) -> String {
-	s.replace('&', "&amp;")
+pub fn escape_xml(text: &str) -> String {
+	text.replace('&', "&amp;")
 		.replace('<', "&lt;")
 		.replace('>', "&gt;")
 		.replace('"', "&quot;")

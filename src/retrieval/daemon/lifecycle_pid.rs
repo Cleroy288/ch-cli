@@ -2,7 +2,6 @@
 //!
 //! Extracted from lifecycle_helpers.rs for norm compliance.
 
-use std::fs;
 use std::path::Path;
 
 use nix::sys::signal::{kill, Signal};
@@ -17,9 +16,9 @@ pub fn pid_file_from_socket(
 
 /// Read PID from PID file
 pub fn read_pid(pid_file: &Path) -> Option<u32> {
-	fs::read_to_string(pid_file)
+	std::fs::read_to_string(pid_file)
 		.ok()
-		.and_then(|s| s.trim().parse().ok())
+		.and_then(|content| content.trim().parse().ok())
 }
 
 /// Check if process is running by PID

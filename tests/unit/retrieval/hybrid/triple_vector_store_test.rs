@@ -1,8 +1,9 @@
 use std::path::PathBuf;
 
-use ch_cli::indexer::ContentType;
-use ch_cli::retrieval::hybrid::triple_vector_store::TripleVectorStore;
-use ch_cli::retrieval::hybrid::vector_store::VectorPoint;
+use rustean::indexer::ContentType;
+use rustean::indexer::TripleLimits;
+use rustean::retrieval::hybrid::triple_vector_store::TripleVectorStore;
+use rustean::retrieval::hybrid::vector_store::VectorPoint;
 
 /// Create a test vector point
 fn create_test_point(
@@ -95,11 +96,15 @@ fn test_triple_vector_store_parallel_search() {
 
 	store.build_indexes().unwrap();
 
+	let limits = TripleLimits {
+		code: 10, doc: 10, notes: 10,
+	};
 	let results = store
-		.search_parallel(&[1.0, 0.0, 0.0], 10, 10, 10);
+		.search_parallel(&[1.0, 0.0, 0.0], &limits);
 
 	assert_eq!(results.code_results.len(), 1);
-	assert_eq!(results.doc_results.len(), 1);
+	// Doc vector search skipped (keyword-only)
+	assert_eq!(results.doc_results.len(), 0);
 	assert_eq!(results.notes_results.len(), 1);
 }
 

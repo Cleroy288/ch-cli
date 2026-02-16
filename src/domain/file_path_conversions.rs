@@ -11,13 +11,13 @@ impl From<PathBuf> for FilePath {
 }
 
 impl From<String> for FilePath {
-	fn from(s: String) -> Self {
-		Self(PathBuf::from(s))
+	fn from(val: String) -> Self {
+		Self(PathBuf::from(val))
 	}
 }
 
 impl From<&str> for FilePath {
-	fn from(s: &str) -> Self {
-		Self(PathBuf::from(s))
+	fn from(val: &str) -> Self {
+		Self(PathBuf::from(val))
 	}
 }

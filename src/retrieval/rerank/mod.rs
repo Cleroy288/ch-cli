@@ -26,8 +26,10 @@ pub fn rerank_by_score<T>(
 ) -> Vec<RerankedItem<T>> {
 	let mut sorted = items;
 	let ordering = std::cmp::Ordering::Equal;
-	sorted.sort_by(|a, b| {
-		b.score.partial_cmp(&a.score).unwrap_or(ordering)
+	sorted.sort_by(|lhs, rhs| {
+		rhs.score
+			.partial_cmp(&lhs.score)
+			.unwrap_or(ordering)
 	});
 	sorted
 }

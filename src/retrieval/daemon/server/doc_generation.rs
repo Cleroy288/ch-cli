@@ -32,7 +32,9 @@ fn handle_cancellation(
 	progress: &Arc<Mutex<DocGenProgress>>,
 	canonical: &Path,
 ) {
-	let mut prog = progress.lock().unwrap();
+	let Ok(mut prog) = progress.lock() else {
+		return;
+	};
 	prog.is_running = false;
 	let docs = canonical.join(".rustean-index/docs.json");
 	let _ = std::fs::remove_file(&docs);
@@ -43,8 +45,8 @@ fn handle_cancellation(
 
 /// Run doc generation in background thread
 ///
-/// Locks are held briefly: extract entry -> unlock ->
-/// LLM inference -> lock -> write back.
+/// Hybrid pipeline: templates first (instant, no GPU),
+/// then LLM only for complex symbols.
 /// Model is unloaded after completion to free GPU.
 #[allow(clippy::print_stderr)]
 pub(crate) fn run_doc_gen_background(
@@ -53,32 +55,80 @@ pub(crate) fn run_doc_gen_background(
 	pending_ids: Vec<String>,
 	graph_and_symbols: GraphAndSymbols,
 ) {
+	let llm_ids =
+		run_template_phase(&ctx, &canonical, &pending_ids);
+
+	if llm_ids.is_empty() {
+		complete_doc_gen(
+			&ctx, &canonical, 0, graph_and_symbols,
+		);
+		return;
+	}
+	run_llm_phase(&ctx, &canonical, &llm_ids, graph_and_symbols);
+}
+
+/// Phase 1: partition and process templates instantly
+#[allow(clippy::print_stderr)]
+fn run_template_phase(
+	ctx: &DocGenContext,
+	canonical: &PathBuf,
+	pending_ids: &[String],
+) -> Vec<String> {
+	let (tpl_ids, llm_ids) =
+		super::doc_gen_template::partition_pending(
+			&ctx.stores, canonical, pending_ids,
+		);
+	eprintln!(
+		"[daemon] Split: {} template, {} LLM",
+		tpl_ids.len(), llm_ids.len(),
+	);
+	super::doc_gen_template::process_template_batch(
+		&ctx.stores, canonical,
+		&tpl_ids, &ctx.progress,
+	);
+	llm_ids
+}
+
+/// Phase 2: LLM inference for complex symbols
+fn run_llm_phase(
+	ctx: &DocGenContext,
+	canonical: &PathBuf,
+	llm_ids: &[String],
+	graph_and_symbols: GraphAndSymbols,
+) {
 	if !init_generator(&ctx.generator, &ctx.progress) {
 		return;
 	}
-	let result = process_pending_entries(
-		&ctx,
-		&canonical,
-		&pending_ids,
-	);
+	let result =
+		process_pending_entries(ctx, canonical, llm_ids);
 	if result.cancelled {
-		handle_cancellation(&ctx.progress, &canonical);
+		handle_cancellation(&ctx.progress, canonical);
 	} else {
-		eprintln!(
-			"[daemon] Generated {} docs for {}",
-			result.generated,
-			canonical.display()
-		);
-		finalize_docs(
-			&ctx.stores,
-			&ctx.progress,
-			&canonical,
-			graph_and_symbols,
+		complete_doc_gen(
+			ctx, canonical,
+			result.generated, graph_and_symbols,
 		);
 	}
-	// Free ~500MB GPU: unload model after doc gen
 	super::doc_gen_helpers::unload_generator(
 		&ctx.generator,
+	);
+}
+
+/// Log completion and finalize docs after generation
+#[allow(clippy::print_stderr)]
+fn complete_doc_gen(
+	ctx: &DocGenContext,
+	canonical: &PathBuf,
+	generated: usize,
+	graph_and_symbols: GraphAndSymbols,
+) {
+	eprintln!(
+		"[daemon] Generated {} docs for {}",
+		generated, canonical.display()
+	);
+	finalize_docs(
+		&ctx.stores, &ctx.progress,
+		canonical, graph_and_symbols,
 	);
 }
 
@@ -90,7 +140,9 @@ fn init_generator(
 	generator: &SharedDocGenerator,
 	progress: &Arc<Mutex<DocGenProgress>>,
 ) -> bool {
-	let mut gen_lock = generator.lock().unwrap();
+	let Ok(mut gen_lock) = generator.lock() else {
+		return false;
+	};
 	if gen_lock.is_some() {
 		return true;
 	}
@@ -106,8 +158,9 @@ fn init_generator(
 				"[daemon] Failed to load doc generator: {}",
 				err
 			);
-			let mut prog = progress.lock().unwrap();
-			prog.is_running = false;
+			if let Ok(mut prog) = progress.lock() {
+				prog.is_running = false;
+			}
 			false
 		}
 	}
@@ -184,31 +237,59 @@ fn process_pending_entries(
 }
 
 /// Build cross-references and do final save
-#[allow(clippy::print_stderr)]
 fn finalize_docs(
 	stores: &SharedDocStores,
 	progress: &Arc<Mutex<DocGenProgress>>,
 	canonical: &PathBuf,
 	graph_and_symbols: GraphAndSymbols,
 ) {
-	if let Some((graph, syms)) = graph_and_symbols {
-		let mut lock = stores.lock().unwrap();
-		if let Some(store) = lock.get_mut(canonical) {
-			let linker = DocLinker::new();
-			linker.build_links(store, &graph, &syms);
-		}
+	build_cross_refs(stores, canonical, graph_and_symbols);
+	save_doc_store(stores, canonical);
+	mark_generation_done(progress);
+}
+
+/// Build cross-reference links if graph is available
+fn build_cross_refs(
+	stores: &SharedDocStores,
+	canonical: &PathBuf,
+	graph_and_symbols: GraphAndSymbols,
+) {
+	let Some((graph, syms)) = graph_and_symbols
+	else {
+		return;
+	};
+	let Ok(mut lock) = stores.lock() else {
+		return;
+	};
+	let Some(store) = lock.get_mut(canonical) else {
+		return;
+	};
+	let linker = DocLinker::new();
+	linker.build_links(store, &graph, &syms);
+}
+
+/// Save doc store to disk
+#[allow(clippy::print_stderr)]
+fn save_doc_store(
+	stores: &SharedDocStores,
+	canonical: &PathBuf,
+) {
+	let Ok(lock) = stores.lock() else { return };
+	let Some(store) = lock.get(canonical) else {
+		return;
+	};
+	if let Err(err) = store.save() {
+		eprintln!(
+			"[daemon] Failed to save: {}", err
+		);
 	}
-	{
-		let lock = stores.lock().unwrap();
-		if let Some(store) = lock.get(canonical) {
-			if let Err(err) = store.save() {
-				eprintln!(
-					"[daemon] Failed to save: {}",
-					err
-				);
-			}
-		}
+}
+
+/// Mark doc generation as no longer running
+fn mark_generation_done(
+	progress: &Arc<Mutex<DocGenProgress>>,
+) {
+	if let Ok(mut prog) = progress.lock() {
+		prog.is_running = false;
 	}
-	let mut prog = progress.lock().unwrap();
-	prog.is_running = false;
 }

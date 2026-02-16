@@ -4,6 +4,7 @@
 //! Each header section becomes a searchable DocumentChunk symbol.
 
 mod chunk;
+mod chunk_extract;
 mod parser;
 
 // Re-export public types for backward compatibility

@@ -1,6 +1,6 @@
 // UI Layout Constants
 /// Height of the ASCII art title box in lines
-pub const TITLE_BOX_HEIGHT: u16 = 7;
+pub const TITLE_BOX_HEIGHT: u16 = 4;
 
 /// Height of the input box in lines
 pub const INPUT_BOX_HEIGHT: u16 = 3;
@@ -13,9 +13,6 @@ pub const MAX_PICKER_HEIGHT: u16 = 15;
 
 /// Width of the type chooser picker in characters
 pub const PICKER_WIDTH: u16 = 40;
-
-/// Number of type options in the picker (folder, file)
-pub const PICKER_TYPE_OPTIONS: usize = 2;
 
 // File System Constants
 /// Maximum recursion depth for directory scanning

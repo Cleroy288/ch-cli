@@ -7,11 +7,11 @@ impl DocEntry {
 	/// Get combined documentation (user + LLM).
 	pub fn combined_doc(&self) -> String {
 		let mut parts = Vec::new();
-		if let Some(ref u) = self.user_comment {
-			parts.push(u.clone());
+		if let Some(ref comment) = self.user_comment {
+			parts.push(comment.clone());
 		}
-		if let Some(ref l) = self.llm_doc {
-			parts.push(l.clone());
+		if let Some(ref llm) = self.llm_doc {
+			parts.push(llm.clone());
 		}
 		parts.join("\n\n")
 	}
@@ -21,14 +21,14 @@ impl DocEntry {
 		let mut parts = vec![
 			format!("{} {}", self.kind, self.name),
 		];
-		if let Some(ref s) = self.signature {
-			parts.push(s.clone());
+		if let Some(ref sig) = self.signature {
+			parts.push(sig.clone());
 		}
-		if let Some(ref d) = self.user_comment {
-			parts.push(d.clone());
+		if let Some(ref comment) = self.user_comment {
+			parts.push(comment.clone());
 		}
-		if let Some(ref d) = self.llm_doc {
-			parts.push(d.clone());
+		if let Some(ref doc) = self.llm_doc {
+			parts.push(doc.clone());
 		}
 		parts.join(" ")
 	}

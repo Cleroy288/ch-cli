@@ -81,7 +81,7 @@ impl SemanticGraph {
 	pub fn validated_references(&self, target: &Symbol) -> Vec<&SymbolReference> {
 		self.find_references(&target.name)
 			.into_iter()
-			.filter(|r| self.validate_reference(r, target))
+			.filter(|sym_ref| self.validate_reference(sym_ref, target))
 			.collect()
 	}
 
@@ -90,13 +90,13 @@ impl SemanticGraph {
 		let definitions: Vec<CodeLocation> = self
 			.find_definitions(name)
 			.into_iter()
-			.map(|d| d.symbol.location.clone())
+			.map(|def| def.symbol.location.clone())
 			.collect();
 
 		let references: Vec<CodeLocation> = self
 			.find_references(name)
 			.into_iter()
-			.map(|r| r.location.clone())
+			.map(|sym_ref| sym_ref.location.clone())
 			.collect();
 
 		AllUsages {

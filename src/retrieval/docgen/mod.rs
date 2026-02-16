@@ -47,6 +47,10 @@ pub mod store_persistence;
 pub mod store_query;
 pub mod store_sync;
 pub mod symbol_links;
+pub mod template_classify;
+pub mod template_composites;
+pub mod template_generate;
+pub mod template_helpers;
 
 // Re-export entry types (preserves original public API)
 pub use entry::DocEntry;

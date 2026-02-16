@@ -3,7 +3,6 @@
 //! Provides load/save/exists operations and
 //! stats/completion tracking for the doc store.
 
-use std::fs;
 use std::io;
 use std::path::Path;
 
@@ -27,21 +26,10 @@ impl DocStore {
 			return Ok(Self::new(project_path));
 		}
 
-		let content = fs::read_to_string(&docs_file)?;
-		let entries: std::collections::HashMap<
-			String,
-			crate::retrieval::docgen::DocEntry,
-		> = serde_json::from_str(&content)
-			.map_err(|e| {
-				io::Error::new(
-					io::ErrorKind::InvalidData,
-					e,
-				)
-			})?;
-
-		let complete = entries
-			.values()
-			.all(|e| e.status == DocStatus::Ready);
+		let entries = load_entries(&docs_file)?;
+		let complete = entries.values().all(
+			|entry| entry.status == DocStatus::Ready,
+		);
 
 		Ok(Self {
 			entries,
@@ -54,19 +42,19 @@ impl DocStore {
 	pub fn save(&self) -> io::Result<()> {
 		let index_dir =
 			self.project_path.join(INDEX_DIR_NAME);
-		fs::create_dir_all(&index_dir)?;
+		std::fs::create_dir_all(&index_dir)?;
 
 		let docs_file = self.docs_file_path();
 		let content =
 			serde_json::to_string_pretty(&self.entries)
-				.map_err(|e| {
+				.map_err(|err| {
 					io::Error::new(
 						io::ErrorKind::InvalidData,
-						e,
+						err,
 					)
 				})?;
 
-		fs::write(&docs_file, content)?;
+		std::fs::write(&docs_file, content)?;
 		Ok(())
 	}
 
@@ -79,6 +67,25 @@ impl DocStore {
 	}
 }
 
+/// Load entries map from a docs JSON file.
+fn load_entries(
+	docs_file: &Path,
+) -> io::Result<
+	std::collections::HashMap<
+		String,
+		crate::retrieval::docgen::DocEntry,
+	>,
+> {
+	let content =
+		std::fs::read_to_string(docs_file)?;
+	serde_json::from_str(&content).map_err(|err| {
+		io::Error::new(
+			io::ErrorKind::InvalidData,
+			err,
+		)
+	})
+}
+
 /// Completion status and statistics.
 impl DocStore {
 	/// Update completion status based on entries.
@@ -87,37 +94,22 @@ impl DocStore {
 	) {
 		self.generation_complete =
 			!self.entries.is_empty()
-				&& self.entries.values().all(|e| {
-					e.status == DocStatus::Ready
-						|| e.status == DocStatus::Failed
+				&& self.entries.values().all(|entry| {
+					entry.status == DocStatus::Ready
+						|| entry.status == DocStatus::Failed
 				});
 	}
 
 	/// Get generation statistics.
 	pub fn stats(&self) -> DocStoreStats {
 		let total = self.entries.len();
-		let ready = self
-			.entries
-			.values()
-			.filter(|e| e.status == DocStatus::Ready)
-			.count();
-		let pending = self
-			.entries
-			.values()
-			.filter(|e| e.status == DocStatus::Pending)
-			.count();
-		let generating = self
-			.entries
-			.values()
-			.filter(|e| {
-				e.status == DocStatus::Generating
-			})
-			.count();
-		let failed = self
-			.entries
-			.values()
-			.filter(|e| e.status == DocStatus::Failed)
-			.count();
+		let ready = self.count_status(DocStatus::Ready);
+		let pending =
+			self.count_status(DocStatus::Pending);
+		let generating =
+			self.count_status(DocStatus::Generating);
+		let failed =
+			self.count_status(DocStatus::Failed);
 
 		DocStoreStats {
 			total,
@@ -128,5 +120,12 @@ impl DocStore {
 			is_complete: self.generation_complete,
 		}
 	}
-}
 
+	/// Count entries with a given status.
+	fn count_status(&self, status: DocStatus) -> usize {
+		self.entries
+			.values()
+			.filter(|entry| entry.status == status)
+			.count()
+	}
+}

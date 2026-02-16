@@ -16,6 +16,7 @@ use crate::retrieval::docgen::symbol_links::SymbolLinks;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DocEntry {
 	/// unique identifier (hash of file + name + line)
+	#[allow(clippy::min_ident_chars)]
 	pub id: String,
 	/// symbol name
 	pub name: String,
@@ -46,13 +47,12 @@ pub struct DocEntry {
 }
 
 impl fmt::Display for DocEntry {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+	fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
 		write!(
-			f, "{} {} @ {}:{} [{}]",
+			fmt, "{} {} @ {}:{} [{}]",
 			self.kind, self.name,
 			self.file_path.display(),
 			self.line, self.status
 		)
 	}
 }
-

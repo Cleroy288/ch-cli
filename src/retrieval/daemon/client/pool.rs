@@ -71,6 +71,7 @@ impl ConnectionPool {
 
 /// RAII wrapper for a pooled connection
 /// Automatically returns connection to pool when dropped
+#[allow(clippy::min_ident_chars)]
 pub struct PooledConnection<'a> {
 	/// The connection (Option to allow taking in Drop)
 	stream: Option<UnixStream>,
@@ -78,6 +79,7 @@ pub struct PooledConnection<'a> {
 	pool: &'a ConnectionPool,
 }
 
+#[allow(clippy::min_ident_chars)]
 impl<'a> PooledConnection<'a> {
 	/// Create a new pooled connection
 	pub(super) fn new(
@@ -96,6 +98,7 @@ impl<'a> PooledConnection<'a> {
 	}
 }
 
+#[allow(clippy::min_ident_chars)]
 impl<'a> Drop for PooledConnection<'a> {
 	fn drop(&mut self) {
 		if let Some(stream) = self.stream.take() {
@@ -108,6 +111,7 @@ impl<'a> Drop for PooledConnection<'a> {
 	}
 }
 
+#[allow(clippy::min_ident_chars)]
 impl<'a> std::ops::Deref for PooledConnection<'a> {
 	type Target = UnixStream;
 	fn deref(&self) -> &Self::Target {
@@ -115,6 +119,7 @@ impl<'a> std::ops::Deref for PooledConnection<'a> {
 	}
 }
 
+#[allow(clippy::min_ident_chars)]
 impl<'a> std::ops::DerefMut for PooledConnection<'a> {
 	fn deref_mut(&mut self) -> &mut Self::Target {
 		self.stream.as_mut().unwrap()

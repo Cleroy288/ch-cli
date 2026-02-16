@@ -10,7 +10,7 @@ use crate::indexer::{
 use super::graph_walker::GraphWalker;
 use super::{CallerInfo, CalleeInfo};
 
-impl<'a> GraphWalker<'a> {
+impl<'graph> GraphWalker<'graph> {
 	/// Find symbols that call the given symbol
 	pub fn find_callers(&self, symbol: &Symbol) -> Vec<CallerInfo> {
 		let mut callers = Vec::new();
@@ -24,7 +24,7 @@ impl<'a> GraphWalker<'a> {
 			}
 
 			// find what symbol contains this call
-			let caller = self.build_caller_info(&reference);
+			let caller = self.build_caller_info(reference);
 			callers.push(caller);
 
 			if callers.len() >= self.config().max_callers {
@@ -60,7 +60,7 @@ impl<'a> GraphWalker<'a> {
 				continue;
 			}
 
-			let callee = self.build_callee_info(&reference);
+			let callee = self.build_callee_info(reference);
 			callees.push(callee);
 
 			if callees.len() >= self.config().max_callees {
@@ -73,7 +73,7 @@ impl<'a> GraphWalker<'a> {
 }
 
 /// Build CallerInfo from a reference and its containing symbol
-impl<'a> GraphWalker<'a> {
+impl<'graph> GraphWalker<'graph> {
 	/// Build caller info from a reference location
 	fn build_caller_info(
 		&self,
@@ -112,14 +112,15 @@ impl<'a> GraphWalker<'a> {
 
 		let (file, line) = callee_defs
 			.first()
-			.map(|d| {
-				let f = d.symbol.location.file.clone();
-				let l = d.symbol.location.line;
-				(Some(f), Some(l))
+			.map(|def| {
+				let path = def.symbol.location.file.clone();
+				let line_num = def.symbol.location.line;
+				(Some(path), Some(line_num))
 			})
 			.unwrap_or((None, None));
 
-		let kind = callee_defs.first().map(|d| d.symbol.kind);
+		let kind =
+			callee_defs.first().map(|def| def.symbol.kind);
 
 		CalleeInfo {
 			name: reference.name.clone(),

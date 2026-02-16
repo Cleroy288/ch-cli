@@ -1,7 +1,7 @@
 //! Tests for retrieval::agent (mod.rs)
 
-use ch_cli::retrieval::agent::RetrievalOutput;
-use ch_cli::retrieval::daemon::protocol::{
+use rustean::retrieval::agent::RetrievalOutput;
+use rustean::retrieval::daemon::protocol::{
 	QueryIntent, SearchSpec,
 };
 

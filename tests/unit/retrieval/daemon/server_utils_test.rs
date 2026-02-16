@@ -2,16 +2,16 @@
 
 use std::path::PathBuf;
 
-use ch_cli::retrieval::daemon::server::lifecycle::{
+use rustean::retrieval::daemon::server::lifecycle::{
 	with_socket_path,
 };
-use ch_cli::retrieval::daemon::server::types::{
+use rustean::retrieval::daemon::server::types::{
 	CachedProject, MAX_CACHED_PROJECTS,
 };
-use ch_cli::retrieval::daemon::server::utils::{
+use rustean::retrieval::daemon::server::utils::{
 	evict_lru_if_needed,
 };
-use ch_cli::retrieval::hybrid::HybridSearch;
+use rustean::retrieval::hybrid::HybridSearch;
 
 /// Test evict_lru_if_needed does not evict
 /// when cache is under limit

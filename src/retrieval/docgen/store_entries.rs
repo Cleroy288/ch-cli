@@ -1,4 +1,4 @@
-//! DocStore entry management - CRUD and iteration operations.
+//! DocStore entry management - CRUD and iteration.
 //!
 //! Provides upsert, get, remove, and iteration
 //! methods for documentation entries.
@@ -15,16 +15,18 @@ impl DocStore {
 	}
 
 	/// Get entry by ID.
-	pub fn get(&self, id: &str) -> Option<&DocEntry> {
-		self.entries.get(id)
+	pub fn get(
+		&self, entry_id: &str,
+	) -> Option<&DocEntry> {
+		self.entries.get(entry_id)
 	}
 
 	/// Get mutable entry by ID.
 	pub fn get_mut(
 		&mut self,
-		id: &str,
+		entry_id: &str,
 	) -> Option<&mut DocEntry> {
-		self.entries.get_mut(id)
+		self.entries.get_mut(entry_id)
 	}
 
 	/// Get entry by symbol name (first match).
@@ -32,7 +34,9 @@ impl DocStore {
 		&self,
 		name: &str,
 	) -> Option<&DocEntry> {
-		self.entries.values().find(|e| e.name == name)
+		self.entries
+			.values()
+			.find(|entry| entry.name == name)
 	}
 
 	/// Get all entries.
@@ -53,8 +57,10 @@ impl DocStore {
 	}
 
 	/// Remove entry by ID.
-	pub fn remove(&mut self, id: &str) -> Option<DocEntry> {
-		let entry = self.entries.remove(id);
+	pub fn remove(
+		&mut self, entry_id: &str,
+	) -> Option<DocEntry> {
+		let entry = self.entries.remove(entry_id);
 		self.update_completion_status();
 		entry
 	}
@@ -65,4 +71,3 @@ impl DocStore {
 		self.generation_complete = false;
 	}
 }
-

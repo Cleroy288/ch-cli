@@ -12,7 +12,7 @@ impl FileScanner {
 	pub fn directories(&self) -> Vec<&FsEntry> {
 		self.entries()
 			.iter()
-			.filter(|e| e.is_dir)
+			.filter(|entry| entry.is_dir)
 			.collect()
 	}
 
@@ -20,7 +20,7 @@ impl FileScanner {
 	pub fn files(&self) -> Vec<&FsEntry> {
 		self.entries()
 			.iter()
-			.filter(|e| !e.is_dir)
+			.filter(|entry| !entry.is_dir)
 			.collect()
 	}
 
@@ -38,17 +38,17 @@ impl FileScanner {
 
 		self.entries()
 			.iter()
-			.filter(|e| {
-				if files_only && e.is_dir {
+			.filter(|entry| {
+				if files_only && entry.is_dir {
 					return false;
 				}
-				if dirs_only && !e.is_dir {
+				if dirs_only && !entry.is_dir {
 					return false;
 				}
 				if query_lower.is_empty() {
 					return true;
 				}
-				e.name
+				entry.name
 					.to_lowercase()
 					.contains(&query_lower)
 			})

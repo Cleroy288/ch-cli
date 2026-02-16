@@ -2,10 +2,10 @@
 
 use std::path::Path;
 
-use ch_cli::retrieval::agent::pipeline::{
+use rustean::retrieval::agent::pipeline::{
 	PipelineConfig, RetrievalPipeline,
 };
-use ch_cli::retrieval::docgen::DocStore;
+use rustean::retrieval::docgen::DocStore;
 
 /// Test new creates pipeline with default config
 #[test]
@@ -23,15 +23,21 @@ fn test_new() {
 /// Test with_config creates pipeline with custom config
 #[test]
 fn test_with_config() {
-	let mut config = PipelineConfig::default();
-	config.max_results = 50;
-	config.semantic_search = false;
+	use rustean::retrieval::agent::pipeline::PipelineFlags;
+	let config = PipelineConfig {
+		max_results: 50,
+		flags: PipelineFlags {
+			semantic_search: false,
+			..PipelineFlags::default()
+		},
+		..PipelineConfig::default()
+	};
 
 	let pipeline =
 		RetrievalPipeline::with_config(config.clone());
 
 	assert_eq!(pipeline.config.max_results, 50);
-	assert!(!pipeline.config.semantic_search);
+	assert!(!pipeline.config.flags.semantic_search);
 	assert!(pipeline.symbols.is_none());
 }
 

@@ -73,7 +73,7 @@ impl IndexState {
 			root: canonical_root,
 			last_updated: SystemTime::now()
 				.duration_since(SystemTime::UNIX_EPOCH)
-				.map(|d| d.as_secs())
+				.map(|dur| dur.as_secs())
 				.unwrap_or(0),
 			files: HashMap::new(),
 			symbols: Vec::new(),

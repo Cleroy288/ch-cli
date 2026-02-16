@@ -2,8 +2,8 @@
 
 use std::path::PathBuf;
 
-use ch_cli::domain::{DIR_SYMBOL, FILE_SYMBOL};
-use ch_cli::fs::FsEntry;
+use rustean::domain::{DIR_SYMBOL, FILE_SYMBOL};
+use rustean::fs::FsEntry;
 
 /// Test FsEntry::new() creates entry with correct fields
 #[test]

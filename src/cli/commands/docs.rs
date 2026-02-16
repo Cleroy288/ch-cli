@@ -3,13 +3,16 @@
 //! Thin handlers that delegate to DocGenService
 //! for all doc operations.
 
+use std::io::Write;
 use std::path::Path;
 
-use crate::retrieval::docgen::DocEntry;
 use crate::service::{
 	DefaultDocGenService, DocGenService,
 };
 
+use super::docs_display::{
+	print_doc_detail, print_search_result,
+};
 use super::error::CommandResult;
 
 /// Execute the `docs generate` command
@@ -18,23 +21,42 @@ pub fn docs_generate_command(
 ) -> CommandResult {
 	let svc = DefaultDocGenService::new();
 	let path = Path::new(".");
+	let mut out = std::io::stdout().lock();
 
-	println!("Starting documentation generation...");
-	match svc.start_generation(path, force) {
+	writeln!(
+		out,
+		"Starting documentation generation..."
+	)?;
+	let result = svc.start_generation(path, force);
+	print_generation_result(&mut out, result)?;
+	Ok(())
+}
+
+/// Print generation start result
+fn print_generation_result(
+	out: &mut impl Write,
+	result: Result<(), impl std::fmt::Display>,
+) -> std::io::Result<()> {
+	match result {
 		Ok(_) => {
-			println!(
-				"Doc generation started in background."
-			);
-			println!(
-				"Use 'ch-cli docs status' to check."
-			);
+			writeln!(
+				out,
+				"Doc generation started \
+				in background."
+			)?;
+			writeln!(
+				out,
+				"Use 'rustean docs status' \
+				to check."
+			)?;
 		}
-		Err(e) => {
-			println!("Error: {}", e);
-			println!(
+		Err(gen_err) => {
+			writeln!(out, "Error: {}", gen_err)?;
+			writeln!(
+				out,
 				"Make sure daemon is running: \
-				ch-cli daemon start"
-			);
+				rustean daemon start"
+			)?;
 		}
 	}
 	Ok(())
@@ -44,42 +66,41 @@ pub fn docs_generate_command(
 pub fn docs_status_command() -> CommandResult {
 	let svc = DefaultDocGenService::new();
 	let path = Path::new(".");
+	let mut out = std::io::stdout().lock();
 
 	match svc.get_status(path) {
-		Ok(s) => {
-			println!("Documentation Status:\n");
-			println!("  Total:     {}", s.total);
-			println!("  Completed: {}", s.completed);
-			println!("  Pending:   {}", s.pending);
-			if s.total > 0 {
-				let pct = (s.completed as f64
-					/ s.total as f64) * 100.0;
-				let filled =
-					((pct / 5.0) as usize).min(20);
-				let empty =
-					20_usize.saturating_sub(filled);
-				println!(
-					"\n  Progress: [{}{}] {:.1}%",
-					"#".repeat(filled),
-					".".repeat(empty),
-					pct,
-				);
-			}
-			if s.is_ready {
-				println!("\n  Documentation is ready!");
-			} else if s.is_generating {
-				println!("\n  Generation running...");
-			} else {
-				println!(
-					"\n  Run 'ch-cli docs generate'."
-				);
-			}
+		Ok(status) => {
+			print_status_counts(&mut out, &status)?;
+			print_status_progress(&status)?;
 		}
-		Err(e) => {
-			println!("No documentation found.");
-			println!("(Error: {})", e);
+		Err(status_err) => {
+			writeln!(
+				out, "No documentation found."
+			)?;
+			writeln!(
+				out, "(Error: {})", status_err
+			)?;
 		}
 	}
+	Ok(())
+}
+
+/// Print doc status counts
+fn print_status_counts(
+	out: &mut impl Write,
+	status: &crate::service::docgen::types
+		::DocStatusInfo,
+) -> std::io::Result<()> {
+	writeln!(out, "Documentation Status:\n")?;
+	writeln!(
+		out, "  Total:     {}", status.total
+	)?;
+	writeln!(
+		out, "  Completed: {}", status.completed
+	)?;
+	writeln!(
+		out, "  Pending:   {}", status.pending
+	)?;
 	Ok(())
 }
 
@@ -89,19 +110,21 @@ pub fn docs_show_command(
 ) -> CommandResult {
 	let svc = DefaultDocGenService::new();
 	let path = Path::new(".");
+	let mut out = std::io::stdout().lock();
 
 	match svc.get_doc(path, symbol) {
 		Ok(Some(entry)) => {
-			print_doc_detail(&entry);
+			print_doc_detail(&mut out, &entry)?;
 		}
 		Ok(None) => {
-			println!(
+			writeln!(
+				out,
 				"No documentation found for '{}'",
 				symbol,
-			);
+			)?;
 		}
-		Err(e) => {
-			println!("Error: {}", e);
+		Err(doc_err) => {
+			writeln!(out, "Error: {}", doc_err)?;
 		}
 	}
 	Ok(())
@@ -114,85 +137,112 @@ pub fn docs_search_command(
 ) -> CommandResult {
 	let svc = DefaultDocGenService::new();
 	let path = Path::new(".");
+	let mut out = std::io::stdout().lock();
 
-	match svc.search_docs(path, query, limit) {
-		Ok(results) if results.is_empty() => {
-			println!(
+	let result =
+		svc.search_docs(path, query, limit);
+	print_search_results(&mut out, query, result)?;
+	Ok(())
+}
+
+/// Print docs search results or error
+fn print_search_results(
+	out: &mut impl Write,
+	query: &str,
+	result: Result<
+		Vec<crate::retrieval::docgen::DocEntry>,
+		impl std::fmt::Display,
+	>,
+) -> std::io::Result<()> {
+	match result {
+		Ok(ref results) if results.is_empty() => {
+			writeln!(
+				out,
 				"No docs found for '{}'", query,
-			);
+			)?;
 		}
 		Ok(results) => {
-			println!(
-				"Doc results for '{}':\n", query,
-			);
-			for (i, d) in results.iter().enumerate() {
-				println!(
-					"  {}. {} {} ({}:{})",
-					i + 1, d.kind, d.name,
-					d.file_path.display(), d.line,
-				);
-				if let Some(ref doc) = d.llm_doc {
-					let short: String =
-						doc.chars().take(100).collect();
-					let tail =
-						if doc.len() > 100 { "..." }
-						else { "" };
-					println!(
-						"     {}{}",
-						short.replace('\n', " "),
-						tail,
-					);
-				}
-				println!();
-			}
+			print_doc_hits(out, query, &results)?;
 		}
-		Err(e) => {
-			println!("Search failed: {}", e);
+		Err(search_err) => {
+			writeln!(
+				out,
+				"Search failed: {}", search_err,
+			)?;
 		}
 	}
 	Ok(())
 }
 
-/// Display full documentation for a single entry
-fn print_doc_detail(e: &DocEntry) {
-	println!("Doc for '{}'\n", e.name);
-	println!("  Kind: {}", e.kind);
-	println!(
-		"  File: {}:{}",
-		e.file_path.display(), e.line,
-	);
-	if let Some(ref s) = e.signature {
-		println!("\n  Signature:\n    {}", s);
+/// Print document search hits
+fn print_doc_hits(
+	out: &mut impl Write,
+	query: &str,
+	results: &[crate::retrieval::docgen::DocEntry],
+) -> std::io::Result<()> {
+	writeln!(
+		out, "Doc results for '{}':\n", query,
+	)?;
+	for (idx, doc) in results.iter().enumerate() {
+		print_search_result(out, idx, doc)?;
 	}
-	if let Some(ref c) = e.user_comment {
-		println!("\n  User Comment:");
-		for line in c.lines() {
-			println!("    {}", line);
-		}
+	Ok(())
+}
+
+/// Print status progress bar and state
+fn print_status_progress(
+	status: &crate::service::docgen::types
+		::DocStatusInfo,
+) -> std::io::Result<()> {
+	let mut out = std::io::stdout().lock();
+	print_progress_bar(&mut out, status)?;
+	print_status_label(&mut out, status)?;
+	Ok(())
+}
+
+/// Print the progress bar if total > 0
+fn print_progress_bar(
+	out: &mut impl Write,
+	status: &crate::service::docgen::types
+		::DocStatusInfo,
+) -> std::io::Result<()> {
+	if status.total == 0 {
+		return Ok(());
 	}
-	if let Some(ref d) = e.llm_doc {
-		println!("\n  Generated Documentation:");
-		for line in d.lines() {
-			println!("    {}", line);
-		}
+	let pct = (status.completed as f64
+		/ status.total as f64)
+		* 100.0;
+	let filled = ((pct / 5.0) as usize).min(20);
+	let empty = 20_usize.saturating_sub(filled);
+	writeln!(
+		out,
+		"\n  Progress: [{}{}] {:.1}%",
+		"#".repeat(filled),
+		".".repeat(empty),
+		pct,
+	)?;
+	Ok(())
+}
+
+/// Print the generation state label
+fn print_status_label(
+	out: &mut impl Write,
+	status: &crate::service::docgen::types
+		::DocStatusInfo,
+) -> std::io::Result<()> {
+	if status.is_ready {
+		writeln!(
+			out, "\n  Documentation is ready!"
+		)?;
+	} else if status.is_generating {
+		writeln!(
+			out, "\n  Generation running..."
+		)?;
+	} else {
+		writeln!(
+			out,
+			"\n  Run 'rustean docs generate'."
+		)?;
 	}
-	if !e.links.depends_on.is_empty() {
-		println!("\n  Depends On:");
-		for dep in &e.links.depends_on {
-			println!("    - {}", dep);
-		}
-	}
-	if !e.links.depended_by.is_empty() {
-		println!("\n  Used By:");
-		for dep in &e.links.depended_by {
-			println!("    - {}", dep);
-		}
-	}
-	if !e.links.external_deps.is_empty() {
-		println!("\n  External Crates:");
-		for dep in &e.links.external_deps {
-			println!("    - {}", dep);
-		}
-	}
-	println!("\n  Status: {}", e.status);
+	Ok(())
 }

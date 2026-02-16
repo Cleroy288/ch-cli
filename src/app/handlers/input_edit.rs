@@ -1,6 +1,16 @@
+//! Text editing handlers for home, end, enter,
+//! and file reference maintenance.
+
+use crate::app::claude_request::spawn_claude_request;
+use crate::app::handlers::symbol_resolver;
+use crate::app::memory_save;
 use crate::app::parser;
 use crate::app::App;
-use crate::domain::{FileName, FilePath, FileReference};
+use crate::domain::memory_helpers;
+use crate::message::user_message::UserMessage;
+
+/// Slash command to start a new conversation
+const CMD_NEW: &str = "/new";
 
 impl App {
     /// Jump cursor to start
@@ -10,73 +20,88 @@ impl App {
 
     /// Jump cursor to end
     pub(crate) fn handle_end(&mut self) {
-        self.cursor_position.jump_to_end(self.input.len());
+        self.cursor_position.jump_to_end(
+            self.input.len(),
+        );
     }
 
-    /// Handle enter key - parse and store message
+    /// Handle enter key - parse, store, send
     pub(crate) fn handle_enter(&mut self) {
-        // Use the parser module for pure parsing logic
-        let refs = &self.file_references;
-        if let Some(message) =
-            parser::parse_input_to_message(
-                self.input.clone(),
-                refs,
-            )
-        {
-            self.history.add_message(message);
+        if self.handle_slash_command() {
+            return;
         }
+        if let Some(msg) = self.parse_message() {
+            self.send_and_store(msg);
+        }
+        self.clear_input_state();
+    }
 
+    /// Parse input into a UserMessage
+    fn parse_message(&self) -> Option<UserMessage> {
+        parser::parse_input_to_message(
+            self.input.clone(),
+            &self.file_references,
+            &self.symbol_selectors,
+        )
+    }
+
+    /// Resolve, capture, send, store
+    fn send_and_store(
+        &mut self,
+        mut message: UserMessage,
+    ) {
+        symbol_resolver::resolve_symbols(
+            &mut message.segments,
+            &self.symbol_selectors,
+        );
+        self.pending_user_input = Some(
+            memory_save::extract_user_input(
+                &self.input, &message.segments,
+            ),
+        );
+        spawn_claude_request(
+            self, &message.segments,
+        );
+        self.history.add_message(message);
+    }
+
+    /// Handle slash commands (e.g. /new).
+    /// Returns true if a command was handled.
+    fn handle_slash_command(&mut self) -> bool {
+        let trimmed = self.input.trim();
+        if trimmed != CMD_NEW {
+            return false;
+        }
+        self.continue_session = false;
+        self.last_claude_response = None;
+        self.memory_session_id =
+            memory_helpers::new_session_id();
+        self.pending_user_input = None;
+        self.set_status_message(Some(
+            "New conversation started".to_string(),
+        ));
+        self.clear_input_state();
+        true
+    }
+
+    /// Reset input, cursor, refs after enter
+    fn clear_input_state(&mut self) {
         self.input.clear();
         self.cursor_position.jump_to_start();
         self.file_references.clear();
+        self.symbol_selectors.clear();
+        self.doc_preview = None;
+        self.doc_fetch_no_result = false;
     }
 
     /// Update file references when input changes.
-    /// Removes references that are no longer valid due to edits.
-    pub(crate) fn update_file_references(&mut self) {
-        let input_len = self.input.len();
-        self.file_references.retain(|r| r.end <= input_len);
-    }
-
-    /// Insert a selected file/folder path at the trigger position.
-    ///
-    /// Called when the user selects a file/folder from the picker.
-    /// Removes the @ symbol and inserts the display name.
-    pub(crate) fn insert_selected_path(
+    pub(crate) fn update_file_references(
         &mut self,
-        full_path_str: String,
-        name_only: String,
-        is_dir: bool,
     ) {
-        let trigger_pos = self.picker.trigger_position();
-
-        // Remove the @ symbol
-        let trigger_char = self.input.chars().nth(trigger_pos);
-        if trigger_pos < self.input.len()
-            && trigger_char == Some('@')
-        {
-            self.input.remove(trigger_pos);
-            self.cursor_position.set(trigger_pos);
-        }
-
-        // Track the start position
-        let start_pos = self.cursor_position.get();
-
-        // Insert only the filename/foldername
-        for c in name_only.chars() {
-            let cursor_pos = self.cursor_position.get();
-            self.input.insert(cursor_pos, c);
-            self.cursor_position.move_right(self.input.len());
-        }
-
-        // Track this as a file reference
-        let file_ref = FileReference::new(
-            start_pos,
-            self.cursor_position.get(),
-            FilePath::from(full_path_str),
-            FileName::from(name_only),
-            is_dir,
-        );
-        self.file_references.push(file_ref);
+        let input_len = self.input.len();
+        self.file_references
+            .retain(|fref| fref.end <= input_len);
+        self.symbol_selectors
+            .retain(|sel| sel.end <= input_len);
     }
 }

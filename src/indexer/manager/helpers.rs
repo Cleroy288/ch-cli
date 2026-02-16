@@ -10,6 +10,10 @@ use crate::indexer::parser::ExtractedReference;
 
 use super::builder::IndexManager;
 
+/// A parsed file paired with its extracted references
+type ParsePair =
+	(FileResult, Vec<ExtractedReference>);
+
 /// Return type for parallel file parsing
 type ParseOutput =
 	(Vec<FileResult>, Vec<ExtractedReference>);
@@ -47,8 +51,8 @@ impl IndexManager {
 	) {
 		let current =
 			processed.fetch_add(1, Ordering::SeqCst) + 1;
-		if let Some(ref cb) = self.progress_callback {
-			cb(current, total, path);
+		if let Some(ref callback) = self.progress_callback {
+			callback(current, total, path);
 		}
 	}
 
@@ -67,7 +71,7 @@ impl IndexManager {
 
 /// Split paired results into two separate vectors
 fn split_results(
-	pairs: Vec<(FileResult, Vec<ExtractedReference>)>,
+	pairs: Vec<ParsePair>,
 ) -> ParseOutput {
 	let cap = pairs.len();
 	let mut files = Vec::with_capacity(cap);

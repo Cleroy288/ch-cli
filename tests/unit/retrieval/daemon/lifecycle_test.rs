@@ -2,30 +2,30 @@
 
 use std::path::Path;
 
-use ch_cli::retrieval::daemon::lifecycle::{
+use rustean::retrieval::daemon::lifecycle::{
 	default_paths, process_running,
 };
-use ch_cli::retrieval::daemon::lifecycle_helpers::{
+use rustean::retrieval::daemon::lifecycle_helpers::{
 	pid_file_from_socket,
 };
 
 /// Test pid_file_from_socket returns .pid extension
 #[test]
 fn test_pid_file_from_socket() {
-	let socket = Path::new("/tmp/ch-cli.sock");
+	let socket = Path::new("/tmp/rustean.sock");
 	let pid = pid_file_from_socket(socket);
-	assert_eq!(pid, Path::new("/tmp/ch-cli.pid"));
+	assert_eq!(pid, Path::new("/tmp/rustean.pid"));
 }
 
 /// Test pid_file_from_socket with nested path
 #[test]
 fn test_pid_file_from_socket_nested() {
 	let socket =
-		Path::new("/var/run/ch-cli/daemon.sock");
+		Path::new("/var/run/rustean/daemon.sock");
 	let pid = pid_file_from_socket(socket);
 	assert_eq!(
 		pid,
-		Path::new("/var/run/ch-cli/daemon.pid")
+		Path::new("/var/run/rustean/daemon.pid")
 	);
 }
 
@@ -34,11 +34,11 @@ fn test_pid_file_from_socket_nested() {
 fn test_default_paths() {
 	let (socket, pid) = default_paths();
 
-	// Should use home directory with .ch-cli prefix
+	// Should use home directory with .rustean prefix
 	assert!(
-		socket.to_string_lossy().contains(".ch-cli")
+		socket.to_string_lossy().contains(".rustean")
 	);
-	assert!(pid.to_string_lossy().contains(".ch-cli"));
+	assert!(pid.to_string_lossy().contains(".rustean"));
 
 	// Socket should end with .sock
 	assert!(socket.extension().is_some());

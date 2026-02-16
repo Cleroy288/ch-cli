@@ -8,7 +8,10 @@ use std::time::Duration;
 
 /// Get number of connections in the pool
 pub fn available_connections(pool: &ConnectionPool) -> usize {
-	pool.connections.lock().unwrap().len()
+	let Ok(conns) = pool.connections.lock() else {
+		return 0;
+	};
+	conns.len()
 }
 
 /// Get the socket path

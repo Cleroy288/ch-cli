@@ -1,7 +1,7 @@
-use ch_cli::retrieval::query::fast_path_patterns::{
+use rustean::retrieval::query::fast_path_patterns::{
 	FastPathIntent, PatternType,
 };
-use ch_cli::retrieval::query::FastPathParser;
+use rustean::retrieval::query::FastPathParser;
 
 #[test]
 fn test_extract_camel_case() {

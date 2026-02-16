@@ -1,108 +1,91 @@
+//! Input box rendering for the TUI.
+//!
+//! Renders the input field with placeholder text
+//! or styled content, and manages cursor position.
+
 use ratatui::{
     layout::{Alignment, Rect},
     style::Style,
-    text::{Line, Span},
+    text::Line,
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
 
+use super::input_styling;
 use crate::app::App;
-use crate::domain::FileReference;
-use crate::ui::styles::{self, colors};
+use crate::ui::strings::tui_labels;
+use crate::ui::styles::colors;
 
 /// Render the input box.
 ///
-/// Shows either a placeholder for empty input or styled text with
-/// file/folder references highlighted.
-pub fn render_input(frame: &mut Frame, area: Rect, app: &App) {
-    let input_text = if app.input().is_empty() {
-        Line::from(
-            "Type something... (@ for files/folders, \
-            ESC or Ctrl+C to quit)",
-        )
-        .style(Style::default().fg(colors::PLACEHOLDER))
-    } else {
-        build_styled_input_line(app)
+/// Shows loading indicator when waiting for Claude,
+/// placeholder when empty, or styled content.
+pub fn render_input(
+    frame: &mut Frame,
+    area: Rect,
+    app: &App,
+) {
+    let loading = app.is_claude_loading();
+    let empty = app.input().is_empty();
+    let input_text = match (empty, loading) {
+        (true, true) => build_loading_line(),
+        (true, false) => build_placeholder_line(),
+        _ => input_styling::build_styled_input_line(app),
     };
 
-    let paragraph = Paragraph::new(input_text).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .title(" Input ")
-            .title_alignment(Alignment::Left)
-            .style(Style::default().fg(colors::INPUT_TEXT)),
-    );
-
+    let paragraph = Paragraph::new(input_text)
+        .block(input_block(loading));
     frame.render_widget(paragraph, area);
 }
 
-/// Build a styled line with file/folder references highlighted.
-///
-/// This is a pure function that transforms the input text and file references
-/// into a styled Line for rendering.
-fn build_styled_input_line(app: &App) -> Line<'static> {
-    let input = app.input();
-    let file_refs = app.file_references();
+/// Build loading indicator for Claude requests
+fn build_loading_line() -> Line<'static> {
+    Line::from(
+        tui_labels::INPUT_WAITING.to_string(),
+    )
+    .style(Style::default().fg(colors::AMBER).bold())
+}
 
-    // Early return for no file references
-    if file_refs.is_empty() {
-        return Line::from(Span::styled(
-            input.to_string(),
-            Style::default().fg(colors::INPUT_TEXT),
-        ));
-    }
+/// Build the placeholder text for empty input
+fn build_placeholder_line() -> Line<'static> {
+    Line::from(
+        "Type something... (@ for files/folders, \
+        ESC or Ctrl+C to quit)",
+    )
+    .style(Style::default().fg(colors::PLACEHOLDER))
+}
 
-    let mut spans = Vec::new();
-    let mut last_pos = 0;
-
-    // Sort file references by start position
-    let mut sorted_refs: Vec<&FileReference> = file_refs.iter().collect();
-    sorted_refs.sort_by_key(|r| r.start);
-
-    for file_ref in sorted_refs {
-        // Add normal text before this reference
-        if last_pos < file_ref.start {
-            let normal_text = &input[last_pos..file_ref.start];
-            spans.push(Span::styled(
-                normal_text.to_string(),
-                Style::default().fg(colors::INPUT_TEXT),
-            ));
-        }
-
-        // Add styled file/folder reference
-        if file_ref.start < input.len() && file_ref.end <= input.len() {
-            let ref_text = &input[file_ref.start..file_ref.end];
-            let style = if file_ref.is_dir {
-                styles::folder_reference_style()
-            } else {
-                styles::file_reference_style()
-            };
-            spans.push(Span::styled(ref_text.to_string(), style));
-            last_pos = file_ref.end;
-        }
-    }
-
-    // Add remaining normal text after last reference
-    if last_pos < input.len() {
-        let remaining_text = &input[last_pos..];
-        spans.push(Span::styled(
-            remaining_text.to_string(),
-            Style::default().fg(colors::INPUT_TEXT),
-        ));
-    }
-
-    Line::from(spans)
+/// Build the input box block decoration
+fn input_block(loading: bool) -> Block<'static> {
+    let border_fg = if loading {
+        colors::AMBER
+    } else {
+        colors::BORDER
+    };
+    Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(border_fg))
+        .title(" > ")
+        .title_alignment(Alignment::Left)
+        .title_style(
+            Style::default()
+                .fg(colors::RUST_ORANGE)
+                .bold(),
+        )
 }
 
 /// Set the cursor position in the input box.
-///
-/// This should be called after rendering the input box to position the cursor.
-pub fn set_cursor(frame: &mut Frame, area: Rect, cursor_pos: usize) {
-    let cursor_x = area.x + cursor_pos as u16 + 1; // +1 for border
-    let cursor_y = area.y + 1; // +1 for border
+pub fn set_cursor(
+    frame: &mut Frame,
+    area: Rect,
+    cursor_pos: usize,
+) {
+    let cursor_x = area.x + cursor_pos as u16 + 1;
+    let cursor_y = area.y + 1;
 
-    // Only set cursor if it's within the input box bounds
     if cursor_x < area.x + area.width - 1 {
-        frame.set_cursor_position((cursor_x, cursor_y));
+        frame.set_cursor_position((
+            cursor_x, cursor_y,
+        ));
     }
 }

@@ -1,5 +1,5 @@
-use ch_cli::indexer::{SymbolKind, Visibility};
-use ch_cli::retrieval::query::validator_scoring::{
+use rustean::indexer::{SymbolKind, Visibility};
+use rustean::retrieval::query::validator_scoring::{
 	calculate_weighted_importance, kind_score,
 	visibility_score,
 };

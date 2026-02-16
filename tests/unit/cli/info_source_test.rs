@@ -1,7 +1,7 @@
 //! Unit tests for cli::commands::info::info_source
 //! — migrated from inline tests
 
-use ch_cli::cli::commands::info::info_source::find_symbol_end;
+use rustean::cli::commands::info::info_source::find_symbol_end;
 
 #[test]
 fn find_end_simple_function() {
@@ -38,9 +38,9 @@ fn find_end_no_braces() {
 fn find_end_max_lines() {
     let mut lines: Vec<&str> =
         vec!["fn large() {"];
-    for _ in 0..100 {
-        lines.push("    let x = 1;");
-    }
+    let body =
+        vec!["    let x = 1;"; 100];
+    lines.extend(body);
     lines.push("}");
     assert_eq!(find_symbol_end(&lines, 0), 51);
 }

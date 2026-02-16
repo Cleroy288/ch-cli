@@ -21,51 +21,62 @@ pub fn should_skip_path(path: &Path) -> bool {
 
 /// Detect project type from configuration files
 pub fn detect_project_type(root: &Path) -> Option<ProjectType> {
-	// Check for Rust (highest priority for this tool)
+	// Check primary project types (Rust, Go, Node, Python)
+	if let Some(proj) = detect_primary_type(root) {
+		return Some(proj);
+	}
+	// Check JVM and .NET project types
+	detect_secondary_type(root)
+}
+
+/// Detect primary project types: Rust, Go, Node, Python
+fn detect_primary_type(root: &Path) -> Option<ProjectType> {
 	if root.join("Cargo.toml").exists() {
 		return Some(ProjectType::RustCargo);
 	}
-
-	// Check for Go
 	if root.join("go.mod").exists() {
 		return Some(ProjectType::GoMod);
 	}
-
-	// Check for Node.js
 	if root.join("package.json").exists() {
 		return Some(ProjectType::NodeJs);
 	}
-
-	// Check for Python
 	if root.join("pyproject.toml").exists()
 		|| root.join("setup.py").exists()
 		|| root.join("requirements.txt").exists()
 	{
 		return Some(ProjectType::Python);
 	}
+	None
+}
 
-	// Check for Java/Gradle
+/// Detect secondary project types: Gradle, Maven, .NET
+fn detect_secondary_type(root: &Path) -> Option<ProjectType> {
 	if root.join("build.gradle").exists()
 		|| root.join("build.gradle.kts").exists()
 	{
 		return Some(ProjectType::Gradle);
 	}
-
-	// Check for Java/Maven
 	if root.join("pom.xml").exists() {
 		return Some(ProjectType::Maven);
 	}
-
-	// Check for .NET (look for any .csproj or .sln)
-	if let Ok(entries) = std::fs::read_dir(root) {
-		for entry in entries.flatten() {
-			if let Some(ext) = entry.path().extension() {
-				if ext == "csproj" || ext == "sln" {
-					return Some(ProjectType::DotNet);
-				}
-			}
-		}
+	if has_dotnet_project(root) {
+		return Some(ProjectType::DotNet);
 	}
-
 	Some(ProjectType::Unknown)
+}
+
+/// Check if root contains .csproj or .sln files
+fn has_dotnet_project(root: &Path) -> bool {
+	let Ok(entries) = std::fs::read_dir(root)
+	else {
+		return false;
+	};
+	entries.flatten().any(|entry| {
+		entry
+			.path()
+			.extension()
+			.is_some_and(|ext| {
+				ext == "csproj" || ext == "sln"
+			})
+	})
 }

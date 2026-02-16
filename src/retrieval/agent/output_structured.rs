@@ -33,44 +33,48 @@ pub struct CodeResult {
 impl CodeResult {
 	/// Convert to XML string with given indentation
 	pub fn to_xml(&self, indent: usize) -> String {
-		let sp = " ".repeat(indent);
-		let mut out = String::new();
+		let pad = " ".repeat(indent);
+		let mut out = self.xml_open_tag(&pad);
 
 		out.push_str(&format!(
+			"{}  <content><![CDATA[\n", pad,
+		));
+		out.push_str(&self.full_content);
+		out.push_str(&format!(
+			"\n{}  ]]></content>\n", pad,
+		));
+		out.push_str(&format!("{}</symbol>\n", pad));
+
+		out
+	}
+
+	/// Build the opening <symbol> tag with attributes
+	fn xml_open_tag(&self, pad: &str) -> String {
+		let mut tag = format!(
 			"{}<symbol kind=\"{}\" name=\"{}\" \
 			file=\"{}\" line=\"{}\"",
-			sp,
+			pad,
 			&self.kind,
 			escape_xml(&self.symbol),
 			escape_xml(&self.file),
 			self.line,
-		));
+		);
 
 		if let Some(ref sig) = self.signature {
-			out.push_str(&format!(
+			tag.push_str(&format!(
 				" signature=\"{}\"",
 				escape_xml(sig),
 			));
 		}
 
-		out.push_str(&format!(
+		tag.push_str(&format!(
 			" lines=\"{}\" truncated=\"{}\" \
 			score=\"{:.3}\">\n",
 			self.line_count,
 			self.truncated,
 			self.relevance_score,
 		));
-
-		out.push_str(&format!(
-			"{}  <content><![CDATA[\n", sp,
-		));
-		out.push_str(&self.full_content);
-		out.push_str(&format!(
-			"\n{}  ]]></content>\n", sp,
-		));
-		out.push_str(&format!("{}</symbol>\n", sp));
-
-		out
+		tag
 	}
 }
 
@@ -90,25 +94,25 @@ pub struct DocResult {
 impl DocResult {
 	/// Convert to XML string with given indentation
 	pub fn to_xml(&self, indent: usize) -> String {
-		let sp = " ".repeat(indent);
+		let pad = " ".repeat(indent);
 		let mut out = String::new();
 
 		out.push_str(&format!(
 			"{}<doc file=\"{}\" section=\"{}\" \
 			score=\"{:.3}\">\n",
-			sp,
+			pad,
 			escape_xml(&self.file),
 			escape_xml(&self.section),
 			self.relevance_score,
 		));
 		out.push_str(&format!(
-			"{}  <content><![CDATA[\n", sp,
+			"{}  <content><![CDATA[\n", pad,
 		));
 		out.push_str(&self.content);
 		out.push_str(&format!(
-			"\n{}  ]]></content>\n", sp,
+			"\n{}  ]]></content>\n", pad,
 		));
-		out.push_str(&format!("{}</doc>\n", sp));
+		out.push_str(&format!("{}</doc>\n", pad));
 
 		out
 	}
@@ -130,25 +134,25 @@ pub struct NotesResult {
 impl NotesResult {
 	/// Convert to XML string with given indentation
 	pub fn to_xml(&self, indent: usize) -> String {
-		let sp = " ".repeat(indent);
+		let pad = " ".repeat(indent);
 		let mut out = String::new();
 
 		out.push_str(&format!(
 			"{}<note file=\"{}\" section=\"{}\" \
 			score=\"{:.3}\">\n",
-			sp,
+			pad,
 			escape_xml(&self.file),
 			escape_xml(&self.section),
 			self.relevance_score,
 		));
 		out.push_str(&format!(
-			"{}  <content><![CDATA[\n", sp,
+			"{}  <content><![CDATA[\n", pad,
 		));
 		out.push_str(&self.content);
 		out.push_str(&format!(
-			"\n{}  ]]></content>\n", sp,
+			"\n{}  ]]></content>\n", pad,
 		));
-		out.push_str(&format!("{}</note>\n", sp));
+		out.push_str(&format!("{}</note>\n", pad));
 
 		out
 	}

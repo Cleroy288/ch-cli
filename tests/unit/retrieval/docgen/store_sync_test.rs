@@ -5,10 +5,10 @@ use std::path::PathBuf;
 
 use tempfile::tempdir;
 
-use ch_cli::indexer::state::{FileState, IndexState};
-use ch_cli::indexer::SymbolKind;
-use ch_cli::retrieval::docgen::entry_types::DocStatus;
-use ch_cli::retrieval::docgen::{DocEntry, DocStore};
+use rustean::indexer::state::{FileState, IndexState};
+use rustean::indexer::SymbolKind;
+use rustean::retrieval::docgen::entry_types::DocStatus;
+use rustean::retrieval::docgen::{DocEntry, DocStore};
 
 #[test]
 fn test_sync_with_index_marks_stale() {

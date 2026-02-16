@@ -2,29 +2,26 @@
 //!
 //! Provides the BlockBuilder struct and basic block building.
 
-use std::fs;
-
 use crate::indexer::{SemanticGraph, Symbol};
 use crate::retrieval::RetrievalResult;
 
-use super::super::code_extractor::find_symbol_end;
 use super::super::{
 	ContextConfig, ContextualBlock, GraphWalker,
 };
 
 /// Builds contextual blocks from symbols
-pub struct BlockBuilder<'a> {
+pub struct BlockBuilder<'graph> {
 	/// the semantic graph
 	#[doc(hidden)]
-	pub graph: &'a SemanticGraph,
+	pub graph: &'graph SemanticGraph,
 	/// configuration
 	#[doc(hidden)]
 	pub config: ContextConfig,
 }
 
-impl<'a> BlockBuilder<'a> {
+impl<'graph> BlockBuilder<'graph> {
 	/// Create a new block builder
-	pub fn new(graph: &'a SemanticGraph) -> Self {
+	pub fn new(graph: &'graph SemanticGraph) -> Self {
 		Self {
 			graph,
 			config: ContextConfig::default(),
@@ -33,7 +30,7 @@ impl<'a> BlockBuilder<'a> {
 
 	/// Create with custom configuration
 	pub fn with_config(
-		graph: &'a SemanticGraph,
+		graph: &'graph SemanticGraph,
 		config: ContextConfig,
 	) -> Self {
 		Self { graph, config }
@@ -80,6 +77,6 @@ impl<'a> BlockBuilder<'a> {
 		&self,
 		symbols: &[Symbol],
 	) -> Vec<RetrievalResult<ContextualBlock>> {
-		symbols.iter().map(|s| self.build(s)).collect()
+		symbols.iter().map(|sym| self.build(sym)).collect()
 	}
 }

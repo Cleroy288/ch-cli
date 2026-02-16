@@ -1,7 +1,7 @@
 //! Additional tests for ProjectType.
 
-use ch_cli::indexer::analyzer::ProjectType;
-use ch_cli::indexer::crawler::DetectedLanguage;
+use rustean::indexer::analyzer::ProjectType;
+use rustean::indexer::crawler::DetectedLanguage;
 
 /// Test expected_language returns Java for Maven
 #[test]

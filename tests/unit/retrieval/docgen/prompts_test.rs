@@ -1,9 +1,9 @@
 //! Tests for retrieval::docgen::prompts
 
-use ch_cli::indexer::SymbolKind;
-use ch_cli::retrieval::docgen::prompts::{
+use rustean::indexer::SymbolKind;
+use rustean::retrieval::docgen::prompts::{
 	build_prompt, format_user_comment_section,
-	get_prompt_for_kind,
+	get_prompt_for_kind, PromptInput,
 };
 
 #[test]
@@ -36,14 +36,17 @@ fn test_format_user_comment_section() {
 
 #[test]
 fn test_build_prompt() {
-	let prompt = build_prompt(
-		SymbolKind::Function,
-		"process_data",
-		Some("fn process_data(input: &str) -> Result<String>"),
-		"fn process_data(input: &str) -> Result<String> { ... }",
-		Some("Processes input data"),
-		None,
-	);
+	let prompt = build_prompt(PromptInput {
+		kind: SymbolKind::Function,
+		name: "process_data",
+		signature: Some(
+			"fn process_data(input: &str) -> Result<String>",
+		),
+		code_snippet:
+			"fn process_data(input: &str) -> Result<String> { ... }",
+		user_comment: Some("Processes input data"),
+		parent: None,
+	});
 
 	assert!(prompt.contains("process_data"));
 	assert!(prompt.contains("fn process_data"));

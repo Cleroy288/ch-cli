@@ -3,9 +3,12 @@
 //! Provides runtime GPU detection with graceful fallback to CPU.
 //! Supports Metal (macOS) and CUDA (Linux/Windows).
 
-use candle_core::Device;
 use std::env;
 use std::fmt;
+use std::io::Write;
+use std::sync::Once;
+
+use candle_core::Device;
 
 #[cfg(feature = "metal")]
 use super::device_platform::{
@@ -67,67 +70,101 @@ pub fn is_force_cpu_mode() -> bool {
 
 /// Get information about the detected compute device
 pub fn get_device_info() -> DeviceInfo {
-	// check force CPU mode first
 	if is_force_cpu_mode() {
 		return DeviceInfo {
 			device_type: DeviceType::Cpu,
-			device_name: "CPU (forced via CH_FORCE_CPU)".to_string(),
+			device_name: "CPU (forced via CH_FORCE_CPU)"
+				.to_string(),
 			memory_mb: None,
 		};
 	}
 
-	// try Metal on macOS
+	detect_gpu_device().unwrap_or_default()
+}
+
+/// Try detecting a GPU device (Metal or CUDA)
+fn detect_gpu_device() -> Option<DeviceInfo> {
 	#[cfg(feature = "metal")]
 	{
-		if let Ok(_device) = Device::new_metal(0) {
-			return DeviceInfo {
+		if Device::new_metal(0).is_ok() {
+			return Some(DeviceInfo {
 				device_type: DeviceType::Metal,
 				device_name: get_metal_device_name(),
 				memory_mb: get_metal_memory_mb(),
-			};
+			});
 		}
 	}
 
-	// try CUDA on Linux/Windows
 	#[cfg(feature = "cuda")]
 	{
 		if Device::cuda_if_available(0).is_ok() {
-			return DeviceInfo {
+			return Some(DeviceInfo {
 				device_type: DeviceType::Cuda,
 				device_name: get_cuda_device_name(),
 				memory_mb: get_cuda_memory_mb(),
-			};
+			});
 		}
 	}
 
-	// fallback to CPU
-	DeviceInfo::default()
+	None
 }
 
-/// Get the default device with runtime detection and fallback
+/// Log device selection once on first call
+static LOG_ONCE: Once = Once::new();
+
+/// Log detected device info to stderr
+fn log_device(info: &DeviceInfo) {
+	LOG_ONCE.call_once(|| {
+		let mut stderr = std::io::stderr().lock();
+		match info.memory_mb {
+			Some(mem_mb) => {
+				let _ = writeln!(
+					stderr,
+					"[device] {} ({}, {} MB)",
+					info.device_type,
+					info.device_name,
+					mem_mb,
+				);
+			}
+			None => {
+				let _ = writeln!(
+					stderr,
+					"[device] {}",
+					info.device_type,
+				);
+			}
+		}
+	});
+}
+
+/// Get the default device with runtime detection
+/// and fallback. Logs the selected device on first call.
 pub fn get_device() -> Device {
-	// check force CPU mode first
-	if is_force_cpu_mode() {
-		return Device::Cpu;
-	}
+	let info = get_device_info();
+	log_device(&info);
 
-	// try Metal on macOS
-	#[cfg(feature = "metal")]
-	{
-		if let Ok(device) = Device::new_metal(0) {
-			return device;
+	match info.device_type {
+		DeviceType::Metal => {
+			#[cfg(feature = "metal")]
+			{
+				if let Ok(dev) = Device::new_metal(0) {
+					return dev;
+				}
+			}
+			Device::Cpu
 		}
-	}
-
-	// try CUDA on Linux/Windows
-	#[cfg(feature = "cuda")]
-	{
-		if let Ok(device) = Device::cuda_if_available(0) {
-			return device;
+		DeviceType::Cuda => {
+			#[cfg(feature = "cuda")]
+			{
+				if let Ok(dev) =
+					Device::cuda_if_available(0)
+				{
+					return dev;
+				}
+			}
+			Device::Cpu
 		}
+		DeviceType::Cpu => Device::Cpu,
 	}
-
-	// fallback to CPU
-	Device::Cpu
 }
 

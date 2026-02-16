@@ -1,6 +1,6 @@
 //! Tests for IndexManager configuration methods.
 
-use ch_cli::indexer::manager::IndexManager;
+use rustean::indexer::manager::IndexManager;
 
 /// Test with_semantic_analysis enables both features
 #[test]
@@ -8,8 +8,8 @@ fn test_with_semantic_analysis() {
 	let manager = IndexManager::new()
 		.with_semantic_analysis();
 
-	assert!(manager.enable_semantic_analysis);
-	assert!(manager.enable_reference_extraction);
+	assert!(manager.flags.semantic_analysis);
+	assert!(manager.flags.reference_extraction);
 }
 
 /// Test with_reference_extraction enables only references
@@ -18,8 +18,8 @@ fn test_with_reference_extraction() {
 	let manager = IndexManager::new()
 		.with_reference_extraction();
 
-	assert!(!manager.enable_semantic_analysis);
-	assert!(manager.enable_reference_extraction);
+	assert!(!manager.flags.semantic_analysis);
+	assert!(manager.flags.reference_extraction);
 }
 
 /// Test with_persistence enables persistence
@@ -28,7 +28,7 @@ fn test_with_persistence() {
 	let manager = IndexManager::new()
 		.with_persistence();
 
-	assert!(manager.enable_persistence);
+	assert!(manager.flags.persistence);
 }
 
 /// Test builder chaining multiple options
@@ -38,7 +38,7 @@ fn test_builder_chaining() {
 		.with_semantic_analysis()
 		.with_persistence();
 
-	assert!(manager.enable_semantic_analysis);
-	assert!(manager.enable_reference_extraction);
-	assert!(manager.enable_persistence);
+	assert!(manager.flags.semantic_analysis);
+	assert!(manager.flags.reference_extraction);
+	assert!(manager.flags.persistence);
 }

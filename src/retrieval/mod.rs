@@ -18,7 +18,8 @@ pub mod query;
 pub mod rerank;
 
 pub use agent::{
-	CodeResult, DocResult, FeedbackAction, FeedbackLoop, NotesResult, PipelineConfig,
+	CodeResult, DocResult, FeedbackAction, FeedbackLoop,
+	NotesResult, PipelineConfig, PipelineFlags,
 	RetrievalOutput, RetrievalPipeline, StructuredOutput,
 };
 pub use context::{
@@ -57,19 +58,20 @@ impl Default for RetrievalConfig {
 	/// Create default configuration using platform-specific directories
 	fn default() -> Self {
 		let base_dir = directories::ProjectDirs::from(
-			"com", "ch-cli", "ch-cli"
+			"com", "rustean", "rustean"
 		)
-		.map(|d| d.data_dir().to_path_buf())
-		.unwrap_or_else(|| PathBuf::from(".ch-cli"));
+		.map(|dir| dir.data_dir().to_path_buf())
+		.unwrap_or_else(|| PathBuf::from(".rustean"));
 
 		Self {
 			socket_path: base_dir.join("ml.sock"),
 			pid_file: base_dir.join("daemon.pid"),
 			model_cache: base_dir.join("models"),
-			embedding_model: "BAAI/bge-small-en-v1.5".to_string(),
+			embedding_model: "jinaai/jina-embeddings-v2-base-code".to_string(),
 			reranker_model: "BAAI/bge-reranker-base".to_string(),
 			expansion_model:
-				"microsoft/phi-3-mini-4k-instruct".to_string(),
+				"microsoft/Phi-3-mini-4k-instruct-gguf"
+					.to_string(),
 		}
 	}
 }

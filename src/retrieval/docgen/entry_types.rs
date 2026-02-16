@@ -25,14 +25,14 @@ pub enum DocStatus {
 }
 
 impl fmt::Display for DocStatus {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		let s = match self {
+	fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+		let label = match self {
 			DocStatus::Pending => "pending",
 			DocStatus::Generating => "generating",
 			DocStatus::Ready => "ready",
 			DocStatus::Failed => "failed",
 		};
-		write!(f, "{}", s)
+		write!(fmt, "{}", label)
 	}
 }
 
@@ -65,8 +65,8 @@ pub enum ReferenceKind {
 }
 
 impl fmt::Display for ReferenceKind {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		let s = match self {
+	fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+		let label = match self {
 			ReferenceKind::Call => "call",
 			ReferenceKind::TypeUsage => "type_usage",
 			ReferenceKind::Import => "import",
@@ -78,7 +78,6 @@ impl fmt::Display for ReferenceKind {
 			ReferenceKind::ReturnType => "return_type",
 			ReferenceKind::ParamType => "param_type",
 		};
-		write!(f, "{}", s)
+		write!(fmt, "{}", label)
 	}
 }
-

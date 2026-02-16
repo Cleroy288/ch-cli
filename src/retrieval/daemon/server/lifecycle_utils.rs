@@ -4,7 +4,6 @@
 
 use super::ModelDaemon;
 use crate::retrieval::RetrievalResult;
-use std::fs;
 
 /// Write PID file for the daemon
 pub fn write_pid_file(
@@ -13,6 +12,6 @@ pub fn write_pid_file(
 	let pid_file =
 		daemon.socket_path.with_extension("pid");
 	let pid = std::process::id();
-	fs::write(&pid_file, pid.to_string())?;
+	std::fs::write(&pid_file, pid.to_string())?;
 	Ok(())
 }

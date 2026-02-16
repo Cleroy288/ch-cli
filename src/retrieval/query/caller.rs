@@ -21,80 +21,93 @@ pub enum CallerDirection {
 }
 
 /// Detect if query is asking about callers/callees
-/// Returns Some(CallerQuery) if detected, None otherwise
-pub fn detect_caller_query(query: &str) -> Option<CallerQuery> {
-	let query_lower = query.to_lowercase(); // lowercase for matching
+pub fn detect_caller_query(
+	query: &str,
+) -> Option<CallerQuery> {
+	let lower = query.to_lowercase();
 
-	// Pattern 1: "who calls X" or "what calls X"
-	let has_who_calls = query_lower.contains("who calls");
-	let has_what_calls = query_lower.contains("what calls");
-	if has_who_calls || has_what_calls {
-		let symbol =
-			extract_symbol_after(&query_lower, "calls ");
-		if let Some(symbol) = symbol {
+	if let Some(result) = detect_callers(&lower) {
+		return Some(result);
+	}
+	detect_callees(&lower)
+}
+
+/// Check caller-direction patterns.
+fn detect_callers(lower: &str) -> Option<CallerQuery> {
+	// "who calls X" or "what calls X"
+	let has_calls = lower.contains("who calls")
+		|| lower.contains("what calls");
+	if has_calls {
+		if let Some(sym) =
+			extract_symbol_after(lower, "calls ")
+		{
 			return Some(CallerQuery {
-				symbol_name: symbol,
+				symbol_name: sym,
 				direction: CallerDirection::Callers,
 			});
 		}
 	}
 
-	// Pattern 2: "callers of X"
-	if query_lower.contains("callers of") {
-		let symbol = extract_symbol_after(
-			&query_lower,
-			"callers of ",
-		);
-		if let Some(symbol) = symbol {
+	// "callers of X"
+	if lower.contains("callers of") {
+		if let Some(sym) =
+			extract_symbol_after(lower, "callers of ")
+		{
 			return Some(CallerQuery {
-				symbol_name: symbol,
+				symbol_name: sym,
 				direction: CallerDirection::Callers,
 			});
 		}
 	}
 
-	// Pattern 3: "X callers" or "X's callers"
-	if query_lower.contains(" callers") {
-		let symbol =
-			extract_symbol_before(&query_lower, " callers");
-		if let Some(symbol) = symbol {
+	detect_callers_suffix(lower)
+}
+
+/// Check suffix/infix caller patterns.
+fn detect_callers_suffix(
+	lower: &str,
+) -> Option<CallerQuery> {
+	// "X callers" or "X's callers"
+	if lower.contains(" callers") {
+		if let Some(sym) =
+			extract_symbol_before(lower, " callers")
+		{
 			return Some(CallerQuery {
-				symbol_name: symbol,
+				symbol_name: sym,
 				direction: CallerDirection::Callers,
 			});
 		}
 	}
 
-	// Pattern 4: "functions that call X"
-	if query_lower.contains("that call ") {
-		let symbol =
-			extract_symbol_after(&query_lower, "that call ");
-		if let Some(symbol) = symbol {
+	// "functions that call X"
+	if lower.contains("that call ") {
+		if let Some(sym) =
+			extract_symbol_after(lower, "that call ")
+		{
 			return Some(CallerQuery {
-				symbol_name: symbol,
+				symbol_name: sym,
 				direction: CallerDirection::Callers,
-			});
-		}
-	}
-
-	// Pattern 5: "what does X call" or "what X calls"
-	let has_what_does = query_lower.contains("what does");
-	let has_call = query_lower.contains("call");
-	if has_what_does && has_call {
-		let symbol = extract_symbol_between(
-			&query_lower,
-			"what does ",
-			" call",
-		);
-		if let Some(symbol) = symbol {
-			return Some(CallerQuery {
-				symbol_name: symbol,
-				direction: CallerDirection::Callees,
 			});
 		}
 	}
 
 	None
+}
+
+/// Check callee-direction patterns.
+fn detect_callees(lower: &str) -> Option<CallerQuery> {
+	let has_what_does = lower.contains("what does");
+	let has_call = lower.contains("call");
+	if !(has_what_does && has_call) {
+		return None;
+	}
+	let sym = extract_symbol_between(
+		lower, "what does ", " call",
+	)?;
+	Some(CallerQuery {
+		symbol_name: sym,
+		direction: CallerDirection::Callees,
+	})
 }
 
 /// Extract symbol name after a keyword
@@ -105,8 +118,8 @@ fn extract_symbol_after(
 	let idx = query.find(keyword)?;
 	let rest = &query[idx + keyword.len()..];
 	let symbol = rest.split_whitespace().next()?;
-	let cleaned = symbol.trim_matches(|c: char| {
-		!c.is_alphanumeric() && c != '_'
+	let cleaned = symbol.trim_matches(|chr: char| {
+		!chr.is_alphanumeric() && chr != '_'
 	});
 	if cleaned.len() > 1 {
 		Some(cleaned.to_string())
@@ -123,8 +136,8 @@ fn extract_symbol_before(
 	let idx = query.find(keyword)?;
 	let before = &query[..idx];
 	let symbol = before.split_whitespace().last()?;
-	let cleaned = symbol.trim_matches(|c: char| {
-		!c.is_alphanumeric() && c != '_'
+	let cleaned = symbol.trim_matches(|chr: char| {
+		!chr.is_alphanumeric() && chr != '_'
 	});
 	if cleaned.len() > 1 {
 		Some(cleaned.to_string())
@@ -140,9 +153,9 @@ fn extract_symbol_between(
 	end: &str,
 ) -> Option<String> {
 	let start_idx = query.find(start)?;
-	let after_start = &query[start_idx + start.len()..];
-	let end_idx = after_start.find(end)?;
-	let between = &after_start[..end_idx];
+	let after = &query[start_idx + start.len()..];
+	let end_idx = after.find(end)?;
+	let between = &after[..end_idx];
 	let symbol = between.trim();
 	if symbol.len() > 1 {
 		Some(symbol.to_string())
@@ -150,4 +163,3 @@ fn extract_symbol_between(
 		None
 	}
 }
-

@@ -33,8 +33,9 @@ pub use health::{
 	health_check, prewarm_daemon, HealthStatus,
 };
 pub use lifecycle::{
-	daemon_status, default_paths, restart_daemon,
-	start_daemon, stop_daemon,
+	daemon_status, default_paths, log_file_from_socket,
+	restart_daemon, signal_daemon_stop, start_daemon,
+	stop_daemon,
 };
 pub use protocol::{
 	DaemonRequest, DaemonResponse, DaemonStatus,

@@ -1,204 +1,199 @@
 //! Progress display for incremental indexing.
 
 use std::io::{self, Write};
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::Arc;
+use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
 use crossterm::{
-	cursor,
-	execute,
-	style::{Color, Print, ResetColor, SetForegroundColor},
-	terminal::{self, ClearType},
+    cursor, execute,
+    style::{
+        Color, Print, ResetColor, SetForegroundColor,
+    },
+    terminal::{self, ClearType},
 };
 
-use crate::indexer::{ChangeSet, IndexManager, IndexResult};
+use crate::indexer::{
+    ChangeSet, IndexManager, IndexResult,
+};
+
+use super::progress_shared::{
+    ProgressState, SPINNER, build_progress_callback,
+    collect_index_result, draw_elapsed_time,
+    format_progress_bar, truncate_name,
+};
 
 /// Display a progress bar during incremental indexing
 pub fn index_with_progress_incremental(
-	changes: &ChangeSet,
+    changes: &ChangeSet,
 ) -> io::Result<Option<IndexResult>> {
-	let mut stdout = io::stdout();
+    let mut stdout = io::stdout();
+    display_update_header(&mut stdout, changes)?;
 
-	// Clear screen
-	execute!(stdout, terminal::Clear(ClearType::All), cursor::MoveTo(0, 0))?;
+    let state = ProgressState::new();
+    let handle = spawn_incremental_thread(&state);
 
-	println!();
-	execute!(
-		stdout,
-		SetForegroundColor(Color::Cyan),
-		Print("  Updating index...\n\n"),
-		ResetColor
-	)?;
+    run_incremental_loop(&mut stdout, &state)?;
+    collect_index_result(&mut stdout, handle)
+}
 
-	// Show what we're updating
-	let files_to_process = changes.added.len() + changes.modified.len();
-	execute!(
-		stdout,
-		SetForegroundColor(Color::DarkGrey),
-		Print(format!("  {} file(s) to re-index\n\n", files_to_process)),
-		ResetColor
-	)?;
+/// Show the incremental update header
+fn display_update_header(
+    stdout: &mut io::Stdout,
+    changes: &ChangeSet,
+) -> io::Result<()> {
+    execute!(
+        stdout,
+        terminal::Clear(ClearType::All),
+        cursor::MoveTo(0, 0)
+    )?;
+    writeln!(stdout)?;
+    execute!(
+        stdout,
+        SetForegroundColor(Color::Cyan),
+        Print("  Updating index...\n\n"),
+        ResetColor
+    )?;
 
-	// Progress tracking
-	// Number of processed files
-	let files_processed = Arc::new(AtomicUsize::new(0));
-	// total number of files
-	let total_files = Arc::new(AtomicUsize::new(0));
-	// Current file name being processed
-	let current_file = Arc::new(
-		std::sync::Mutex::new(String::new())
-	);
-	// Flag indicating indexing is done
-	let indexing_done = Arc::new(AtomicBool::new(false));
+    let file_count =
+        changes.added.len() + changes.modified.len();
+    execute!(
+        stdout,
+        SetForegroundColor(Color::DarkGrey),
+        Print(format!(
+            "  {} file(s) to re-index\n\n",
+            file_count
+        )),
+        ResetColor
+    )
+}
 
-	let files_processed_clone = files_processed.clone();
-	let total_files_clone = total_files.clone();
-	let current_file_clone = current_file.clone();
-	let indexing_done_clone = indexing_done.clone();
+/// Spawn the incremental indexing thread
+fn spawn_incremental_thread(
+    state: &ProgressState,
+) -> std::thread::JoinHandle<
+    crate::indexer::IndexManagerResult<IndexResult>,
+> {
+    let callback = build_progress_callback(state);
+    let done_clone = state.done.clone();
 
-	// Start indexing in a separate thread
-	let handle = std::thread::spawn(move || {
-		let manager = IndexManager::new()
-			.with_persistence()
-			.with_semantic_analysis()
-			.with_reference_extraction()
-			.on_progress(move |current, total, path| {
-				files_processed_clone.store(current, Ordering::SeqCst);
-				total_files_clone.store(total, Ordering::SeqCst);
-				if let Ok(mut file) = current_file_clone.lock() {
-					*file = path
-						.file_name()
-						.and_then(|n| n.to_str())
-						.unwrap_or("")
-						.to_string();
-				}
-			});
+    std::thread::spawn(move || {
+        let manager = IndexManager::new()
+            .with_persistence()
+            .with_semantic_analysis()
+            .with_reference_extraction()
+            .on_progress(callback);
 
-		// Incremental index - will only process changed files
-		let result = manager.index_project(".");
-		indexing_done_clone.store(true, Ordering::SeqCst);
-		result
-	});
+        let result = manager.index_project(".");
+        done_clone.store(true, Ordering::SeqCst);
+        result
+    })
+}
 
-	// Animation frames for spinner
-	let spinner_frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-	let mut spinner_idx = 0; // current spinner frame index
-	let start_time = Instant::now(); // start time for elapsed calculation
+/// Run the progress display loop
+fn run_incremental_loop(
+    stdout: &mut io::Stdout,
+    state: &ProgressState,
+) -> io::Result<()> {
+    let mut spin_idx = 0;
+    let start = Instant::now();
 
-	// Progress bar width
-	let bar_width = 40;
+    while !state.done.load(Ordering::SeqCst) {
+        draw_incremental_frame(
+            stdout, state, spin_idx, &start,
+        )?;
+        spin_idx += 1;
+        std::thread::sleep(
+            Duration::from_millis(80),
+        );
+    }
+    Ok(())
+}
 
-	// Display loop
-	while !indexing_done.load(Ordering::SeqCst) {
-		let processed = files_processed.load(Ordering::SeqCst);
-		let total = total_files.load(Ordering::SeqCst).max(1);
-		let current = current_file
-			.lock()
-			.map(|f| f.clone())
-			.unwrap_or_default();
+/// Draw one frame of incremental progress
+fn draw_incremental_frame(
+    stdout: &mut io::Stdout,
+    state: &ProgressState,
+    spin_idx: usize,
+    start: &Instant,
+) -> io::Result<()> {
+    let processed =
+        state.files_done.load(Ordering::SeqCst);
+    let total =
+        state.total.load(Ordering::SeqCst).max(1);
+    let current = state
+        .current_file
+        .lock()
+        .map(|val| val.clone())
+        .unwrap_or_default();
 
-		// Calculate progress
-		let progress = (processed as f64 / total as f64).min(1.0);
-		let filled = (progress * bar_width as f64) as usize;
-		let empty = bar_width - filled;
+    draw_incremental_bar(
+        stdout, processed, total, spin_idx,
+    )?;
+    draw_incremental_stats(
+        stdout, processed, total, &current,
+    )?;
+    draw_elapsed_time(stdout, start, 9)?;
+    stdout.flush()
+}
 
-		// Build progress bar
-		let bar: String = format!(
-			"{}{}",
-			"█".repeat(filled),
-			"░".repeat(empty),
-		);
+/// Draw one frame of the incremental progress bar
+fn draw_incremental_bar(
+    stdout: &mut io::Stdout,
+    processed: usize,
+    total: usize,
+    spin_idx: usize,
+) -> io::Result<()> {
+    let (progress_bar, progress) =
+        format_progress_bar(processed, total);
+    let spinner = SPINNER[spin_idx % SPINNER.len()];
 
-		// Spinner
-		let spinner = spinner_frames[spinner_idx % spinner_frames.len()];
-		spinner_idx += 1;
+    execute!(
+        stdout,
+        cursor::MoveTo(0, 5),
+        terminal::Clear(ClearType::CurrentLine),
+        SetForegroundColor(Color::Yellow),
+        Print(format!("  {} ", spinner)),
+        SetForegroundColor(Color::Cyan),
+        Print("["),
+        SetForegroundColor(Color::Yellow),
+        Print(&progress_bar),
+        SetForegroundColor(Color::Cyan),
+        Print("]"),
+        SetForegroundColor(Color::White),
+        Print(format!(
+            " {:.0}%",
+            progress * 100.0
+        )),
+        ResetColor
+    )
+}
 
-		// Move cursor and clear line
-		execute!(
-			stdout,
-			cursor::MoveTo(0, 5),
-			terminal::Clear(ClearType::CurrentLine)
-		)?;
+/// Draw file count and current file name
+fn draw_incremental_stats(
+    stdout: &mut io::Stdout,
+    processed: usize,
+    total: usize,
+    current: &str,
+) -> io::Result<()> {
+    execute!(
+        stdout,
+        cursor::MoveTo(0, 7),
+        terminal::Clear(ClearType::CurrentLine),
+        SetForegroundColor(Color::DarkGrey),
+        Print(format!(
+            "  Files: {}/{}",
+            processed, total
+        )),
+        ResetColor
+    )?;
 
-		// Display progress bar
-		execute!(
-			stdout,
-			SetForegroundColor(Color::Yellow),
-			Print(format!("  {} ", spinner)),
-			SetForegroundColor(Color::Cyan),
-			Print("["),
-			SetForegroundColor(Color::Yellow),
-			Print(&bar),
-			SetForegroundColor(Color::Cyan),
-			Print("]"),
-			SetForegroundColor(Color::White),
-			Print(format!(" {:.0}%", progress * 100.0)),
-			ResetColor
-		)?;
-
-		// Display file count
-		execute!(
-			stdout,
-			cursor::MoveTo(0, 7),
-			terminal::Clear(ClearType::CurrentLine),
-			SetForegroundColor(Color::DarkGrey),
-			Print(format!("  Files: {}/{}", processed, total)),
-			ResetColor
-		)?;
-
-		// Display current file (truncated if too long)
-		let display_file = if current.len() > 50 {
-			format!("...{}", &current[current.len() - 47..])
-		} else {
-			current
-		};
-
-		execute!(
-			stdout,
-			cursor::MoveTo(0, 8),
-			terminal::Clear(ClearType::CurrentLine),
-			SetForegroundColor(Color::DarkGrey),
-			Print(format!("  Current: {}", display_file)),
-			ResetColor
-		)?;
-
-		// Elapsed time
-		let elapsed = start_time.elapsed().as_secs();
-		execute!(
-			stdout,
-			cursor::MoveTo(0, 9),
-			terminal::Clear(ClearType::CurrentLine),
-			SetForegroundColor(Color::DarkGrey),
-			Print(format!("  Elapsed: {}s", elapsed)),
-			ResetColor
-		)?;
-
-		stdout.flush()?;
-
-		// Small delay to avoid excessive CPU usage
-		std::thread::sleep(Duration::from_millis(80));
-	}
-
-	// Wait for indexing thread to complete
-	let result = handle
-		.join()
-		.map_err(|_| {
-			io::Error::new(
-				io::ErrorKind::Other,
-				"Indexing thread panicked",
-			)
-		})?;
-
-	// Clear the progress display
-	execute!(
-		stdout,
-		cursor::MoveTo(0, 0),
-		terminal::Clear(ClearType::All)
-	)?;
-
-	match result {
-		Ok(index_result) => Ok(Some(index_result)),
-		Err(_) => Ok(None),
-	}
+    let display = truncate_name(current, 50);
+    execute!(
+        stdout,
+        cursor::MoveTo(0, 8),
+        terminal::Clear(ClearType::CurrentLine),
+        SetForegroundColor(Color::DarkGrey),
+        Print(format!("  Current: {}", display)),
+        ResetColor
+    )
 }

@@ -14,6 +14,12 @@ use super::DaemonService;
 /// Default daemon service backed by DaemonClient
 pub struct DefaultDaemonService;
 
+impl Default for DefaultDaemonService {
+	fn default() -> Self {
+		Self
+	}
+}
+
 impl DefaultDaemonService {
 	/// Create a new default daemon service
 	pub fn new() -> Self {
@@ -25,9 +31,9 @@ impl DaemonService for DefaultDaemonService {
 	fn start(&self) -> Result<(), DaemonError> {
 		let config = RetrievalConfig::default();
 		start_daemon(&config.socket_path)
-			.map_err(|e| {
+			.map_err(|err| {
 				DaemonError::StartFailed(
-					e.to_string(),
+					err.to_string(),
 				)
 			})
 	}
@@ -35,9 +41,9 @@ impl DaemonService for DefaultDaemonService {
 	fn stop(&self) -> Result<(), DaemonError> {
 		let config = RetrievalConfig::default();
 		stop_daemon(&config.socket_path)
-			.map_err(|e| {
+			.map_err(|err| {
 				DaemonError::StopFailed(
-					e.to_string(),
+					err.to_string(),
 				)
 			})
 	}
@@ -75,8 +81,8 @@ impl DaemonService for DefaultDaemonService {
 			}
 			None => ModelDaemon::new(),
 		};
-		daemon.run().map_err(|e| {
-			DaemonError::StartFailed(e.to_string())
+		daemon.run().map_err(|err| {
+			DaemonError::StartFailed(err.to_string())
 		})
 	}
 }

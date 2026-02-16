@@ -13,7 +13,7 @@ impl SemanticGraph {
 		line: usize,
 	) -> Option<&Definition> {
 		self.definitions_by_file.get(file).and_then(|defs| {
-			defs.iter().find(|d| d.symbol.location.line == line)
+			defs.iter().find(|def| def.symbol.location.line == line)
 		})
 	}
 

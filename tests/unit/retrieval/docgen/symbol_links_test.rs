@@ -1,6 +1,6 @@
 //! Tests for retrieval::docgen::symbol_links
 
-use ch_cli::retrieval::docgen::SymbolLinks;
+use rustean::retrieval::docgen::SymbolLinks;
 
 #[test]
 fn test_symbol_links() {

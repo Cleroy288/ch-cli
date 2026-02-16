@@ -2,7 +2,6 @@
 
 use std::path::{Path, PathBuf};
 
-use tantivy::schema::Schema;
 use tantivy::{Index, IndexReader, IndexWriter, ReloadPolicy};
 
 use crate::indexer::search::error::SearchResult;
@@ -11,8 +10,6 @@ use crate::indexer::search::schema::{build_schema, SchemaFields};
 /// The main search index for symbols
 pub struct SearchIndex {
 	pub(crate) index: Index,         // tantivy index instance
-	#[allow(dead_code)]
-	pub(crate) schema: Schema,       // schema for the index
 	pub(crate) fields: SchemaFields, // field handles
 	pub(crate) index_path: Option<PathBuf>, // path for persistent index
 }
@@ -26,7 +23,6 @@ impl SearchIndex {
 
 		Ok(Self {
 			index,
-			schema,
 			fields,
 			index_path: None,
 		})
@@ -48,7 +44,6 @@ impl SearchIndex {
 
 		Ok(Self {
 			index,
-			schema,
 			fields,
 			index_path: Some(path.to_path_buf()),
 		})

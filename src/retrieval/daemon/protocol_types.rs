@@ -71,7 +71,7 @@ impl Default for DeviceStatus {
 }
 
 /// Status information about the daemon
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct DaemonStatus {
 	/// is the daemon running
 	pub running: bool,
@@ -85,17 +85,6 @@ pub struct DaemonStatus {
 	pub uptime_secs: u64,
 }
 
-impl Default for DaemonStatus {
-	fn default() -> Self {
-		Self {
-			running: false,
-			pid: None,
-			loaded_models: Vec::new(),
-			device: DeviceStatus::default(),
-			uptime_secs: 0,
-		}
-	}
-}
 
 /// Expanded search specification from query expansion
 #[derive(Debug, Clone, Serialize, Deserialize)]

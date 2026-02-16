@@ -1,5 +1,5 @@
-use ch_cli::retrieval::daemon::protocol::QueryIntent;
-use ch_cli::retrieval::query::parsing::{
+use rustean::retrieval::daemon::protocol::QueryIntent;
+use rustean::retrieval::query::parsing::{
 	contains_word, extract_identifiers,
 	filter_stop_words, parse_intent,
 };

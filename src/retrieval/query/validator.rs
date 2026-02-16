@@ -1,7 +1,8 @@
 //! Symbol Validator
 //!
-//! Validates extracted symbols against the SemanticGraph.
-//! Uses scoring from validator_scoring to rank importance.
+//! Validates extracted symbols against the
+//! SemanticGraph. Uses scoring from
+//! validator_scoring to rank importance.
 
 use crate::indexer::SemanticGraph;
 
@@ -10,7 +11,7 @@ use super::validator_scoring::{
 	visibility_score,
 };
 
-/// A validated symbol with existence and importance info
+/// A validated symbol with existence and importance
 #[derive(Debug, Clone)]
 pub struct ValidatedSymbol {
 	/// the symbol name
@@ -36,40 +37,36 @@ pub struct ValidationResult {
 	pub existence_ratio: f32,
 }
 
-/// Validator for checking symbols against SemanticGraph
-pub struct SymbolValidator<'a> {
+/// Validator for checking symbols against graph
+pub struct SymbolValidator<'graph> {
 	/// reference to the semantic graph
-	graph: &'a SemanticGraph,
+	graph: &'graph SemanticGraph,
 }
 
-impl<'a> SymbolValidator<'a> {
+impl<'graph> SymbolValidator<'graph> {
 	/// Create a new validator with a graph reference
-	pub fn new(graph: &'a SemanticGraph) -> Self {
+	pub fn new(
+		graph: &'graph SemanticGraph,
+	) -> Self {
 		Self { graph }
 	}
 
 	/// Calculate importance score for a symbol
 	#[doc(hidden)]
-	pub fn calculate_importance(&self, name: &str) -> f32 {
+	pub fn calculate_importance(
+		&self, name: &str,
+	) -> f32 {
 		let definitions =
 			self.graph.find_definitions(name);
-		let references = self.graph.find_references(name);
+		let references =
+			self.graph.find_references(name);
 
 		if definitions.is_empty() {
 			return 0.0;
 		}
 
-		let vis = definitions
-			.iter()
-			.map(|d| visibility_score(d.symbol.visibility))
-			.max_by(|a, b| a.partial_cmp(b).unwrap())
-			.unwrap_or(0.3);
-
-		let kind = definitions
-			.iter()
-			.map(|d| kind_score(d.symbol.kind))
-			.max_by(|a, b| a.partial_cmp(b).unwrap())
-			.unwrap_or(0.3);
+		let vis = best_visibility(&definitions);
+		let kind = best_kind(&definitions);
 
 		calculate_weighted_importance(
 			references.len(),
@@ -85,7 +82,8 @@ impl<'a> SymbolValidator<'a> {
 	) -> ValidatedSymbol {
 		let definitions =
 			self.graph.find_definitions(name);
-		let references = self.graph.find_references(name);
+		let references =
+			self.graph.find_references(name);
 		let exists = !definitions.is_empty();
 		let importance = if exists {
 			self.calculate_importance(name)
@@ -109,34 +107,68 @@ impl<'a> SymbolValidator<'a> {
 	) -> ValidationResult {
 		let symbols: Vec<ValidatedSymbol> = names
 			.iter()
-			.map(|n| self.validate_symbol(n))
+			.map(|name| self.validate_symbol(name))
 			.collect();
 
-		let existing: Vec<&ValidatedSymbol> =
-			symbols.iter().filter(|s| s.exists).collect();
-
-		let avg_importance = if existing.is_empty() {
-			0.0
-		} else {
-			existing
-				.iter()
-				.map(|s| s.importance)
-				.sum::<f32>()
-				/ existing.len() as f32
-		};
-
-		let existence_ratio = if symbols.is_empty() {
-			0.0
-		} else {
-			existing.len() as f32
-				/ symbols.len() as f32
-		};
-
-		ValidationResult {
-			symbols,
-			avg_importance,
-			existence_ratio,
-		}
+		compute_validation_stats(symbols)
 	}
 }
 
+/// Get best visibility score from definitions
+fn best_visibility(
+	definitions: &[&crate::indexer::semantic::Definition],
+) -> f32 {
+	definitions
+		.iter()
+		.map(|def| visibility_score(def.symbol.visibility))
+		.max_by(|lhs: &f32, rhs: &f32| {
+			lhs.partial_cmp(rhs).unwrap()
+		})
+		.unwrap_or(0.3)
+}
+
+/// Get best kind score from definitions
+fn best_kind(
+	definitions: &[&crate::indexer::semantic::Definition],
+) -> f32 {
+	definitions
+		.iter()
+		.map(|def| kind_score(def.symbol.kind))
+		.max_by(|lhs: &f32, rhs: &f32| {
+			lhs.partial_cmp(rhs).unwrap()
+		})
+		.unwrap_or(0.3)
+}
+
+/// Compute aggregate stats from validated symbols
+fn compute_validation_stats(
+	symbols: Vec<ValidatedSymbol>,
+) -> ValidationResult {
+	let existing: Vec<&ValidatedSymbol> = symbols
+		.iter()
+		.filter(|sym| sym.exists)
+		.collect();
+
+	let avg_importance = if existing.is_empty() {
+		0.0
+	} else {
+		existing
+			.iter()
+			.map(|sym| sym.importance)
+			.sum::<f32>()
+			/ existing.len() as f32
+	};
+
+	let existence_ratio = if symbols.is_empty() {
+		0.0
+	} else {
+		existing.len() as f32
+			/ symbols.len() as f32
+	};
+
+	ValidationResult {
+		symbols,
+		avg_importance,
+		existence_ratio,
+	}
+}

@@ -5,7 +5,7 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-use ch_cli::retrieval::daemon::server::DocGenProgress;
+use rustean::retrieval::daemon::server::DocGenProgress;
 
 #[test]
 fn test_doc_gen_progress_default() {
@@ -19,12 +19,12 @@ fn test_doc_gen_progress_default() {
 
 #[test]
 fn test_doc_gen_progress_update() {
-    let mut progress = DocGenProgress::default();
-
-    progress.total = 100;
-    progress.completed = 50;
-    progress.failed = 2;
-    progress.is_running = true;
+    let progress = DocGenProgress {
+        total: 100,
+        completed: 50,
+        failed: 2,
+        is_running: true,
+    };
 
     assert_eq!(progress.total, 100);
     assert_eq!(progress.completed, 50);
@@ -34,10 +34,12 @@ fn test_doc_gen_progress_update() {
 
 #[test]
 fn test_doc_gen_progress_clone() {
-    let mut progress = DocGenProgress::default();
-    progress.total = 10;
-    progress.completed = 5;
-    progress.is_running = true;
+    let progress = DocGenProgress {
+        total: 10,
+        completed: 5,
+        is_running: true,
+        ..DocGenProgress::default()
+    };
 
     let cloned = progress.clone();
 

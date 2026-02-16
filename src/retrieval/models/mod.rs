@@ -9,9 +9,12 @@ mod cache_default;
 mod cache_ops;
 pub mod device;
 mod device_platform;
+mod dtype_select;
+mod gguf_download;
 mod weights;
 
 use std::collections::HashSet;
+use std::io::Write;
 use std::path::PathBuf;
 
 use hf_hub::api::sync::Api;
@@ -19,6 +22,8 @@ use serde::Deserialize;
 
 pub use cache::ModelCache;
 pub use device::{get_device, get_device_info, DeviceInfo, DeviceType};
+pub use dtype_select::embedding_dtype;
+pub use gguf_download::{download_gguf_model, GgufModelInfo};
 pub use weights::{load_weights, load_weights_multi};
 
 // Re-export errors from domain for backward compat
@@ -42,40 +47,36 @@ pub struct ModelInfo {
 /// Sharded model index structure (model.safetensors.index.json)
 #[derive(Deserialize)]
 struct ShardIndex {
-	/// metadata about the sharded model (unused but part of format)
+	/// metadata about the sharded model (part of JSON format)
 	#[serde(default)]
-	#[allow(dead_code)]
-	metadata: Option<ShardMetadata>,
+	_metadata: Option<ShardMetadata>,
 	/// mapping from tensor name to shard filename
 	weight_map: std::collections::HashMap<String, String>,
 }
 
 /// Metadata in shard index
 #[derive(Deserialize)]
-#[allow(dead_code)]
 struct ShardMetadata {
 	/// total size in bytes
 	#[serde(default)]
-	total_size: u64,
+	_total_size: u64,
 }
 
 /// Download model files from HuggingFace Hub
 /// Handles both single-file and sharded models
-pub fn download_model(model_id: &str) -> ModelResult<ModelInfo> {
-	let api = Api::new().map_err(|e| ModelError::Hub(e.to_string()))?;
+pub fn download_model(
+	model_id: &str,
+) -> ModelResult<ModelInfo> {
+	let api = Api::new()
+		.map_err(|err| ModelError::Hub(err.to_string()))?;
 	let repo = api.model(model_id.to_string());
 
-	// download tokenizer
-	let tokenizer_path = repo
-		.get("tokenizer.json")
-		.map_err(|e| ModelError::FileNotFound(format!("tokenizer: {}", e)))?;
-
-	// download config
-	let config_path = repo
-		.get("config.json")
-		.map_err(|e| ModelError::FileNotFound(format!("config: {}", e)))?;
-
-	// download weights (handles sharded models)
+	let tokenizer_path = download_file(
+		&repo, "tokenizer.json", "tokenizer",
+	)?;
+	let config_path = download_file(
+		&repo, "config.json", "config",
+	)?;
 	let weights_paths = download_weights(&repo)?;
 
 	Ok(ModelInfo {
@@ -86,57 +87,110 @@ pub fn download_model(model_id: &str) -> ModelResult<ModelInfo> {
 	})
 }
 
-/// Download model weights, handling both single-file and sharded models
+/// Download a single file from a HuggingFace repo
+fn download_file(
+	repo: &hf_hub::api::sync::ApiRepo,
+	filename: &str,
+	label: &str,
+) -> ModelResult<PathBuf> {
+	repo.get(filename).map_err(|err| {
+		ModelError::FileNotFound(format!(
+			"{}: {}",
+			label, err
+		))
+	})
+}
+
+/// Download model weights, handling single/sharded/pytorch
 fn download_weights(
 	repo: &hf_hub::api::sync::ApiRepo,
 ) -> ModelResult<Vec<PathBuf>> {
-	// Try 1: Single safetensors file
+	// Try single safetensors file
 	if let Ok(path) = repo.get("model.safetensors") {
-		eprintln!("[models] Found single model.safetensors");
+		log_model_msg("Found single model.safetensors");
 		return Ok(vec![path]);
 	}
 
-	// Try 2: Sharded safetensors (check for index file)
-	if let Ok(index_path) = repo.get("model.safetensors.index.json") {
-		eprintln!("[models] Found sharded model, downloading shards...");
-		let index_content = std::fs::read_to_string(&index_path)?;
-		let index: ShardIndex = serde_json::from_str(&index_content)
-			.map_err(|e| {
-				let msg = format!("index parse: {}", e);
-				ModelError::WeightLoad(msg)
-			})?;
-
-		// get unique shard filenames
-		let shard_names: HashSet<&String> = index.weight_map.values().collect();
-		let mut shard_paths = Vec::new();
-
-		for shard_name in &shard_names {
-			eprintln!("[models] Downloading shard: {}", shard_name);
-			let path = repo
-				.get(shard_name)
-				.map_err(|e| {
-				let msg = format!("shard {}: {}", shard_name, e);
-				ModelError::FileNotFound(msg)
-			})?;
-			shard_paths.push(path);
-		}
-
-		// sort for deterministic ordering
-		shard_paths.sort();
-		eprintln!("[models] Downloaded {} shards", shard_paths.len());
-		return Ok(shard_paths);
+	// Try sharded safetensors
+	if let Some(paths) = try_sharded_download(repo)? {
+		return Ok(paths);
 	}
 
-	// Try 3: Single pytorch file (fallback)
+	// Try pytorch file (fallback)
 	if let Ok(path) = repo.get("pytorch_model.bin") {
-		eprintln!("[models] Found pytorch_model.bin");
+		log_model_msg("Found pytorch_model.bin");
 		return Ok(vec![path]);
 	}
 
 	let msg = "No model weights found \
-		(tried model.safetensors, sharded index, \
-		pytorch_model.bin)";
+		(tried safetensors, sharded, pytorch)";
 	Err(ModelError::FileNotFound(msg.to_string()))
+}
+
+/// Try downloading sharded safetensors model
+fn try_sharded_download(
+	repo: &hf_hub::api::sync::ApiRepo,
+) -> ModelResult<Option<Vec<PathBuf>>> {
+	let index_file = "model.safetensors.index.json";
+	let index_path = match repo.get(index_file) {
+		Ok(path) => path,
+		Err(_) => return Ok(None),
+	};
+
+	log_model_msg("Found sharded model, downloading...");
+	let index = parse_shard_index(&index_path)?;
+	let paths = download_shards(repo, &index)?;
+	Ok(Some(paths))
+}
+
+/// Parse shard index from JSON file
+fn parse_shard_index(
+	index_path: &PathBuf,
+) -> ModelResult<ShardIndex> {
+	let content = std::fs::read_to_string(index_path)?;
+	serde_json::from_str(&content).map_err(|err| {
+		ModelError::WeightLoad(format!(
+			"index parse: {}",
+			err
+		))
+	})
+}
+
+/// Download individual shard files from the index
+fn download_shards(
+	repo: &hf_hub::api::sync::ApiRepo,
+	index: &ShardIndex,
+) -> ModelResult<Vec<PathBuf>> {
+	let names: HashSet<&String> =
+		index.weight_map.values().collect();
+	let mut paths = Vec::new();
+
+	for name in &names {
+		log_model_msg(&format!("Downloading: {}", name));
+		let path = repo.get(name).map_err(|err| {
+			ModelError::FileNotFound(format!(
+				"shard {}: {}",
+				name, err
+			))
+		})?;
+		paths.push(path);
+	}
+
+	paths.sort();
+	log_model_msg(&format!(
+		"Downloaded {} shards",
+		paths.len()
+	));
+	Ok(paths)
+}
+
+/// Log a model-related message to stderr
+fn log_model_msg(msg: &str) {
+	let _ = writeln!(
+		std::io::stderr().lock(),
+		"[models] {}",
+		msg,
+	);
 }
 
 /// Load tokenizer from path
@@ -144,5 +198,5 @@ pub fn load_tokenizer(
 	tokenizer_path: &PathBuf,
 ) -> ModelResult<tokenizers::Tokenizer> {
 	tokenizers::Tokenizer::from_file(tokenizer_path)
-		.map_err(|e| ModelError::Tokenizer(e.to_string()))
+		.map_err(|err| ModelError::Tokenizer(err.to_string()))
 }

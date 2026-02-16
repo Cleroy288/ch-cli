@@ -7,7 +7,9 @@ use std::path::PathBuf;
 use std::sync::atomic::Ordering;
 
 use super::ModelDaemon;
-use crate::indexer::{IndexManager, IndexState};
+use crate::indexer::{
+	IndexManager, IndexState, SymbolKind,
+};
 use crate::retrieval::daemon::protocol::DaemonResponse;
 use crate::retrieval::docgen::DocStore;
 
@@ -15,8 +17,11 @@ use crate::retrieval::docgen::DocStore;
 pub(super) fn check_already_running(
 	daemon: &ModelDaemon,
 ) -> Option<DaemonResponse> {
-	let progress =
-		daemon.doc_gen_progress.lock().unwrap();
+	let Ok(progress) =
+		daemon.doc_gen_progress.lock()
+	else {
+		return None;
+	};
 	if progress.is_running {
 		Some(DaemonResponse::DocGenStatus {
 			total: progress.total,
@@ -37,7 +42,9 @@ pub(super) fn check_store_ready(
 	daemon: &ModelDaemon,
 	canonical: &PathBuf,
 ) -> Option<DaemonResponse> {
-	let stores = daemon.doc_stores.lock().unwrap();
+	let Ok(stores) = daemon.doc_stores.lock() else {
+		return None;
+	};
 	if let Some(existing) = stores.get(canonical) {
 		if existing.is_ready() {
 			let stats = existing.stats();
@@ -58,29 +65,75 @@ pub(super) fn prepare_store(
 	daemon: &mut ModelDaemon,
 	canonical: &PathBuf,
 ) {
-	// load or create doc store
-	{
-		let mut stores =
-			daemon.doc_stores.lock().unwrap();
-		if !stores.contains_key(canonical) {
-			let store =
-				DocStore::load(canonical).unwrap_or_else(
-					|_| DocStore::new(canonical),
-				);
-			stores.insert(canonical.clone(), store);
+	ensure_store_exists(daemon, canonical);
+	sync_store_with_index(daemon, canonical);
+}
+
+/// Ensure a doc store exists for the given path
+fn ensure_store_exists(
+	daemon: &mut ModelDaemon,
+	canonical: &PathBuf,
+) {
+	let Ok(mut stores) =
+		daemon.doc_stores.lock()
+	else {
+		return;
+	};
+	if !stores.contains_key(canonical) {
+		let store =
+			DocStore::load(canonical).unwrap_or_else(
+				|_| DocStore::new(canonical),
+			);
+		stores.insert(canonical.clone(), store);
+	}
+}
+
+/// Sync doc store entries with current index state
+fn sync_store_with_index(
+	daemon: &mut ModelDaemon,
+	canonical: &PathBuf,
+) {
+	let Ok(mut stores) =
+		daemon.doc_stores.lock()
+	else {
+		return;
+	};
+	if let Some(store) = stores.get_mut(canonical) {
+		if let Ok(state) = IndexState::load(canonical)
+		{
+			store.sync_with_index(&state);
 		}
 	}
+}
 
-	// sync with index state to mark stale as Pending
+/// Result type for store population
+type PopulateResult =
+	Result<(usize, Vec<String>), Box<DaemonResponse>>;
+
+/// Result of fetching symbols for doc generation
+type FetchSymbolsResult =
+	Result<Vec<crate::indexer::Symbol>, Box<DaemonResponse>>;
+
+/// Fetch symbols from cache or fresh index
+fn fetch_symbols(
+	daemon: &mut ModelDaemon,
+	canonical: &PathBuf,
+) -> FetchSymbolsResult {
+	if let Some(cached) =
+		daemon.project_cache.get(canonical)
 	{
-		let mut stores =
-			daemon.doc_stores.lock().unwrap();
-		if let Some(store) = stores.get_mut(canonical) {
-			if let Ok(state) = IndexState::load(canonical)
-			{
-				store.sync_with_index(&state);
-			}
-		}
+		return Ok(cached.symbols.clone());
+	}
+	let manager = IndexManager::new()
+		.with_semantic_analysis()
+		.with_reference_extraction();
+	match manager.index_project(canonical) {
+		Ok(result) => Ok(result.symbols),
+		Err(err) => Err(Box::new(
+			DaemonResponse::Error(
+				format!("indexing error: {}", err),
+			),
+		)),
 	}
 }
 
@@ -90,32 +143,61 @@ pub(super) fn prepare_store(
 pub(super) fn populate_store(
 	daemon: &mut ModelDaemon,
 	canonical: &PathBuf,
-) -> Result<(usize, Vec<String>), DaemonResponse> {
-	// get symbols from cache or index
-	let symbols = if let Some(cached) =
-		daemon.project_cache.get(canonical)
-	{
-		cached.symbols.clone()
-	} else {
-		let manager = IndexManager::new()
-			.with_persistence()
-			.with_semantic_analysis()
-			.with_reference_extraction();
-		match manager.index_project(canonical) {
-			Ok(result) => result.symbols,
-			Err(e) => {
-				return Err(DaemonResponse::Error(
-					format!("indexing error: {}", e),
-				))
-			}
-		}
+) -> PopulateResult {
+	let all_symbols = fetch_symbols(daemon, canonical)?;
+	let symbols: Vec<_> = all_symbols
+		.into_iter()
+		.filter(|sym| matches!(
+			sym.kind,
+			SymbolKind::Function
+				| SymbolKind::Method
+				| SymbolKind::Struct
+				| SymbolKind::Enum
+				| SymbolKind::Trait
+		))
+		.collect();
+	let mut stores = daemon.doc_stores.lock()
+		.map_err(|_| Box::new(DaemonResponse::Error(
+			"lock poisoned".into(),
+		)))?;
+	let Some(store) = stores.get_mut(canonical) else {
+		return Err(Box::new(DaemonResponse::Error(
+			"store not found".into(),
+		)));
 	};
-
-	let mut stores =
-		daemon.doc_stores.lock().unwrap();
-	let store = stores.get_mut(canonical).unwrap();
 	store.populate_from_symbols(&symbols);
 	Ok((store.len(), store.get_pending_ids()))
+}
+
+/// Initialize progress state before spawning
+fn init_doc_gen_progress(
+	daemon: &mut ModelDaemon,
+	pending_count: usize,
+) {
+	let Ok(mut progress) =
+		daemon.doc_gen_progress.lock()
+	else {
+		return;
+	};
+	progress.total = pending_count;
+	progress.completed = 0;
+	progress.failed = 0;
+	progress.is_running = true;
+	daemon
+		.doc_gen_cancel
+		.store(false, Ordering::SeqCst);
+}
+
+/// Build doc gen context from daemon shared state
+fn build_doc_gen_context(
+	daemon: &ModelDaemon,
+) -> super::doc_generation::DocGenContext {
+	super::doc_generation::DocGenContext {
+		stores: daemon.doc_stores.clone(),
+		generator: daemon.doc_generator.clone(),
+		progress: daemon.doc_gen_progress.clone(),
+		cancel: daemon.doc_gen_cancel.clone(),
+	}
 }
 
 /// Spawn background doc generation thread
@@ -126,51 +208,24 @@ pub(super) fn spawn_background_gen(
 	pending_ids: Vec<String>,
 ) -> DaemonResponse {
 	let pending_count = pending_ids.len();
+	init_doc_gen_progress(daemon, pending_count);
 
-	// set progress before spawning
-	{
-		let mut progress =
-			daemon.doc_gen_progress.lock().unwrap();
-		progress.total = pending_count;
-		progress.completed = 0;
-		progress.failed = 0;
-		progress.is_running = true;
-	}
-
-	// reset cancel flag
-	daemon
-		.doc_gen_cancel
-		.store(false, Ordering::SeqCst);
-
-	// extract graph for cross-references
 	let graph_and_symbols = daemon
 		.project_cache
 		.get(&canonical)
 		.and_then(|cached| {
-			cached.graph.as_ref().map(|g| {
-				(g.clone(), cached.symbols.clone())
+			cached.graph.as_ref().map(|graph| {
+				(graph.clone(), cached.symbols.clone())
 			})
 		});
 
-	// clone shared state for background thread
-	let stores = daemon.doc_stores.clone();
-	let generator = daemon.doc_generator.clone();
-	let progress = daemon.doc_gen_progress.clone();
-	let cancel = daemon.doc_gen_cancel.clone();
+	let ctx = build_doc_gen_context(daemon);
 	let path = canonical.clone();
-
 	let handle = std::thread::spawn(move || {
 		super::doc_generation::run_doc_gen_background(
-			stores,
-			generator,
-			progress,
-			cancel,
-			path,
-			pending_ids,
-			graph_and_symbols,
+			ctx, path, pending_ids, graph_and_symbols,
 		);
 	});
-
 	daemon.doc_gen_thread = Some(handle);
 
 	DaemonResponse::DocGenStatus {

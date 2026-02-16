@@ -20,35 +20,45 @@ impl StructuredOutput {
 			&self.intent,
 		));
 
-		// Code section
-		out.push_str("  <code_context>\n");
-		for result in &self.code_context {
-			out.push_str(&result.to_xml(4));
-		}
-		out.push_str("  </code_context>\n");
-
-		// Doc section
-		out.push_str("  <doc_context>\n");
-		for result in &self.doc_context {
-			out.push_str(&result.to_xml(4));
-		}
-		out.push_str("  </doc_context>\n");
-
-		// Notes section
-		out.push_str("  <notes_context>\n");
-		for result in &self.notes_context {
-			out.push_str(&result.to_xml(4));
-		}
-		out.push_str("  </notes_context>\n");
+		append_section(
+			&mut out, &self.code_context,
+			&self.doc_context, &self.notes_context,
+		);
 
 		out.push_str("</retrieval_context>");
 		out
 	}
 }
 
+/// Append code, doc, and notes sections to output
+fn append_section(
+	out: &mut String,
+	code: &[super::output_structured::CodeResult],
+	docs: &[super::output_structured::DocResult],
+	notes: &[super::output_structured::NotesResult],
+) {
+	out.push_str("  <code_context>\n");
+	for result in code {
+		out.push_str(&result.to_xml(4));
+	}
+	out.push_str("  </code_context>\n");
+
+	out.push_str("  <doc_context>\n");
+	for result in docs {
+		out.push_str(&result.to_xml(4));
+	}
+	out.push_str("  </doc_context>\n");
+
+	out.push_str("  <notes_context>\n");
+	for result in notes {
+		out.push_str(&result.to_xml(4));
+	}
+	out.push_str("  </notes_context>\n");
+}
+
 /// Escape XML special characters
-pub fn escape_xml(s: &str) -> String {
-	s.replace('&', "&amp;")
+pub fn escape_xml(text: &str) -> String {
+	text.replace('&', "&amp;")
 		.replace('<', "&lt;")
 		.replace('>', "&gt;")
 		.replace('"', "&quot;")

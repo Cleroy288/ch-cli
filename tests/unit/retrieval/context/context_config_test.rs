@@ -1,6 +1,6 @@
 //! Tests for retrieval::context::context_config
 
-use ch_cli::retrieval::context::ContextConfig;
+use rustean::retrieval::context::ContextConfig;
 
 #[test]
 fn test_context_config_defaults() {

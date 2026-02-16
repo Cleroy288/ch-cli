@@ -1,14 +1,24 @@
-//! Startup flow for ch-cli.
+//! Startup flow for rustean.
 //!
 //! Handles index checking, user prompting, and progress
 //! display during indexing.
 
 mod checks;
+mod key_reader;
+pub mod mcp_registration;
 mod progress;
 mod progress_docgen;
+mod progress_docgen_draw;
+mod progress_docgen_render;
+mod progress_docgen_stats;
+mod progress_helpers;
 mod progress_incremental;
+mod progress_shared;
 mod prompts;
 mod prompts_analysis;
+mod prompts_analysis_display;
+mod prompts_index;
+mod prompts_shared;
 mod unsupported_display;
 pub mod watcher;
 
@@ -20,10 +30,12 @@ pub use checks::{
 	analyze_codebase, check_index_exists,
 	detect_codebase_changes,
 };
+pub use mcp_registration::ensure_mcp_registered;
 pub use progress::index_with_progress;
 pub use progress_docgen::generate_docs_with_progress;
 pub use progress_incremental::index_with_progress_incremental;
-pub use prompts::{prompt_for_indexing, prompt_for_update};
+pub use prompts::prompt_for_update;
+pub use prompts_index::prompt_for_indexing;
 pub use prompts_analysis::prompt_for_indexing_with_analysis;
 pub use watcher::{spawn_watcher, WatcherHandle};
 
@@ -47,6 +59,9 @@ pub enum StartupAction {
 
 /// Run the complete startup flow
 pub fn run_startup() -> io::Result<Option<IndexResult>> {
+	// Step 0: Ensure MCP server is registered
+	ensure_mcp_registered();
+
 	// Step 1: Analyze codebase language
 	let analysis = analyze_codebase();
 
@@ -108,15 +123,13 @@ fn handle_first_launch(
 		show_partial_note,
 		analysis,
 	)? {
-		StartupAction::Index | StartupAction::IndexAndGenerateDocs => {
-			// Step 1/3: Index codebase
+		StartupAction::Index
+		| StartupAction::IndexAndGenerateDocs => {
 			let result = index_with_progress()?;
-
-			// Step 2/3 + 3/3: Start daemon + generate docs with progress
 			if result.is_some() {
+				// returns true if user sent to bg
 				generate_docs_with_progress()?;
 			}
-
 			Ok(result)
 		}
 		StartupAction::Skip => Ok(None),
@@ -127,30 +140,23 @@ fn handle_first_launch(
 	}
 }
 
-/// Spawn background thread to update docs for changed symbols
+/// Spawn background thread to update docs
 fn spawn_background_doc_update() {
 	std::thread::spawn(|| {
-		let client = crate::retrieval::daemon::DaemonClient::new();
+		let client =
+			crate::retrieval::daemon::DaemonClient::new();
 
-		// check if daemon is alive
 		if client.ping().is_err() {
-			return; // daemon not running, skip
+			return;
 		}
 
-		// trigger doc gen (non-blocking on daemon side now)
 		let project_path = std::env::current_dir()
 			.unwrap_or_default()
 			.to_string_lossy()
 			.to_string();
 
-		match client.start_doc_gen(project_path, false) {
-			Ok(_) => eprintln!(
-				"[startup] Background doc update started"
-			),
-			Err(e) => eprintln!(
-				"[startup] Background doc update failed: {}",
-				e
-			),
-		}
+		let _ = client.start_doc_gen(
+			project_path, false,
+		);
 	});
 }

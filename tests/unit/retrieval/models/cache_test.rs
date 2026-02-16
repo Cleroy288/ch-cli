@@ -4,7 +4,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use tempfile::tempdir;
 
-use ch_cli::retrieval::models::cache::{
+use rustean::retrieval::models::cache::{
 	CachedModel, ModelCache,
 };
 

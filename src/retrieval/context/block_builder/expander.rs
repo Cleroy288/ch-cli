@@ -3,22 +3,24 @@
 //! Processes search results and expands them into
 //! contextual blocks with token budget management.
 
+use std::io::Write;
+
 use crate::indexer::{SemanticGraph, Symbol};
 
 use super::core::BlockBuilder;
 use super::super::{ContextConfig, ContextualBlock};
 
 /// Context expander that processes search results
-pub struct ContextExpander<'a> {
+pub struct ContextExpander<'graph> {
 	/// the block builder
-	builder: BlockBuilder<'a>,
+	builder: BlockBuilder<'graph>,
 	/// max total tokens
 	max_tokens: usize,
 }
 
-impl<'a> ContextExpander<'a> {
+impl<'graph> ContextExpander<'graph> {
 	/// Create a new context expander
-	pub fn new(graph: &'a SemanticGraph) -> Self {
+	pub fn new(graph: &'graph SemanticGraph) -> Self {
 		Self {
 			builder: BlockBuilder::new(graph),
 			max_tokens: 10000,
@@ -27,7 +29,7 @@ impl<'a> ContextExpander<'a> {
 
 	/// Create with custom config and token limit
 	pub fn with_config(
-		graph: &'a SemanticGraph,
+		graph: &'graph SemanticGraph,
 		config: ContextConfig,
 		max_tokens: usize,
 	) -> Self {
@@ -46,27 +48,23 @@ impl<'a> ContextExpander<'a> {
 		let mut total_tokens = 0;
 
 		for symbol in symbols {
-			match self.builder.build(symbol) {
-				Ok(block) => {
-					let tokens = block.token_count();
-					if total_tokens + tokens > self.max_tokens
-					{
-						break; // token budget exhausted
-					}
-					total_tokens += tokens;
-					blocks.push(block);
-				}
-				Err(e) => {
-					let msg = format!(
-						"context for {}: {}",
-						symbol.name, e,
+			let block = match self.builder.build(symbol) {
+				Ok(built) => built,
+				Err(err) => {
+					let _ = writeln!(
+						std::io::stderr().lock(),
+						"Warning: context for {}: {}",
+						symbol.name, err,
 					);
-					eprintln!(
-						"Warning: failed to build {}",
-						msg
-					);
+					continue;
 				}
+			};
+			let tokens = block.token_count();
+			if total_tokens + tokens > self.max_tokens {
+				break;
 			}
+			total_tokens += tokens;
+			blocks.push(block);
 		}
 
 		blocks

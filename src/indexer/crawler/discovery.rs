@@ -39,48 +39,50 @@ impl Crawler {
 	/// Walks the directory tree respecting gitignore rules and filters
 	/// files by supported languages and size limits.
 	pub fn discover_files<P: AsRef<Path>>(&self, root: P) -> Vec<PathBuf> {
-		let root = root.as_ref(); // root directory to start crawling from
-		let mut files = Vec::new(); // collected file paths
+		let root = root.as_ref(); // root directory
+		let builder = self.build_walker(root);
 
+		builder
+			.build()
+			.flatten()
+			.filter_map(|entry| {
+				let path = entry.path();
+				if path.is_dir() { return None; }
+				Language::from_path(path)?;
+				if self.exceeds_max_size(path) { return None; }
+				Some(path.to_path_buf())
+			})
+			.collect()
+	}
+
+	/// Create a walker builder with configured options
+	fn build_walker(&self, root: &Path) -> WalkBuilder {
 		let mut builder = WalkBuilder::new(root);
 		builder
-			.hidden(true) // Skip hidden files by default
+			.hidden(true)
 			.git_ignore(self.config.respect_gitignore)
 			.git_global(self.config.respect_gitignore)
 			.git_exclude(self.config.respect_gitignore)
 			.follow_links(self.config.follow_symlinks);
 
-		// Add custom ignore patterns
 		for pattern in &self.config.ignore_patterns {
 			let _ = builder.add_ignore(Path::new(pattern));
 		}
+		builder
+	}
 
-		for entry in builder.build().flatten() {
-			let path = entry.path();
-
-			// Skip directories
-			if path.is_dir() {
-				continue;
-			}
-
-			// Check if it's a supported language
-			if Language::from_path(path).is_none() {
-				continue;
-			}
-
-			// Check file size if configured
-			if let Some(max_size) = self.config.max_file_size {
-				if let Ok(metadata) = path.metadata() {
-					if metadata.len() > max_size {
-						continue;
-					}
-				}
-			}
-
-			files.push(path.to_path_buf());
-		}
-
-		files
+	/// Check if a file exceeds the configured max size
+	fn exceeds_max_size(
+		&self,
+		path: &Path,
+	) -> bool {
+		let Some(max) = self.config.max_file_size
+		else {
+			return false;
+		};
+		path.metadata()
+			.map(|meta| meta.len() > max)
+			.unwrap_or(false)
 	}
 }
 

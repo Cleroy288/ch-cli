@@ -47,16 +47,16 @@ pub const DOC_RUNNING: &str =
 	"Generation running in background...";
 pub const DOC_NOT_STARTED: &str =
 	"Generation not started. \
-	Run 'ch-cli docs generate'.";
+	Run 'rustean docs generate'.";
 pub const DOC_GENERATE_STARTED: &str =
 	"Documentation generation started \
 	in background.";
 pub const DOC_CHECK_PROGRESS: &str =
-	"Use 'ch-cli docs status' to check progress.";
+	"Use 'rustean docs status' to check progress.";
 pub const DOC_NO_DOCS: &str =
 	"No documentation found.";
 pub const DOC_RUN_GENERATE: &str =
-	"Run 'ch-cli docs generate' to start.";
+	"Run 'rustean docs generate' to start.";
 
 // -- Embed --
 pub const CONNECTING_DAEMON: &str =
@@ -65,7 +65,7 @@ pub const DAEMON_READY: &str = "Daemon is ready";
 pub const DAEMON_STARTED_LOADING: &str =
 	"Daemon started, waiting for models to load...";
 pub const RUN_DAEMON_FIRST: &str =
-	"Run 'ch-cli daemon start' first and wait \
+	"Run 'rustean daemon start' first and wait \
 	for models to load";
 pub const EMBEDDING_SYMBOLS: &str =
 	"Generating embeddings...";
@@ -80,6 +80,19 @@ pub const MORE_RESULTS: &str =
 	"(More results available - increase \
 	--limit to see more)";
 
+// -- Memory --
+pub const MEMORY_STATS_HEADER: &str =
+	"Memory Statistics:";
+pub const MEMORY_NO_RESULTS: &str =
+	"No memory entries found";
+pub const MEMORY_NO_SESSIONS: &str =
+	"No sessions found. Use 'rustean memory add' \
+	to create one.";
+pub const MEMORY_ADDED: &str =
+	"Interaction saved.";
+pub const MEMORY_SEARCH_HEADER: &str =
+	"Memory search results";
+
 // -- Warnings --
 pub const WARN_DAEMON_NOT_READY: &str =
 	"Warning: Daemon not ready";
@@ -88,4 +101,4 @@ pub const WARN_CONTEXT_NEEDS_SEMANTIC: &str =
 	semantic analysis.";
 pub const MAKE_SURE_DAEMON: &str =
 	"Make sure the daemon is running: \
-	ch-cli daemon start";
+	rustean daemon start";

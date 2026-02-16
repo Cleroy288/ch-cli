@@ -15,39 +15,38 @@ use super::protocol::{
 };
 use crate::retrieval::{RetrievalError, RetrievalResult};
 
-/// Send request to daemon asynchronously
-pub async fn send_async_request(
+/// Connect to daemon socket with timeout
+async fn connect_async(
 	socket_path: &Path,
-	request_timeout: Duration,
-	request: &DaemonRequest,
-) -> RetrievalResult<DaemonResponse> {
-	// Connect with timeout
+	dur: Duration,
+) -> RetrievalResult<UnixStream> {
 	let connect = UnixStream::connect(socket_path);
-	let stream = timeout(request_timeout, connect)
+	timeout(dur, connect)
 		.await
 		.map_err(|_| {
 			let msg = "connection timeout".to_string();
 			RetrievalError::DaemonCommunication(msg)
 		})?
-		.map_err(|e| {
+		.map_err(|err| {
 			RetrievalError::DaemonNotRunning(
-				e.to_string(),
+				err.to_string(),
 			)
-		})?;
+		})
+}
 
-	// split stream into reader and writer
-	let (reader, mut writer) = stream.into_split();
-
-	// Serialize request to JSON
+/// Write serialized request to socket with timeout
+async fn write_request(
+	writer: &mut tokio::net::unix::OwnedWriteHalf,
+	dur: Duration,
+	request: &DaemonRequest,
+) -> RetrievalResult<()> {
 	let json = serde_json::to_string(request).map_err(
-		|e| {
-			let msg = format!("serialize: {}", e);
+		|err| {
+			let msg = format!("serialize: {}", err);
 			RetrievalError::DaemonCommunication(msg)
 		},
 	)?;
-
-	// Write request with timeout
-	timeout(request_timeout, async {
+	timeout(dur, async {
 		writer.write_all(json.as_bytes()).await?;
 		writer.write_all(b"\n").await?;
 		writer.flush().await?;
@@ -58,25 +57,42 @@ pub async fn send_async_request(
 		let msg = "write timeout".to_string();
 		RetrievalError::DaemonCommunication(msg)
 	})?
-	.map_err(|e| RetrievalError::Io(e))?;
+	.map_err(RetrievalError::IoError)
+}
 
-	// Read response with timeout
-	let mut reader = BufReader::new(reader);
+/// Read and deserialize response from socket
+async fn read_response(
+	reader: tokio::net::unix::OwnedReadHalf,
+	dur: Duration,
+) -> RetrievalResult<DaemonResponse> {
+	let mut buf_reader = BufReader::new(reader);
 	let mut line = String::new();
-
-	timeout(request_timeout, reader.read_line(&mut line))
+	timeout(dur, buf_reader.read_line(&mut line))
 		.await
 		.map_err(|_| {
 			let msg = "read timeout".to_string();
 			RetrievalError::DaemonCommunication(msg)
 		})?
-		.map_err(|e| RetrievalError::Io(e))?;
-
-	// Deserialize response from JSON
-	serde_json::from_str(line.trim()).map_err(|e| {
-		let msg = format!("deserialize: {}", e);
+		.map_err(RetrievalError::IoError)?;
+	serde_json::from_str(line.trim()).map_err(|err| {
+		let msg = format!("deserialize: {}", err);
 		RetrievalError::DaemonCommunication(msg)
 	})
+}
+
+/// Send request to daemon asynchronously
+pub async fn send_async_request(
+	socket_path: &Path,
+	request_timeout: Duration,
+	request: &DaemonRequest,
+) -> RetrievalResult<DaemonResponse> {
+	let stream =
+		connect_async(socket_path, request_timeout).await?;
+	let (reader, mut writer) = stream.into_split();
+	write_request(
+		&mut writer, request_timeout, request,
+	).await?;
+	read_response(reader, request_timeout).await
 }
 
 /// Generate embeddings async
@@ -90,9 +106,9 @@ pub async fn async_embed(
 		send_async_request(socket_path, timeout, &request)
 			.await?;
 	match response {
-		DaemonResponse::Embeddings(v) => Ok(v),
-		DaemonResponse::Error(e) => {
-			Err(RetrievalError::Embedding(e))
+		DaemonResponse::Embeddings(vecs) => Ok(vecs),
+		DaemonResponse::Error(msg) => {
+			Err(RetrievalError::Embedding(msg))
 		}
 		_ => {
 			let msg = "unexpected response".to_string();
@@ -114,9 +130,9 @@ pub async fn async_rerank(
 		send_async_request(socket_path, timeout, &request)
 			.await?;
 	match response {
-		DaemonResponse::Scores(s) => Ok(s),
-		DaemonResponse::Error(e) => {
-			Err(RetrievalError::Embedding(e))
+		DaemonResponse::Scores(scores) => Ok(scores),
+		DaemonResponse::Error(msg) => {
+			Err(RetrievalError::Embedding(msg))
 		}
 		_ => {
 			let msg = "unexpected response".to_string();
@@ -136,9 +152,9 @@ pub async fn async_expand(
 		send_async_request(socket_path, timeout, &request)
 			.await?;
 	match response {
-		DaemonResponse::SearchSpec(s) => Ok(s),
-		DaemonResponse::Error(e) => {
-			Err(RetrievalError::Embedding(e))
+		DaemonResponse::SearchSpec(spec) => Ok(spec),
+		DaemonResponse::Error(msg) => {
+			Err(RetrievalError::Embedding(msg))
 		}
 		_ => {
 			let msg = "unexpected response".to_string();
@@ -158,8 +174,8 @@ pub async fn async_ping(
 			.await?;
 	match response {
 		DaemonResponse::Pong => Ok(true),
-		DaemonResponse::Error(e) => {
-			Err(RetrievalError::DaemonCommunication(e))
+		DaemonResponse::Error(msg) => {
+			Err(RetrievalError::DaemonCommunication(msg))
 		}
 		_ => Ok(false),
 	}

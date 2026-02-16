@@ -20,7 +20,7 @@ pub fn embed(
 	let request = DaemonRequest::Embed { texts };
 	match send_request(socket_path, timeout, &request)? {
 		DaemonResponse::Embeddings(vecs) => Ok(vecs),
-		DaemonResponse::Error(e) => Err(RetrievalError::Embedding(e)),
+		DaemonResponse::Error(msg) => Err(RetrievalError::Embedding(msg)),
 		other => Err(RetrievalError::DaemonCommunication(format!(
 			"unexpected response: {:?}",
 			other
@@ -38,7 +38,7 @@ pub fn rerank(
 	let request = DaemonRequest::Rerank { query, documents };
 	match send_request(socket_path, timeout, &request)? {
 		DaemonResponse::Scores(scores) => Ok(scores),
-		DaemonResponse::Error(e) => Err(RetrievalError::Embedding(e)),
+		DaemonResponse::Error(msg) => Err(RetrievalError::Embedding(msg)),
 		other => Err(RetrievalError::DaemonCommunication(format!(
 			"unexpected response: {:?}",
 			other
@@ -55,7 +55,7 @@ pub fn expand(
 	let request = DaemonRequest::Expand { query };
 	match send_request(socket_path, timeout, &request)? {
 		DaemonResponse::SearchSpec(spec) => Ok(spec),
-		DaemonResponse::Error(e) => Err(RetrievalError::Embedding(e)),
+		DaemonResponse::Error(msg) => Err(RetrievalError::Embedding(msg)),
 		other => Err(RetrievalError::DaemonCommunication(format!(
 			"unexpected response: {:?}",
 			other
@@ -91,8 +91,8 @@ pub fn shutdown(
 	let request = DaemonRequest::Shutdown;
 	match send_request(socket_path, timeout, &request) {
 		Ok(DaemonResponse::Ok) => Ok(()),
-		Ok(DaemonResponse::Error(e)) =>
-			Err(RetrievalError::DaemonCommunication(e)),
+		Ok(DaemonResponse::Error(msg)) =>
+			Err(RetrievalError::DaemonCommunication(msg)),
 		Err(_) => Ok(()), // daemon may have already shut down
 		other => Err(RetrievalError::DaemonCommunication(
 			format!("unexpected response: {:?}", other)

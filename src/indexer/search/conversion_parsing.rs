@@ -3,8 +3,8 @@
 use crate::indexer::symbols::{SymbolKind, Visibility};
 
 /// Parse a SymbolKind from its string representation
-pub fn parse_symbol_kind(s: &str) -> Option<SymbolKind> {
-	match s {
+pub fn parse_symbol_kind(text: &str) -> Option<SymbolKind> {
+	match text {
 		"fn" => Some(SymbolKind::Function),
 		"method" => Some(SymbolKind::Method),
 		"struct" => Some(SymbolKind::Struct),
@@ -24,8 +24,8 @@ pub fn parse_symbol_kind(s: &str) -> Option<SymbolKind> {
 }
 
 /// Parse a Visibility from its string representation
-pub fn parse_visibility(s: &str) -> Visibility {
-	match s {
+pub fn parse_visibility(text: &str) -> Visibility {
+	match text {
 		"pub" => Visibility::Public,
 		"pub(crate)" => Visibility::PublicCrate,
 		"pub(super)" => Visibility::PublicSuper,

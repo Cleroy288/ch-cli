@@ -22,19 +22,24 @@ impl TripleVectorStore {
 		}
 	}
 
-	/// Build all three HNSW indexes
-	pub fn build_indexes(&mut self) -> RetrievalResult<()> {
+	/// Build HNSW indexes (code, notes, enriched).
+	/// Doc store is skipped — doc pipeline uses
+	/// keyword-only search.
+	pub fn build_indexes(
+		&mut self,
+	) -> RetrievalResult<()> {
 		self.code_store.build_index()?;
-		self.doc_store.build_index()?;
 		self.notes_store.build_index()?;
+		self.enriched_store.build_index()?;
 		Ok(())
 	}
 
-	/// Persist all three stores to disk
+	/// Persist stores to disk (code, notes, enriched).
+	/// Doc store is skipped — no vectors stored.
 	pub fn persist(&self) -> RetrievalResult<()> {
 		self.code_store.persist()?;
-		self.doc_store.persist()?;
 		self.notes_store.persist()?;
+		self.enriched_store.persist()?;
 		Ok(())
 	}
 
@@ -43,5 +48,6 @@ impl TripleVectorStore {
 		self.code_store.clear();
 		self.doc_store.clear();
 		self.notes_store.clear();
+		self.enriched_store.clear();
 	}
 }

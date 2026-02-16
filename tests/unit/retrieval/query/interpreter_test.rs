@@ -1,4 +1,4 @@
-use ch_cli::retrieval::query::QueryInterpreter;
+use rustean::retrieval::query::QueryInterpreter;
 
 #[test]
 fn test_interpret_simple() {

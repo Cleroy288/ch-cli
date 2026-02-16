@@ -2,8 +2,8 @@
 
 use std::path::PathBuf;
 
-use ch_cli::retrieval::docgen::entry_types::ReferenceKind;
-use ch_cli::retrieval::docgen::ReferenceLocation;
+use rustean::retrieval::docgen::entry_types::ReferenceKind;
+use rustean::retrieval::docgen::ReferenceLocation;
 
 /// Verify ReferenceLocation builder methods chain correctly.
 #[test]

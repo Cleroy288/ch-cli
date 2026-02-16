@@ -53,7 +53,7 @@ impl DocumentType {
 		let path_str = path.to_string_lossy(); // path as string for pattern matching
 		let extension = path // file extension
 			.extension()
-			.and_then(|e| e.to_str())
+			.and_then(|ext| ext.to_str())
 			.unwrap_or("");
 
 		// Check benchmarks first (most specific)
@@ -101,41 +101,14 @@ impl DocumentType {
 	/// Get boost factor adjusted for query context.
 	/// Lowers documentation boost for implementation queries.
 	pub fn boost_factor_for_query(&self, query: &str) -> f32 {
-		// base boost for this document type
 		let base_boost = self.boost_factor();
-		// lowercase query for matching
-		let lower_query = query.to_lowercase();
-
-		// Keywords indicating user wants code, not docs
-		let impl_keywords = [
-			"implementation",
-			"algorithm",
-			"logic",
-			"code",
-			"function",
-			"method",
-			"work",
-			"works",
-			"working",
-			"implement",
-			"source",
-			"actual",
-		];
-		// query wants code
-		let wants_code = impl_keywords
-			.iter()
-			.any(|k| lower_query.contains(k));
-
-		// If query wants code, reduce boost for non-code
-		if wants_code {
-			match self {
-				Self::Documentation | Self::Notes
-				| Self::Benchmark => base_boost * 0.5,
-				// unchanged for code
-				Self::SourceCode | Self::Test => base_boost,
-			}
-		} else {
-			base_boost // no adjustment
+		if !query_wants_code(query) {
+			return base_boost;
+		}
+		match self {
+			Self::Documentation | Self::Notes
+			| Self::Benchmark => base_boost * 0.5,
+			Self::SourceCode | Self::Test => base_boost,
 		}
 	}
 
@@ -182,4 +155,19 @@ impl DocumentType {
 			_ => base_boost, // no adjustment for other intents
 		}
 	}
+}
+
+/// Keywords indicating a query wants code, not docs
+const CODE_KEYWORDS: &[&str] = &[
+	"implementation", "algorithm", "logic", "code",
+	"function", "method", "work", "works", "working",
+	"implement", "source", "actual",
+];
+
+/// Check if query text contains code-seeking keywords
+fn query_wants_code(query: &str) -> bool {
+	let lower = query.to_lowercase();
+	CODE_KEYWORDS
+		.iter()
+		.any(|keyword| lower.contains(keyword))
 }

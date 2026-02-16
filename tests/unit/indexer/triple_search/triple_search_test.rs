@@ -4,15 +4,15 @@
 
 use std::path::PathBuf;
 
-use ch_cli::indexer::symbols::{CodeLocation, Symbol, SymbolKind};
-use ch_cli::indexer::triple_search::TripleSearchIndex;
+use rustean::indexer::symbols::{ByteSpan, CodeLocation, Symbol, SymbolKind};
+use rustean::indexer::triple_search::TripleSearchIndex;
 
 /// Create a test symbol at given path
 fn create_test_symbol(name: &str, path: &str) -> Symbol {
     Symbol::new(
         name.to_string(),
         SymbolKind::Function,
-        CodeLocation::new(PathBuf::from(path), 1, 0, 0, 10),
+        CodeLocation::new(PathBuf::from(path), 1, 0, ByteSpan { offset: 0, length: 10 }),
     )
 }
 
@@ -110,7 +110,8 @@ fn test_triple_index_parallel_search() {
     index.index_symbols(&symbols).unwrap();
 
     // Parallel search all indexes
-    let results = index.search_parallel("handle", 10, 10, 10).unwrap();
+    let limits = rustean::indexer::TripleLimits::uniform(10);
+    let results = index.search_parallel("handle", limits).unwrap();
 
     assert_eq!(results.code_results.len(), 1);
     assert_eq!(results.doc_results.len(), 1);

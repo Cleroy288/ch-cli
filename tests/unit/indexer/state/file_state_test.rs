@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use tempfile::tempdir;
 
-use ch_cli::indexer::state::FileState;
+use rustean::indexer::state::FileState;
 
 /// Test from_path creates FileState with correct metadata
 #[test]

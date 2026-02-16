@@ -11,24 +11,26 @@ pub fn build_status(
 ) -> Result<DaemonStatusInfo, DaemonError> {
 	let client = DaemonClient::new();
 	match client.status() {
-		Ok(s) => Ok(DaemonStatusInfo {
+		Ok(status) => Ok(DaemonStatusInfo {
 			is_running: true,
 			pid: Some(pid),
-			loaded_models: s.loaded_models,
-			device: Some(s.device.device_type),
-			device_detail: Some(
-				s.device.device_name,
+			loaded_models: status.loaded_models,
+			device: Some(
+				status.device.device_type,
 			),
-			gpu_memory_mb: s.device.memory_mb,
-			uptime_secs: Some(s.uptime_secs),
+			device_detail: Some(
+				status.device.device_name,
+			),
+			gpu_memory_mb: status.device.memory_mb,
+			uptime_secs: Some(status.uptime_secs),
 			is_reachable: true,
 			error: None,
 		}),
-		Err(e) => Ok(DaemonStatusInfo {
+		Err(err) => Ok(DaemonStatusInfo {
 			is_running: true,
 			pid: Some(pid),
 			is_reachable: false,
-			error: Some(e.to_string()),
+			error: Some(err.to_string()),
 			..DaemonStatusInfo::default()
 		}),
 	}

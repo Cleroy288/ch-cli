@@ -5,9 +5,9 @@
 use std::path::PathBuf;
 use std::time::Duration;
 
-use ch_cli::retrieval::daemon::client::pool::ConnectionPool;
-use ch_cli::retrieval::daemon::client::retry::{is_retryable_error, RetryConfig};
-use ch_cli::retrieval::RetrievalError;
+use rustean::retrieval::daemon::client::pool::ConnectionPool;
+use rustean::retrieval::daemon::client::retry::{is_retryable_error, RetryConfig};
+use rustean::retrieval::RetrievalError;
 
 #[test]
 fn test_retry_config_defaults() {
@@ -20,7 +20,7 @@ fn test_retry_config_defaults() {
 
 #[test]
 fn test_is_retryable_error_io_would_block() {
-    let error = RetrievalError::Io(std::io::Error::new(
+    let error = RetrievalError::IoError(std::io::Error::new(
         std::io::ErrorKind::WouldBlock,
         "would block",
     ));
@@ -29,7 +29,7 @@ fn test_is_retryable_error_io_would_block() {
 
 #[test]
 fn test_is_retryable_error_io_timed_out() {
-    let error = RetrievalError::Io(std::io::Error::new(
+    let error = RetrievalError::IoError(std::io::Error::new(
         std::io::ErrorKind::TimedOut,
         "timed out",
     ));
@@ -38,7 +38,7 @@ fn test_is_retryable_error_io_timed_out() {
 
 #[test]
 fn test_is_retryable_error_connection_reset() {
-    let error = RetrievalError::Io(std::io::Error::new(
+    let error = RetrievalError::IoError(std::io::Error::new(
         std::io::ErrorKind::ConnectionReset,
         "connection reset",
     ));
@@ -55,7 +55,7 @@ fn test_is_retryable_error_daemon_communication() {
 
 #[test]
 fn test_is_not_retryable_error_not_found() {
-    let error = RetrievalError::Io(std::io::Error::new(
+    let error = RetrievalError::IoError(std::io::Error::new(
         std::io::ErrorKind::NotFound,
         "not found",
     ));

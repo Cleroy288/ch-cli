@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use ch_cli::retrieval::docgen::linker_paths::get_module_path;
+use rustean::retrieval::docgen::linker_paths::get_module_path;
 
 #[test]
 fn test_get_module_path() {

@@ -3,9 +3,7 @@
 //! Provides stop-word filtering, identifier extraction,
 //! LLM response parsing, and fallback query parsing.
 
-use crate::retrieval::daemon::protocol::{
-	FileFilter, QueryIntent, SearchSpec,
-};
+use crate::retrieval::daemon::protocol::QueryIntent;
 
 /// Common English stop words to filter from symbols
 const STOP_WORDS: &[&str] = &[
@@ -50,21 +48,25 @@ pub fn filter_stop_words(
 ) -> Vec<String> {
 	symbols
 		.into_iter()
-		.filter(|s| {
-			let lower = s.to_lowercase();
+		.filter(|sym| {
+			let lower = sym.to_lowercase();
 			!STOP_WORDS.contains(&lower.as_str())
-				&& s.len() > 1
-				&& !s.chars().all(|c| c.is_numeric())
+				&& sym.len() > 1
+				&& !sym.chars().all(|chr| chr.is_numeric())
 		})
 		.collect()
 }
 
 /// Extract potential code identifiers from a query
-pub fn extract_identifiers(query: &str) -> Vec<String> {
+pub fn extract_identifiers(
+	query: &str,
+) -> Vec<String> {
 	let mut identifiers = Vec::new();
 
-	for word in
-		query.split(|c: char| !c.is_alphanumeric() && c != '_')
+	for word in query
+		.split(|chr: char| {
+			!chr.is_alphanumeric() && chr != '_'
+		})
 	{
 		if word.is_empty() || word.len() < 2 {
 			continue;
@@ -79,32 +81,42 @@ pub fn extract_identifiers(query: &str) -> Vec<String> {
 
 /// Check if a word looks like a code identifier
 fn is_code_identifier(word: &str) -> bool {
-	let is_camel = word.chars().any(|c| c.is_uppercase())
-		&& word.chars().any(|c| c.is_lowercase());
+	let is_camel = has_mixed_case(word);
 	let is_snake = word.contains('_')
-		&& word
-			.chars()
-			.all(|c| c.is_alphanumeric() || c == '_');
-	let is_screaming = word
-		.chars()
-		.all(|c| c.is_uppercase() || c.is_numeric() || c == '_')
-		&& word.len() > 2;
+		&& word.chars().all(|chr| {
+			chr.is_alphanumeric() || chr == '_'
+		});
+	let is_screaming = word.chars().all(|chr| {
+		chr.is_uppercase()
+			|| chr.is_numeric()
+			|| chr == '_'
+	}) && word.len() > 2;
 
 	(is_camel || is_snake || is_screaming)
 		&& !STOP_WORDS
 			.contains(&word.to_lowercase().as_str())
 }
 
-/// Check if query contains a whole word (not substring)
-pub fn contains_word(query: &str, word: &str) -> bool {
+/// Check if word has mixed case (CamelCase-like)
+fn has_mixed_case(word: &str) -> bool {
+	word.chars().any(|chr| chr.is_uppercase())
+		&& word.chars().any(|chr| chr.is_lowercase())
+}
+
+/// Check if query contains a whole word
+pub fn contains_word(
+	query: &str, word: &str,
+) -> bool {
 	let query_bytes = query.as_bytes();
 
-	for (i, _) in query.match_indices(word) {
-		let before_ok = i == 0
-			|| !query_bytes[i - 1].is_ascii_alphanumeric();
-		let after_ok = i + word.len() >= query.len()
-			|| !query_bytes[i + word.len()]
+	for (idx, _) in query.match_indices(word) {
+		let before_ok = idx == 0
+			|| !query_bytes[idx - 1]
 				.is_ascii_alphanumeric();
+		let after_ok =
+			idx + word.len() >= query.len()
+				|| !query_bytes[idx + word.len()]
+					.is_ascii_alphanumeric();
 
 		if before_ok && after_ok {
 			return true;
@@ -133,4 +145,3 @@ pub fn parse_intent(intent: &str) -> QueryIntent {
 		_ => QueryIntent::Search,
 	}
 }
-

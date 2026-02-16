@@ -1,192 +1,184 @@
 //! Progress display for full indexing.
 
 use std::io::{self, Write};
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::Arc;
+use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
 use crossterm::{
-	cursor,
-	execute,
-	style::{Color, Print, ResetColor, SetForegroundColor},
-	terminal::{self, ClearType},
+    cursor, execute,
+    style::{
+        Color, Print, ResetColor, SetForegroundColor,
+    },
+    terminal::{self, ClearType},
 };
 
 use crate::indexer::{IndexManager, IndexResult};
 
-/// Display a progress bar during indexing (like Augment/Auggie style)
-pub fn index_with_progress() -> io::Result<Option<IndexResult>> {
-	let mut stdout = io::stdout();
+use super::progress_shared::{
+    ProgressState, SPINNER, build_progress_callback,
+    collect_index_result, draw_elapsed_time,
+    format_progress_bar, truncate_name,
+};
 
-	// Clear screen
-	execute!(stdout, terminal::Clear(ClearType::All), cursor::MoveTo(0, 0))?;
+/// Display a progress bar during indexing
+pub fn index_with_progress(
+) -> io::Result<Option<IndexResult>> {
+    let mut stdout = io::stdout();
+    display_index_header(&mut stdout)?;
 
-	println!();
-	execute!(
-		stdout,
-		SetForegroundColor(Color::Cyan),
-		Print("  Indexing codebase...\n\n"),
-		ResetColor
-	)?;
+    let state = ProgressState::new();
+    let handle = spawn_index_thread(&state);
 
-	// Progress tracking
-	// Number of processed files
-	let files_processed = Arc::new(AtomicUsize::new(0));
-	// total number of files
-	let total_files = Arc::new(AtomicUsize::new(0));
-	// Current file name being processed
-	let current_file = Arc::new(
-		std::sync::Mutex::new(String::new())
-	);
-	// Flag indicating indexing is done
-	let indexing_done = Arc::new(AtomicBool::new(false));
+    run_progress_loop(&mut stdout, &state)?;
+    collect_index_result(&mut stdout, handle)
+}
 
-	let files_processed_clone = files_processed.clone();
-	let total_files_clone = total_files.clone();
-	let current_file_clone = current_file.clone();
-	let indexing_done_clone = indexing_done.clone();
+/// Show the indexing header
+fn display_index_header(
+    stdout: &mut io::Stdout,
+) -> io::Result<()> {
+    execute!(
+        stdout,
+        terminal::Clear(ClearType::All),
+        cursor::MoveTo(0, 0)
+    )?;
+    writeln!(stdout)?;
+    execute!(
+        stdout,
+        SetForegroundColor(Color::Cyan),
+        Print("  Indexing codebase...\n\n"),
+        ResetColor
+    )
+}
 
-	// Start indexing in a separate thread
-	let handle = std::thread::spawn(move || {
-		let manager = IndexManager::new()
-			.with_persistence()
-			.with_semantic_analysis()
-			.with_reference_extraction()
-			.on_progress(move |current, total, path| {
-				files_processed_clone.store(current, Ordering::SeqCst);
-				total_files_clone.store(total, Ordering::SeqCst);
-				if let Ok(mut file) = current_file_clone.lock() {
-					*file = path
-						.file_name()
-						.and_then(|n| n.to_str())
-						.unwrap_or("")
-						.to_string();
-				}
-			});
+/// Spawn indexing thread with progress callbacks
+fn spawn_index_thread(
+    state: &ProgressState,
+) -> std::thread::JoinHandle<
+    crate::indexer::IndexManagerResult<IndexResult>,
+> {
+    let callback = build_progress_callback(state);
+    let done_clone = state.done.clone();
 
-		let result = manager.index_project(".");
-		indexing_done_clone.store(true, Ordering::SeqCst);
-		result
-	});
+    std::thread::spawn(move || {
+        let manager = IndexManager::new()
+            .with_persistence()
+            .with_semantic_analysis()
+            .with_reference_extraction()
+            .on_progress(callback);
 
-	// Animation frames for spinner
-	let spinner_frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-	let mut spinner_idx = 0; // current spinner frame index
-	let start_time = Instant::now(); // start time for elapsed calculation
+        let result = manager.index_project(".");
+        done_clone.store(true, Ordering::SeqCst);
+        result
+    })
+}
 
-	// Progress bar width
-	let bar_width = 40;
+/// Run the progress display loop until done
+fn run_progress_loop(
+    stdout: &mut io::Stdout,
+    state: &ProgressState,
+) -> io::Result<()> {
+    let mut spin_idx = 0;
+    let start = Instant::now();
 
-	// Display loop
-	while !indexing_done.load(Ordering::SeqCst) {
-		let processed = files_processed.load(Ordering::SeqCst);
-		let total = total_files.load(Ordering::SeqCst).max(1);
-		let current = current_file
-			.lock()
-			.map(|f| f.clone())
-			.unwrap_or_default();
+    while !state.done.load(Ordering::SeqCst) {
+        draw_progress_frame(
+            stdout, state, spin_idx, &start,
+        )?;
+        spin_idx += 1;
+        std::thread::sleep(
+            Duration::from_millis(80),
+        );
+    }
+    Ok(())
+}
 
-		// Calculate progress
-		let progress = (processed as f64 / total as f64).min(1.0);
-		let filled = (progress * bar_width as f64) as usize;
-		let empty = bar_width - filled;
+/// Draw one frame of the full-index progress
+fn draw_progress_frame(
+    stdout: &mut io::Stdout,
+    state: &ProgressState,
+    spin_idx: usize,
+    start: &Instant,
+) -> io::Result<()> {
+    let processed =
+        state.files_done.load(Ordering::SeqCst);
+    let total =
+        state.total.load(Ordering::SeqCst).max(1);
+    let current = state
+        .current_file
+        .lock()
+        .map(|val| val.clone())
+        .unwrap_or_default();
 
-		// Build progress bar
-		let bar: String = format!(
-			"{}{}",
-			"█".repeat(filled),
-			"░".repeat(empty),
-		);
+    draw_progress_bar(
+        stdout, processed, total, spin_idx,
+    )?;
+    draw_file_stats(
+        stdout, processed, total, &current,
+    )?;
+    draw_elapsed_time(stdout, start, 7)?;
+    stdout.flush()
+}
 
-		// Spinner
-		let spinner = spinner_frames[spinner_idx % spinner_frames.len()];
-		spinner_idx += 1;
+/// Draw the progress bar line
+fn draw_progress_bar(
+    stdout: &mut io::Stdout,
+    processed: usize,
+    total: usize,
+    spin_idx: usize,
+) -> io::Result<()> {
+    let (progress_bar, progress) =
+        format_progress_bar(processed, total);
+    let spinner =
+        SPINNER[spin_idx % SPINNER.len()];
 
-		// Move cursor and clear line
-		execute!(
-			stdout,
-			cursor::MoveTo(0, 3),
-			terminal::Clear(ClearType::CurrentLine)
-		)?;
+    execute!(
+        stdout,
+        cursor::MoveTo(0, 3),
+        terminal::Clear(ClearType::CurrentLine),
+        SetForegroundColor(Color::Green),
+        Print(format!("  {} ", spinner)),
+        SetForegroundColor(Color::Cyan),
+        Print("["),
+        SetForegroundColor(Color::Green),
+        Print(&progress_bar),
+        SetForegroundColor(Color::Cyan),
+        Print("]"),
+        SetForegroundColor(Color::White),
+        Print(format!(
+            " {:.0}%",
+            progress * 100.0
+        )),
+        ResetColor
+    )
+}
 
-		// Display progress bar
-		execute!(
-			stdout,
-			SetForegroundColor(Color::Green),
-			Print(format!("  {} ", spinner)),
-			SetForegroundColor(Color::Cyan),
-			Print("["),
-			SetForegroundColor(Color::Green),
-			Print(&bar),
-			SetForegroundColor(Color::Cyan),
-			Print("]"),
-			SetForegroundColor(Color::White),
-			Print(format!(" {:.0}%", progress * 100.0)),
-			ResetColor
-		)?;
+/// Draw file count and current file name
+fn draw_file_stats(
+    stdout: &mut io::Stdout,
+    processed: usize,
+    total: usize,
+    current: &str,
+) -> io::Result<()> {
+    execute!(
+        stdout,
+        cursor::MoveTo(0, 5),
+        terminal::Clear(ClearType::CurrentLine),
+        SetForegroundColor(Color::DarkGrey),
+        Print(format!(
+            "  Files: {}/{}",
+            processed, total
+        )),
+        ResetColor
+    )?;
 
-		// Display file count
-		execute!(
-			stdout,
-			cursor::MoveTo(0, 5),
-			terminal::Clear(ClearType::CurrentLine),
-			SetForegroundColor(Color::DarkGrey),
-			Print(format!("  Files: {}/{}", processed, total)),
-			ResetColor
-		)?;
-
-		// Display current file (truncated if too long)
-		let display_file = if current.len() > 50 {
-			format!("...{}", &current[current.len() - 47..])
-		} else {
-			current
-		};
-
-		execute!(
-			stdout,
-			cursor::MoveTo(0, 6),
-			terminal::Clear(ClearType::CurrentLine),
-			SetForegroundColor(Color::DarkGrey),
-			Print(format!("  Current: {}", display_file)),
-			ResetColor
-		)?;
-
-		// Elapsed time
-		let elapsed = start_time.elapsed().as_secs();
-		execute!(
-			stdout,
-			cursor::MoveTo(0, 7),
-			terminal::Clear(ClearType::CurrentLine),
-			SetForegroundColor(Color::DarkGrey),
-			Print(format!("  Elapsed: {}s", elapsed)),
-			ResetColor
-		)?;
-
-		stdout.flush()?;
-
-		// Small delay to avoid excessive CPU usage
-		std::thread::sleep(Duration::from_millis(80));
-	}
-
-	// Wait for indexing thread to complete
-	let result = handle
-		.join()
-		.map_err(|_| {
-			io::Error::new(
-				io::ErrorKind::Other,
-				"Indexing thread panicked",
-			)
-		})?;
-
-	// Clear the progress display
-	execute!(
-		stdout,
-		cursor::MoveTo(0, 0),
-		terminal::Clear(ClearType::All)
-	)?;
-
-	match result {
-		Ok(index_result) => Ok(Some(index_result)),
-		Err(_) => Ok(None),
-	}
+    let display = truncate_name(current, 50);
+    execute!(
+        stdout,
+        cursor::MoveTo(0, 6),
+        terminal::Clear(ClearType::CurrentLine),
+        SetForegroundColor(Color::DarkGrey),
+        Print(format!("  Current: {}", display)),
+        ResetColor
+    )
 }

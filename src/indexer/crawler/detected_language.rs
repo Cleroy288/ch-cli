@@ -20,7 +20,7 @@ pub enum DetectedLanguage {
 	/// Python (not yet supported)
 	Python,
 	/// Go (not yet supported)
-	Go,
+	GoLang,
 	/// Java (not yet supported)
 	Java,
 	/// C# (not yet supported)
@@ -28,11 +28,11 @@ pub enum DetectedLanguage {
 	/// C++ (not yet supported)
 	Cpp,
 	/// C (not yet supported)
-	C,
+	CLang,
 	/// Ruby (not yet supported)
 	Ruby,
-	/// PHP (not yet supported)
-	PHP,
+	/// Php (not yet supported)
+	Php,
 	/// Swift (not yet supported)
 	Swift,
 	/// Kotlin (not yet supported)
@@ -50,13 +50,13 @@ impl DetectedLanguage {
 			"js" | "mjs" | "cjs" | "jsx" => Some(DetectedLanguage::JavaScript),
 			"ts" | "tsx" | "mts" | "cts" => Some(DetectedLanguage::TypeScript),
 			"py" | "pyw" | "pyi" => Some(DetectedLanguage::Python),
-			"go" => Some(DetectedLanguage::Go),
+			"go" => Some(DetectedLanguage::GoLang),
 			"java" => Some(DetectedLanguage::Java),
 			"cs" => Some(DetectedLanguage::CSharp),
 			"cpp" | "cc" | "cxx" | "hpp" | "hxx" | "h++" => Some(DetectedLanguage::Cpp),
-			"c" | "h" => Some(DetectedLanguage::C),
+			"c" | "h" => Some(DetectedLanguage::CLang),
 			"rb" | "rake" => Some(DetectedLanguage::Ruby),
-			"php" => Some(DetectedLanguage::PHP),
+			"php" => Some(DetectedLanguage::Php),
 			"swift" => Some(DetectedLanguage::Swift),
 			"kt" | "kts" => Some(DetectedLanguage::Kotlin),
 			_ => None,
@@ -77,13 +77,13 @@ impl DetectedLanguage {
 			DetectedLanguage::JavaScript => "JavaScript",
 			DetectedLanguage::TypeScript => "TypeScript",
 			DetectedLanguage::Python => "Python",
-			DetectedLanguage::Go => "Go",
+			DetectedLanguage::GoLang => "Go",
 			DetectedLanguage::Java => "Java",
 			DetectedLanguage::CSharp => "C#",
 			DetectedLanguage::Cpp => "C++",
-			DetectedLanguage::C => "C",
+			DetectedLanguage::CLang => "C",
 			DetectedLanguage::Ruby => "Ruby",
-			DetectedLanguage::PHP => "PHP",
+			DetectedLanguage::Php => "Php",
 			DetectedLanguage::Swift => "Swift",
 			DetectedLanguage::Kotlin => "Kotlin",
 		}

@@ -17,20 +17,38 @@ pub fn format_usages_xml(usages: &[UsageInfo]) -> String {
 		usages.len(),
 	);
 
-	// group usages by file path
-	let mut by_file: std::collections::HashMap<
-		&std::path::Path,
-		Vec<&UsageInfo>,
-	> = std::collections::HashMap::new();
+	let by_file = group_usages_by_file(usages);
+	format_file_groups(&by_file, &mut xml);
 
+	xml.push_str("  </usages>\n");
+	xml
+}
+
+/// Group usages by file path for organized output
+fn group_usages_by_file(
+	usages: &[UsageInfo],
+) -> std::collections::HashMap<
+	&std::path::Path,
+	Vec<&UsageInfo>,
+> {
+	let mut by_file = std::collections::HashMap::new();
 	for usage in usages {
 		by_file
 			.entry(usage.file.as_path())
-			.or_default()
+			.or_insert_with(Vec::new)
 			.push(usage);
 	}
+	by_file
+}
 
-	// sort file paths for consistent output
+/// Format grouped file entries into XML
+fn format_file_groups(
+	by_file: &std::collections::HashMap<
+		&std::path::Path,
+		Vec<&UsageInfo>,
+	>,
+	xml: &mut String,
+) {
 	let mut files: Vec<_> = by_file.keys().collect();
 	files.sort();
 
@@ -40,16 +58,11 @@ pub fn format_usages_xml(usages: &[UsageInfo]) -> String {
 			"    <file path=\"{}\">\n",
 			file.display(),
 		));
-
 		for usage in file_usages {
 			xml.push_str(&format_single_usage(usage));
 		}
-
 		xml.push_str("    </file>\n");
 	}
-
-	xml.push_str("  </usages>\n");
-	xml
 }
 
 /// Format a single usage entry as XML

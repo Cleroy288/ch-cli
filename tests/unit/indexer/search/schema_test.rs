@@ -2,7 +2,7 @@
 
 use tantivy::schema::Schema;
 
-use ch_cli::indexer::search::{SchemaFields, build_schema};
+use rustean::indexer::search::{SchemaFields, build_schema};
 
 /// Test build_schema creates schema with all required fields
 #[test]

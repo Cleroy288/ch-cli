@@ -5,8 +5,8 @@ use std::io::Write;
 
 use tempfile::TempDir;
 
-use ch_cli::indexer::manager::IndexManager;
-use ch_cli::indexer::SymbolKind;
+use rustean::indexer::manager::IndexManager;
+use rustean::indexer::SymbolKind;
 
 fn create_test_project() -> TempDir {
 	let temp_dir = TempDir::new().expect("Failed to create temp dir");

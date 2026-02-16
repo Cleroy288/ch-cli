@@ -1,8 +1,9 @@
-use ch_cli::indexer::{
-	CodeLocation, SemanticGraph, Symbol, SymbolKind,
-	SymbolReference, ReferenceContext, Visibility,
+use rustean::indexer::{
+	ByteSpan, CodeLocation, ReferenceContext,
+	SemanticGraph, Symbol, SymbolKind,
+	SymbolReference, Visibility,
 };
-use ch_cli::retrieval::query::SymbolValidator;
+use rustean::retrieval::query::SymbolValidator;
 use std::path::PathBuf;
 
 fn create_test_graph() -> SemanticGraph {
@@ -13,7 +14,8 @@ fn create_test_graph() -> SemanticGraph {
 		SymbolKind::Struct,
 		CodeLocation::new(
 			PathBuf::from("src/auth.rs"),
-			10, 1, 0, 11,
+			10, 1,
+			ByteSpan { offset: 0, length: 11 },
 		),
 	)
 	.with_visibility(Visibility::Public);
@@ -24,7 +26,8 @@ fn create_test_graph() -> SemanticGraph {
 			name: "AuthService".to_string(),
 			location: CodeLocation::new(
 				PathBuf::from("src/main.rs"),
-				20 + i, 1, 0, 11,
+				20 + i, 1,
+				ByteSpan { offset: 0, length: 11 },
 			),
 			context: ReferenceContext::Type,
 		});
@@ -35,7 +38,8 @@ fn create_test_graph() -> SemanticGraph {
 		SymbolKind::Function,
 		CodeLocation::new(
 			PathBuf::from("src/utils.rs"),
-			5, 1, 0, 9,
+			5, 1,
+			ByteSpan { offset: 0, length: 9 },
 		),
 	);
 	graph.add_definition(helper);

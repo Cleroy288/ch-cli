@@ -9,58 +9,46 @@ pub use super::schema_builder::build_schema;
 /// Field handles for the search schema
 #[derive(Clone)]
 pub struct SchemaFields {
-	pub symbol_name: Field,   // primary search field (tokenized)
-	pub symbol_kind: Field,   // symbol kind (string, not tokenized)
-	pub file_path: Field,     // file path (string, not tokenized)
+	pub symbol_name: Field,   // primary search field
+	pub symbol_kind: Field,   // symbol kind (string)
+	pub file_path: Field,     // file path (string)
 	pub line: Field,          // line number (u64)
 	pub column: Field,        // column number (u64)
-	pub visibility: Field,    // visibility modifier (string)
-	pub signature: Field,     // function/method signature (tokenized)
-	pub fqn: Field,           // fully qualified name (tokenized)
-	pub parent: Field,        // parent symbol name (string)
-	pub content: Field,       // documentation/content (tokenized)
-	pub document_type: Field, // document type for boost scoring
+	pub visibility: Field,    // visibility modifier
+	pub signature: Field,     // function signature
+	pub fqn: Field,           // fully qualified name
+	pub parent: Field,        // parent symbol name
+	pub content: Field,       // documentation content
+	pub document_type: Field, // document type for boost
 }
 
 impl SchemaFields {
 	/// Extract all field handles from the schema
-	pub fn from_schema(schema: &Schema) -> SearchResult<Self> {
-		let err_fn = |name: &str| {
-			SearchError::FieldNotFound(name.to_string())
-		};
-
+	pub fn from_schema(
+		schema: &Schema,
+	) -> SearchResult<Self> {
 		Ok(Self {
-			symbol_name: schema
-				.get_field("symbol_name")
-				.map_err(|_| err_fn("symbol_name"))?,
-			symbol_kind: schema
-				.get_field("symbol_kind")
-				.map_err(|_| err_fn("symbol_kind"))?,
-			file_path: schema
-				.get_field("file_path")
-				.map_err(|_| err_fn("file_path"))?,
-			line: schema
-				.get_field("line")
-				.map_err(|_| err_fn("line"))?,
-			column: schema
-				.get_field("column")
-				.map_err(|_| err_fn("column"))?,
-			visibility: schema
-				.get_field("visibility")
-				.map_err(|_| err_fn("visibility"))?,
-			signature: schema
-				.get_field("signature")
-				.map_err(|_| err_fn("signature"))?,
-			fqn: schema.get_field("fqn").map_err(|_| err_fn("fqn"))?,
-			parent: schema
-				.get_field("parent")
-				.map_err(|_| err_fn("parent"))?,
-			content: schema
-				.get_field("content")
-				.map_err(|_| err_fn("content"))?,
-			document_type: schema
-				.get_field("document_type")
-				.map_err(|_| err_fn("document_type"))?,
+			symbol_name: get(schema, "symbol_name")?,
+			symbol_kind: get(schema, "symbol_kind")?,
+			file_path: get(schema, "file_path")?,
+			line: get(schema, "line")?,
+			column: get(schema, "column")?,
+			visibility: get(schema, "visibility")?,
+			signature: get(schema, "signature")?,
+			fqn: get(schema, "fqn")?,
+			parent: get(schema, "parent")?,
+			content: get(schema, "content")?,
+			document_type: get(schema, "document_type")?,
 		})
 	}
+}
+
+/// Get a field from schema, returning SearchError on failure
+fn get(
+	schema: &Schema,
+	name: &str,
+) -> SearchResult<Field> {
+	schema
+		.get_field(name)
+		.map_err(|_| SearchError::FieldNotFound(name.to_string()))
 }

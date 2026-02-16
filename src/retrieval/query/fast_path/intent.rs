@@ -5,9 +5,13 @@ use super::super::fast_path_patterns::{
 };
 
 /// Check if query is conceptual (needs LLM)
-pub(crate) fn is_conceptual_query(query: &str) -> bool {
+pub(crate) fn is_conceptual_query(
+	query: &str,
+) -> bool {
 	let lower = query.to_lowercase();
-	CONCEPTUAL_PATTERNS.iter().any(|p| lower.contains(p))
+	CONCEPTUAL_PATTERNS
+		.iter()
+		.any(|pat| lower.contains(pat))
 }
 
 /// Classify query intent based on conceptual flag

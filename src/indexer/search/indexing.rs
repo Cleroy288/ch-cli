@@ -7,6 +7,9 @@ use crate::indexer::search::error::SearchResult;
 use crate::indexer::search::index_core::SearchIndex;
 use crate::indexer::symbols::Symbol;
 
+/// Batch of symbols grouped by file path
+type FileSymbolBatch = [(PathBuf, Vec<Symbol>)];
+
 impl SearchIndex {
 	/// Index a batch of symbols
 	pub fn index_symbols(&self, symbols: &[Symbol]) -> SearchResult<usize> {
@@ -57,7 +60,7 @@ impl SearchIndex {
 	pub fn batch_update(
 		&self,
 		files_to_delete: &[PathBuf],
-		file_results: &[(PathBuf, Vec<Symbol>)],
+		file_results: &FileSymbolBatch,
 	) -> SearchResult<usize> {
 		let mut writer = self.writer(50_000_000)?; // writer instance
 		let mut total_count = 0; // total symbols added

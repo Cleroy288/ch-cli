@@ -2,7 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
-use ch_cli::indexer::trigram::TrigramIndex;
+use rustean::indexer::trigram::TrigramIndex;
 
 #[test]
 fn test_extract_trigrams() {

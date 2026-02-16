@@ -5,25 +5,30 @@
 use std::collections::VecDeque;
 use std::os::unix::net::UnixStream;
 use std::sync::Mutex;
-use std::time::Duration;
 
 use crate::retrieval::{RetrievalError, RetrievalResult};
 
 use super::pool::{ConnectionPool, PooledConnection};
 
 /// Get a connection from the pool or create a new one
+#[allow(clippy::min_ident_chars)]
 pub fn get_connection(
 	pool: &ConnectionPool,
 ) -> RetrievalResult<PooledConnection<'_>> {
 	// Try to get existing connection from pool
-	let conns = &pool.connections;
-	if let Some(stream) = conns.lock().unwrap().pop_front()
-	{
-		// Verify connection is still valid
+	let recycled = {
+		let mut guard = pool.connections.lock()
+			.map_err(|_| {
+				RetrievalError::DaemonCommunication(
+					"lock poisoned".into(),
+				)
+			})?;
+		guard.pop_front()
+	};
+	if let Some(stream) = recycled {
 		if is_connection_valid(&stream) {
 			return Ok(PooledConnection::new(stream, pool));
 		}
-		// Connection invalid, will create new one
 	}
 
 	// Create new connection
@@ -31,6 +36,7 @@ pub fn get_connection(
 }
 
 /// Create a new connection to the daemon
+#[allow(clippy::min_ident_chars)]
 fn create_new_connection(
 	pool: &ConnectionPool,
 ) -> RetrievalResult<PooledConnection<'_>> {
@@ -38,9 +44,9 @@ fn create_new_connection(
 	let timeout = pool.timeout();
 
 	let stream = UnixStream::connect(socket_path)
-		.map_err(|e| {
+		.map_err(|err| {
 			RetrievalError::DaemonNotRunning(
-				e.to_string(),
+				err.to_string(),
 			)
 		})?;
 	stream.set_read_timeout(Some(timeout)).ok();
@@ -61,7 +67,9 @@ pub fn return_connection(
 	max_size: usize,
 	stream: UnixStream,
 ) {
-	let mut conns = connections.lock().unwrap();
+	let Ok(mut conns) = connections.lock() else {
+		return;
+	};
 	if conns.len() < max_size {
 		conns.push_back(stream);
 	}

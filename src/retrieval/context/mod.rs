@@ -10,6 +10,7 @@ pub mod block_builder;
 #[doc(hidden)]
 pub mod code_extractor;
 pub mod context_config;
+pub mod file_reader;
 pub mod context_xml;
 pub mod context_xml_usages;
 pub mod graph_walker;

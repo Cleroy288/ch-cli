@@ -3,7 +3,7 @@
 use std::path::PathBuf;
 use std::time::Duration;
 
-use ch_cli::retrieval::daemon::AsyncDaemonClient;
+use rustean::retrieval::daemon::AsyncDaemonClient;
 
 #[test]
 fn test_async_client_creation() {

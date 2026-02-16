@@ -16,9 +16,10 @@ impl DocEntry {
 		file_path: PathBuf,
 		line: usize,
 	) -> Self {
-		let id = Self::generate_id(&file_path, &name, line);
+		let entry_id =
+			Self::generate_id(&file_path, &name, line);
 		Self {
-			id, name, kind, file_path, line,
+			id: entry_id, name, kind, file_path, line,
 			user_comment: None, llm_doc: None,
 			signature: None,
 			code_snippet: String::new(),

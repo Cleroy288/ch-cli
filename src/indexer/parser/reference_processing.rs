@@ -8,7 +8,7 @@ use std::path::Path;
 use tree_sitter::Query;
 
 use crate::indexer::semantic::ReferenceContext;
-use crate::indexer::symbols::CodeLocation;
+use crate::indexer::symbols::{ByteSpan, CodeLocation};
 
 use super::helpers::is_rust_keyword;
 use super::types::ExtractedReference;
@@ -35,12 +35,15 @@ pub fn process_reference_match(
 		return None;
 	}
 
+	let bytes = ByteSpan {
+		offset: node.start_byte(),
+		length: node.end_byte() - node.start_byte(),
+	};
 	let location = CodeLocation::new(
 		file_path.to_path_buf(),
 		node.start_position().row + 1,
 		node.start_position().column + 1,
-		node.start_byte(),
-		node.end_byte() - node.start_byte(),
+		bytes,
 	);
 
 	Some(ExtractedReference {
@@ -71,14 +74,14 @@ fn determine_reference_context(capture_name: &str) -> Option<ReferenceContext> {
 /// Deduplicate references by sorting and removing duplicates.
 /// References with same name and location are considered duplicates.
 pub fn deduplicate_references(references: &mut Vec<ExtractedReference>) {
-	references.sort_by(|a, b| {
-		a.location.line.cmp(&b.location.line)
-			.then(a.location.column.cmp(&b.location.column))
-			.then(a.name.cmp(&b.name))
+	references.sort_by(|lhs, rhs| {
+		lhs.location.line.cmp(&rhs.location.line)
+			.then(lhs.location.column.cmp(&rhs.location.column))
+			.then(lhs.name.cmp(&rhs.name))
 	});
-	references.dedup_by(|a, b| {
-		a.name == b.name
-			&& a.location.line == b.location.line
-			&& a.location.column == b.location.column
+	references.dedup_by(|lhs, rhs| {
+		lhs.name == rhs.name
+			&& lhs.location.line == rhs.location.line
+			&& lhs.location.column == rhs.location.column
 	});
 }

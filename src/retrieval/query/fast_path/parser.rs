@@ -3,11 +3,13 @@
 use regex::Regex;
 
 use super::super::fast_path_patterns::{
-	FastPathIntent, FastPathResult, PatternType,
+	FastPathResult, PatternType,
 	SOURCE_CODE_PATTERNS, SymbolCandidate,
 };
 
-use super::extraction::extract_by_regex;
+use super::extraction::{
+	extract_by_regex, ExtractionParams,
+};
 use super::intent::is_conceptual_query;
 use super::result::{build_result, deduplicate_symbols};
 
@@ -40,12 +42,14 @@ impl FastPathParser {
 		}
 	}
 
-	/// Check if query explicitly requests source code
-	pub fn wants_source_code(&self, query: &str) -> bool {
+	/// Check if query requests source code
+	pub fn wants_source_code(
+		&self, query: &str,
+	) -> bool {
 		let lower = query.to_lowercase();
 		SOURCE_CODE_PATTERNS
 			.iter()
-			.any(|p| lower.contains(p))
+			.any(|pat| lower.contains(pat))
 	}
 
 	/// Extract symbol candidates from a query
@@ -56,30 +60,65 @@ impl FastPathParser {
 		let mut symbols = Vec::new();
 		let is_conceptual = is_conceptual_query(query);
 
-		extract_by_regex(
-			&self.camel_case,
-			query,
-			PatternType::CamelCase,
-			0.95,
-			&mut symbols,
-		);
-		extract_by_regex(
-			&self.screaming_case,
-			query,
-			PatternType::ScreamingCase,
-			0.9,
-			&mut symbols,
-		);
-		extract_by_regex(
-			&self.snake_case,
-			query,
-			PatternType::SnakeCase,
-			0.85,
-			&mut symbols,
-		);
-
+		self.extract_camel(query, &mut symbols);
+		self.extract_screaming(query, &mut symbols);
+		self.extract_snake(query, &mut symbols);
 		deduplicate_symbols(&mut symbols);
 		build_result(symbols, is_conceptual)
+	}
+}
+
+/// Individual extraction passes.
+impl FastPathParser {
+	/// Extract CamelCase symbols
+	fn extract_camel(
+		&self,
+		query: &str,
+		symbols: &mut Vec<SymbolCandidate>,
+	) {
+		extract_by_regex(
+			&ExtractionParams {
+				regex: &self.camel_case,
+				pattern_type: PatternType::CamelCase,
+				confidence: 0.95,
+			},
+			query,
+			symbols,
+		);
+	}
+
+	/// Extract SCREAMING_CASE symbols
+	fn extract_screaming(
+		&self,
+		query: &str,
+		symbols: &mut Vec<SymbolCandidate>,
+	) {
+		extract_by_regex(
+			&ExtractionParams {
+				regex: &self.screaming_case,
+				pattern_type: PatternType::ScreamingCase,
+				confidence: 0.9,
+			},
+			query,
+			symbols,
+		);
+	}
+
+	/// Extract snake_case symbols
+	fn extract_snake(
+		&self,
+		query: &str,
+		symbols: &mut Vec<SymbolCandidate>,
+	) {
+		extract_by_regex(
+			&ExtractionParams {
+				regex: &self.snake_case,
+				pattern_type: PatternType::SnakeCase,
+				confidence: 0.85,
+			},
+			query,
+			symbols,
+		);
 	}
 }
 

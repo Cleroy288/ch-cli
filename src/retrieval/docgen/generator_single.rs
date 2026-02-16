@@ -7,7 +7,9 @@ use crate::retrieval::docgen::generator::{
 use crate::retrieval::docgen::generator_utils::{
 	clean_generated_doc, extract_code_snippet,
 };
-use crate::retrieval::docgen::prompts::build_prompt;
+use crate::retrieval::docgen::prompts::{
+	build_prompt, PromptInput,
+};
 use crate::retrieval::models::{ModelError, ModelResult};
 
 /// Single-entry generation methods.
@@ -17,27 +19,14 @@ impl DocGenerator {
 		&mut self,
 		entry: &mut DocEntry,
 	) -> ModelResult<()> {
+		ensure_snippet(entry)?;
+		let prompt = build_entry_prompt(entry);
+
 		let model = self.model.as_mut().ok_or_else(|| {
 			ModelError::NotLoaded(
-				"DocGenerator model not loaded".to_string(),
+				"DocGenerator model not loaded".into(),
 			)
 		})?;
-
-		if entry.code_snippet.is_empty() {
-			entry.code_snippet = extract_code_snippet(
-				&entry.file_path,
-				entry.line,
-			)?;
-		}
-
-		let prompt = build_prompt(
-			entry.kind,
-			&entry.name,
-			entry.signature.as_deref(),
-			&entry.code_snippet,
-			entry.user_comment.as_deref(),
-			entry.links.parent.as_deref(),
-		);
 
 		entry.mark_generating();
 
@@ -47,17 +36,14 @@ impl DocGenerator {
 				entry.mark_ready(cleaned);
 				Ok(())
 			}
-			Err(e) => {
+			Err(err) => {
 				entry.mark_failed();
-				Err(e)
+				Err(err)
 			}
 		}
 	}
 
 	/// Generate documentation from a pre-built prompt.
-	///
-	/// Skips code extraction and prompt building.
-	/// Goes straight to LLM inference.
 	pub fn generate_from_prompt(
 		&mut self,
 		entry: &mut DocEntry,
@@ -65,7 +51,7 @@ impl DocGenerator {
 	) -> ModelResult<()> {
 		let model = self.model.as_mut().ok_or_else(|| {
 			ModelError::NotLoaded(
-				"DocGenerator model not loaded".to_string(),
+				"DocGenerator model not loaded".into(),
 			)
 		})?;
 
@@ -77,10 +63,35 @@ impl DocGenerator {
 				entry.mark_ready(cleaned);
 				Ok(())
 			}
-			Err(e) => {
+			Err(err) => {
 				entry.mark_failed();
-				Err(e)
+				Err(err)
 			}
 		}
 	}
+}
+
+/// Fill in code snippet if empty.
+fn ensure_snippet(
+	entry: &mut DocEntry,
+) -> ModelResult<()> {
+	if entry.code_snippet.is_empty() {
+		entry.code_snippet = extract_code_snippet(
+			&entry.file_path,
+			entry.line,
+		)?;
+	}
+	Ok(())
+}
+
+/// Build the LLM prompt for an entry.
+fn build_entry_prompt(entry: &DocEntry) -> String {
+	build_prompt(PromptInput {
+		kind: entry.kind,
+		name: &entry.name,
+		signature: entry.signature.as_deref(),
+		code_snippet: &entry.code_snippet,
+		user_comment: entry.user_comment.as_deref(),
+		parent: entry.links.parent.as_deref(),
+	})
 }

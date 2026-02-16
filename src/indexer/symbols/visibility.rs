@@ -17,13 +17,13 @@ pub enum Visibility {
 }
 
 impl fmt::Display for Visibility {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		let s = match self {
+	fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+		let label = match self {
 			Visibility::Public => "pub",
 			Visibility::PublicCrate => "pub(crate)",
 			Visibility::PublicSuper => "pub(super)",
 			Visibility::Private => "",
 		};
-		write!(f, "{}", s)
+		write!(fmt, "{}", label)
 	}
 }

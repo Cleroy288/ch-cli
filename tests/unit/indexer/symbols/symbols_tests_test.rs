@@ -2,8 +2,8 @@
 
 use std::path::Path;
 
-use ch_cli::indexer::symbols::{is_test_file, ContentType, DocumentType, SymbolKind};
-use ch_cli::retrieval::daemon::protocol::QueryIntent;
+use rustean::indexer::symbols::{is_test_file, ContentType, DocumentType, SymbolKind};
+use rustean::retrieval::daemon::protocol::QueryIntent;
 
 /// Test DocumentType::from_path with benchmark paths
 #[test]

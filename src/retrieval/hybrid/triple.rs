@@ -5,6 +5,7 @@
 //! and Notes. Uses parallel execution for fast retrieval
 //! without content type interference.
 
+use std::collections::HashMap;
 use std::path::Path;
 
 use crate::indexer::symbols::Symbol;
@@ -55,6 +56,14 @@ pub struct TripleHybridResults {
 	pub notes_results: Vec<HybridSearchResult>,
 }
 
+/// Pipeline-level context for fusion and filtering
+pub struct PipelineSlice<'slice> {
+	/// max results to return
+	pub limit: usize,
+	/// content type label (e.g. "code", "doc", "notes")
+	pub content_type: &'slice str,
+}
+
 /// Triple hybrid search with separate code, doc, and notes
 /// pipelines. Combines keyword and semantic search with RRF
 /// fusion for each pipeline.
@@ -69,6 +78,10 @@ pub struct TripleHybridSearch {
 	pub(crate) config: HybridSearchConfig,
 	/// symbol lookup for vector result conversion
 	pub(crate) symbols: Vec<Symbol>,
+	/// pre-computed ref counts for hub penalty
+	pub(crate) ref_counts: HashMap<String, usize>,
+	/// pre-computed caller context strings
+	pub(crate) caller_contexts: HashMap<String, String>,
 }
 
 impl TripleHybridSearch {
@@ -77,8 +90,8 @@ impl TripleHybridSearch {
 		daemon_client: DaemonClient,
 	) -> RetrievalResult<Self> {
 		let keyword_index = TripleSearchIndex::in_memory()
-			.map_err(|e| {
-				RetrievalError::Embedding(e.to_string())
+			.map_err(|err| {
+				RetrievalError::Embedding(err.to_string())
 			})?;
 		let vector_store = TripleVectorStore::new();
 
@@ -88,6 +101,8 @@ impl TripleHybridSearch {
 			daemon_client,
 			config: HybridSearchConfig::default(),
 			symbols: Vec::new(),
+			ref_counts: HashMap::new(),
+			caller_contexts: HashMap::new(),
 		})
 	}
 
@@ -98,8 +113,10 @@ impl TripleHybridSearch {
 	) -> RetrievalResult<Self> {
 		let keyword_index =
 			TripleSearchIndex::open_or_create(base_path)
-				.map_err(|e| {
-					RetrievalError::Embedding(e.to_string())
+				.map_err(|err| {
+					RetrievalError::Embedding(
+						err.to_string(),
+					)
 				})?;
 		let vector_store =
 			TripleVectorStore::with_path(base_path)?;
@@ -110,6 +127,8 @@ impl TripleHybridSearch {
 			daemon_client,
 			config: HybridSearchConfig::default(),
 			symbols: Vec::new(),
+			ref_counts: HashMap::new(),
+			caller_contexts: HashMap::new(),
 		})
 	}
 
@@ -119,6 +138,15 @@ impl TripleHybridSearch {
 		config: HybridSearchConfig,
 	) -> Self {
 		self.config = config;
+		self
+	}
+
+	/// Set pre-computed ref counts for hub penalty
+	pub fn with_ref_counts(
+		mut self,
+		counts: HashMap<String, usize>,
+	) -> Self {
+		self.ref_counts = counts;
 		self
 	}
 }

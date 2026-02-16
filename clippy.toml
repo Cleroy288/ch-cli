@@ -1,0 +1,33 @@
+# ===========================
+# RUSTY NORM — clippy.toml
+# ===========================
+
+# --- Function constraints (42-norm style) ---
+too-many-lines-threshold = 25
+too-many-arguments-threshold = 4
+cognitive-complexity-threshold = 5
+
+# --- Nesting & complexity ---
+excessive-nesting-threshold = 4
+type-complexity-threshold = 100
+
+# --- Naming discipline ---
+single-char-binding-names-threshold = 3
+min-ident-chars-threshold = 2
+allowed-idents-below-min-chars = ["..", "io", "id", "ui", "fs", "No", "Ok", "'a", "'b", "'_"]
+disallowed-names = ["foo", "bar", "baz", "toto", "tata", "titi"]
+
+# --- Boolean discipline ---
+max-fn-params-bools = 2
+max-struct-bools = 2
+
+# --- Test discipline ---
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-dbg-in-tests = false
+allow-print-in-tests = false
+
+# --- Idiomatic Rust ---
+avoid-breaking-exported-api = false
+enum-variant-size-threshold = 200
+large-error-threshold = 128

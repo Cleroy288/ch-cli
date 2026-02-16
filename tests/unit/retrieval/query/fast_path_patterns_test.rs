@@ -1,4 +1,4 @@
-use ch_cli::retrieval::query::fast_path_patterns::{
+use rustean::retrieval::query::fast_path_patterns::{
 	FastPathIntent, PatternType,
 	CONCEPTUAL_PATTERNS, SOURCE_CODE_PATTERNS,
 	STOP_WORDS,

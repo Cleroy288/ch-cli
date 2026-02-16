@@ -15,9 +15,9 @@ pub fn handle_embed(
 			Ok(embeddings) => {
 				DaemonResponse::Embeddings(embeddings)
 			}
-			Err(e) => DaemonResponse::Error(format!(
+			Err(err) => DaemonResponse::Error(format!(
 				"embedding error: {}",
-				e
+				err
 			)),
 		},
 		None => DaemonResponse::Error(
@@ -36,9 +36,9 @@ pub fn handle_rerank(
 		Some(reranker) => {
 			match reranker.score_batch(query, &documents) {
 				Ok(scores) => DaemonResponse::Scores(scores),
-				Err(e) => DaemonResponse::Error(format!(
+				Err(err) => DaemonResponse::Error(format!(
 					"reranking error: {}",
-					e
+					err
 				)),
 			}
 		}
@@ -47,7 +47,7 @@ pub fn handle_rerank(
 			let scores: Vec<f32> = documents
 				.iter()
 				.enumerate()
-				.map(|(i, _)| 1.0 / (i as f32 + 1.0))
+				.map(|(idx, _)| 1.0 / (idx as f32 + 1.0))
 				.collect();
 			DaemonResponse::Scores(scores)
 		}
@@ -55,10 +55,15 @@ pub fn handle_rerank(
 }
 
 /// Handle expand request (query expansion via LLM)
+///
+/// Lazy-loads the Phi-3 model on first expand call.
 pub fn handle_expand(
 	daemon: &mut ModelDaemon,
 	query: &str,
 ) -> DaemonResponse {
+	let model_id =
+		daemon.config.expansion_model.clone();
+	daemon.interpreter.ensure_loaded(&model_id);
 	let spec = daemon.interpreter.interpret(query);
 	DaemonResponse::SearchSpec(spec)
 }

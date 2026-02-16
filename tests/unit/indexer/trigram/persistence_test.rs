@@ -5,7 +5,7 @@ use std::path::Path;
 
 use tempfile::tempdir;
 
-use ch_cli::indexer::trigram::{
+use rustean::indexer::trigram::{
 	Trigram, TrigramIndex, string_to_trigram, trigram_to_string,
 };
 

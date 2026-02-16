@@ -1,6 +1,7 @@
 //! Error types for CLI command execution.
 
 use super::index::IndexError;
+use super::memory::MemoryError;
 use super::retrieval::RetrievalError;
 use super::search::SearchError;
 
@@ -30,4 +31,7 @@ pub enum CommandError {
 
 	#[error("Retrieval error: {0}")]
 	RetrievalError(#[from] RetrievalError),
+
+	#[error("Memory error: {0}")]
+	MemoryError(#[from] MemoryError),
 }

@@ -1,4 +1,4 @@
-use ch_cli::retrieval::query::Phi3Model;
+use rustean::retrieval::query::Phi3Model;
 
 #[test]
 #[ignore] // requires model download (~4GB)

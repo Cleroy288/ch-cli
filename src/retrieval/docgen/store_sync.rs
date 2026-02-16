@@ -16,21 +16,30 @@ impl DocStore {
 		index_state: &IndexState,
 	) {
 		for (path, file_state) in &index_state.files {
-			let mtime = file_state.mtime;
-
-			for entry in self.entries.values_mut() {
-				if entry.file_path != *path {
-					continue;
-				}
-				if !entry.is_stale(mtime) {
-					continue;
-				}
-				entry.status = DocStatus::Pending;
-				entry.llm_doc = None;
-				entry.doc_embedding = None;
-			}
+			self.mark_stale_entries(
+				path, file_state.mtime,
+			);
 		}
 		self.update_completion_status();
+	}
+
+	/// Mark entries as stale if file was modified
+	fn mark_stale_entries(
+		&mut self,
+		path: &std::path::Path,
+		mtime: u64,
+	) {
+		for entry in self.entries.values_mut() {
+			if entry.file_path != *path {
+				continue;
+			}
+			if !entry.is_stale(mtime) {
+				continue;
+			}
+			entry.status = DocStatus::Pending;
+			entry.llm_doc = None;
+			entry.doc_embedding = None;
+		}
 	}
 
 	/// Create entries from symbols (without docs).
@@ -39,13 +48,13 @@ impl DocStore {
 		symbols: &[Symbol],
 	) {
 		for symbol in symbols {
-			let id = DocEntry::generate_id(
+			let entry_id = DocEntry::generate_id(
 				&symbol.location.file,
 				&symbol.name,
 				symbol.location.line,
 			);
 
-			if self.entries.contains_key(&id) {
+			if self.entries.contains_key(&entry_id) {
 				continue;
 			}
 
@@ -63,9 +72,8 @@ impl DocStore {
 				entry.signature = Some(sig.clone());
 			}
 
-			self.entries.insert(id, entry);
+			self.entries.insert(entry_id, entry);
 		}
 		self.update_completion_status();
 	}
 }
-

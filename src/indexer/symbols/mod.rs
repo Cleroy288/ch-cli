@@ -16,6 +16,6 @@ mod visibility;
 pub use content_type::ContentType;
 pub use document_type::{is_test_file, DocumentType};
 pub use kind::SymbolKind;
-pub use location::CodeLocation;
+pub use location::{ByteSpan, CodeLocation};
 pub use symbol::Symbol;
 pub use visibility::Visibility;

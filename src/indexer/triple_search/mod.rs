@@ -9,4 +9,7 @@ mod types;
 
 // Re-export all public types for backward compatibility
 pub use index::TripleSearchIndex;
-pub use types::{TripleIndexStats, TripleSearchResults};
+pub use types::{
+	TripleIndexStats, TripleLimits,
+	TripleSearchResults,
+};

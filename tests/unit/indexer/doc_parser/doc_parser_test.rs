@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 
-use ch_cli::indexer::doc_parser::DocParser;
+use rustean::indexer::doc_parser::DocParser;
 
 #[test]
 fn test_parse_simple_markdown() {

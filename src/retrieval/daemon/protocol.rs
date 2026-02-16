@@ -82,6 +82,15 @@ pub enum DaemonRequest {
 		/// symbol name to look up
 		symbol_name: String,
 	},
+	/// Get doc for a symbol in a specific file
+	GetDocByFile {
+		/// project root path
+		project_path: String,
+		/// file path relative to project root
+		file_path: String,
+		/// symbol name (leaf only, e.g. "add")
+		symbol_name: String,
+	},
 	/// Search documentation
 	SearchDocs {
 		/// project root path

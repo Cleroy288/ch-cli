@@ -9,11 +9,35 @@ use crate::indexer::Symbol;
 
 use super::error::IndexManagerResult;
 
+/// Input for merging new symbols and persisting state
+pub struct MergePersistInput<'inp> {
+	/// new symbols from parsed files
+	pub new_symbols: &'inp [Symbol],
+	/// parsed file results
+	pub file_results: &'inp [FileResult],
+	/// detected changes (None = full reindex)
+	pub changes: &'inp Option<ChangeSet>,
+	/// mutable index state to update
+	pub index_state: &'inp mut IndexState,
+}
+
+/// Result of change detection: (files, changes, state, existed)
+type ChangeDetectionResult = IndexManagerResult<
+	(Vec<PathBuf>, Option<ChangeSet>, IndexState, bool),
+>;
+
+/// Result of merge: (merged symbols, optional search index)
+type MergeResult =
+	IndexManagerResult<(Vec<Symbol>, Option<SearchIndex>)>;
+
+/// Batch of symbols grouped by file path
+type FileSymbolBatch = Vec<(PathBuf, Vec<Symbol>)>;
+
 /// Detect changes between current files and stored index state
 pub fn detect_changes(
 	root: &Path,
 	current_files: &[PathBuf],
-) -> IndexManagerResult<(Vec<PathBuf>, Option<ChangeSet>, IndexState, bool)> {
+) -> ChangeDetectionResult {
 	if IndexState::exists(root) {
 		// Load existing state
 		let state = IndexState::load(root)?;
@@ -39,51 +63,68 @@ pub fn detect_changes(
 	}
 }
 
-/// Merge new symbols with existing index and persist to disk
-pub fn merge_and_persist(
+/// Merge new symbols with existing index and persist
+pub fn merge_and_persist<'inp>(
 	root: &Path,
-	new_symbols: &[Symbol],
-	file_results: &[FileResult],
-	changes: &Option<ChangeSet>,
-	index_state: &mut IndexState,
-) -> IndexManagerResult<(Vec<Symbol>, Option<SearchIndex>)> {
+	mut input: MergePersistInput<'inp>,
+) -> MergeResult {
 	let tantivy_path = IndexState::tantivy_dir(root);
-	let search_index = SearchIndex::open_or_create(&tantivy_path)?;
+	let search_index =
+		SearchIndex::open_or_create(&tantivy_path)?;
 
-	// Collect files to delete and file results for batch update
-	let mut files_to_delete: Vec<PathBuf> = Vec::new();
+	let files_to_delete = collect_deleted(&input);
+	let file_symbols = collect_successful(&input);
 
-	// If incremental, collect deleted files
-	if let Some(ref change_set) = changes {
-		// Add deleted files to the delete list
-		files_to_delete.extend(change_set.deleted.iter().cloned());
+	update_index_state(&mut input)?;
 
-		// Update index state for deleted files
-		for deleted_path in &change_set.deleted {
-			index_state.remove_file(deleted_path);
-		}
-	}
+	search_index
+		.batch_update(&files_to_delete, &file_symbols)?;
 
-	// Collect successful file results for batch update
-	let file_symbols: Vec<(PathBuf, Vec<Symbol>)> = file_results
+	input.index_state.touch();
+	input.index_state.save()?;
+
+	Ok((input.new_symbols.to_vec(), Some(search_index)))
+}
+
+/// Collect deleted file paths from change set
+fn collect_deleted<'inp>(input: &MergePersistInput<'inp>) -> Vec<PathBuf> {
+	input
+		.changes
+		.as_ref()
+		.map(|change_set| change_set.deleted.clone())
+		.unwrap_or_default()
+}
+
+/// Collect successful parse results as (path, symbols) pairs
+fn collect_successful<'inp>(
+	input: &MergePersistInput<'inp>,
+) -> FileSymbolBatch {
+	input
+		.file_results
 		.iter()
-		.filter(|r| r.error.is_none())
-		.map(|r| (r.path.clone(), r.symbols.clone()))
-		.collect();
+		.filter(|res| res.error.is_none())
+		.map(|res| (res.path.clone(), res.symbols.clone()))
+		.collect()
+}
 
-	// Update index state for processed files
-	for result in file_results {
-		if result.error.is_none() {
-			index_state.update_file(&result.path, result.symbols.len())?;
+/// Update index state for deleted and processed files
+fn update_index_state<'inp>(
+	input: &mut MergePersistInput<'inp>,
+) -> IndexManagerResult<()> {
+	// Remove deleted files from state
+	if let Some(ref change_set) = input.changes {
+		for path in &change_set.deleted {
+			input.index_state.remove_file(path);
 		}
 	}
-
-	// Batch update Tantivy index (single commit!)
-	search_index.batch_update(&files_to_delete, &file_symbols)?;
-
-	// Update timestamp and save state
-	index_state.touch();
-	index_state.save()?;
-
-	Ok((new_symbols.to_vec(), Some(search_index)))
+	// Update state for processed files
+	for result in input.file_results {
+		if result.error.is_none() {
+			input.index_state.update_file(
+				&result.path,
+				result.symbols.len(),
+			)?;
+		}
+	}
+	Ok(())
 }

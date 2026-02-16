@@ -1,7 +1,7 @@
 //! Tests for ProjectType expected_language.
 
-use ch_cli::indexer::analyzer::ProjectType;
-use ch_cli::indexer::crawler::{DetectedLanguage, Language};
+use rustean::indexer::analyzer::ProjectType;
+use rustean::indexer::crawler::{DetectedLanguage, Language};
 
 /// Test expected_language returns Rust for RustCargo
 #[test]
@@ -30,7 +30,7 @@ fn test_expected_language_python() {
 #[test]
 fn test_expected_language_go() {
 	let result = ProjectType::GoMod.expected_language();
-	assert_eq!(result, Some(DetectedLanguage::Go));
+	assert_eq!(result, Some(DetectedLanguage::GoLang));
 }
 
 /// Test expected_language returns Java for Gradle

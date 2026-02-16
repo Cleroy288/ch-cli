@@ -11,12 +11,14 @@ mod error;
 mod helpers;
 mod incremental;
 mod indexing;
+mod indexing_helpers;
 mod parsing;
+mod parsing_rust;
 mod query;
 mod types;
 mod watching;
 
 // Re-export public types
-pub use builder::IndexManager;
+pub use builder::{IndexManager, IndexManagerFlags};
 pub use error::{IndexError, IndexManagerResult};
 pub use types::{IndexResult, IndexStats, ProgressCallback, WatchCallback};
