@@ -1,11 +1,12 @@
 //! Tests for Claude response line rendering.
 
 use rustean::domain::claude::{
-	ClaudeResponse, ClaudeUsage,
+	ClaudeResponse, ClaudeUsage, ToolActivity,
 };
 use rustean::ui::components::debug_render::{
 	build_claude_loading_lines,
 	build_claude_response_lines,
+	build_claude_streaming_lines,
 };
 
 /// Helper: build a test ClaudeResponse
@@ -13,16 +14,19 @@ fn make_response() -> ClaudeResponse {
 	ClaudeResponse {
 		result: "Hello from Claude".to_string(),
 		session_id: "s-1".to_string(),
+		subtype: "success".to_string(),
 		is_error: false,
 		num_turns: 1,
 		cost_usd: Some(0.005),
 		duration_ms: 2000,
+		duration_api_ms: 1500,
 		usage: ClaudeUsage {
 			input_tokens: 100,
 			output_tokens: 50,
 			cache_read_tokens: 0,
 			cache_creation_tokens: 0,
 		},
+		intent: Default::default(),
 	}
 }
 
@@ -42,9 +46,9 @@ fn lines_to_text(
 		.join("\n")
 }
 
-/// Response lines contain the result text
+/// Response lines show token counts
 #[test]
-fn response_lines_contain_result_text() {
+fn response_lines_show_token_counts() {
 	// Arrange
 	let resp = make_response();
 
@@ -54,12 +58,13 @@ fn response_lines_contain_result_text() {
 	let text = lines_to_text(&lines);
 
 	// Assert
-	assert!(text.contains("Hello from Claude"));
+	assert!(text.contains("\u{2191}100"));
+	assert!(text.contains("\u{2193}50"));
 }
 
-/// Response lines include usage footer
+/// Response lines show duration
 #[test]
-fn response_lines_include_usage_footer() {
+fn response_lines_show_duration() {
 	// Arrange
 	let resp = make_response();
 
@@ -69,9 +74,7 @@ fn response_lines_include_usage_footer() {
 	let text = lines_to_text(&lines);
 
 	// Assert
-	assert!(text.contains("tokens:"));
-	assert!(text.contains("turns:"));
-	assert!(text.contains("time:"));
+	assert!(text.contains("2.0s"));
 }
 
 /// None response returns empty vec
@@ -88,9 +91,65 @@ fn none_response_returns_empty() {
 #[test]
 fn loading_lines_contain_thinking() {
 	// Act
-	let lines = build_claude_loading_lines();
+	let lines = build_claude_loading_lines(None);
 	let text = lines_to_text(&lines);
 
 	// Assert
 	assert!(text.contains("Thinking"));
+}
+
+/// Loading lines show tool name when active
+#[test]
+fn loading_lines_show_tool_status() {
+	// Arrange
+	let tool = ToolActivity {
+		tool_name: "Read".into(),
+		summary: "src/main.rs".into(),
+	};
+
+	// Act
+	let lines =
+		build_claude_loading_lines(Some(&tool));
+	let text = lines_to_text(&lines);
+
+	// Assert
+	assert!(text.contains("Read"));
+	assert!(text.contains("src/main.rs"));
+}
+
+/// Streaming lines show tool status above text
+#[test]
+fn streaming_lines_show_tool_status() {
+	// Arrange
+	let tool = ToolActivity {
+		tool_name: "Grep".into(),
+		summary: "auth".into(),
+	};
+
+	// Act
+	let lines = build_claude_streaming_lines(
+		"results here",
+		Some(&tool),
+	);
+	let text = lines_to_text(&lines);
+
+	// Assert
+	assert!(text.contains("Grep"));
+	assert!(text.contains("auth"));
+	assert!(text.contains("results here"));
+}
+
+/// Streaming lines without tool show just text
+#[test]
+fn streaming_lines_no_tool_show_text_only() {
+	// Act
+	let lines = build_claude_streaming_lines(
+		"hello world",
+		None,
+	);
+	let text = lines_to_text(&lines);
+
+	// Assert
+	assert!(text.contains("hello world"));
+	assert!(!text.contains("Read"));
 }

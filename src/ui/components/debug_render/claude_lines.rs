@@ -16,7 +16,7 @@ pub fn build_claude_response_lines(
 	let Some(resp) = response else {
 		return Vec::new();
 	};
-	vec![chrome::footer_line(resp)]
+	chrome::meta_lines(resp)
 }
 
 pub fn build_claude_loading_lines(
