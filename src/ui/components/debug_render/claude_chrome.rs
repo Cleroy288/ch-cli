@@ -7,10 +7,10 @@ use crate::domain::claude::{
 use crate::ui::components::spinner;
 use crate::ui::styles::colors;
 
-/// `  Assistant`
+/// `  ✦ Assistant`
 pub(super) fn role_line() -> Line<'static> {
 	Line::from(Span::styled(
-		"  Assistant",
+		"  \u{2726} Assistant",
 		Style::default()
 			.fg(colors::TOOL_BLUE)
 			.add_modifier(Modifier::BOLD),
@@ -69,8 +69,10 @@ pub(super) fn meta_lines(
 ) -> Vec<Line<'static>> {
 	let dim = Style::default().fg(colors::DIM_TEXT);
 	let sep = Style::default().fg(colors::SEPARATOR);
+	let ok =
+		Style::default().fg(colors::SUCCESS);
 	let mut spans = vec![
-		Span::styled("  \u{2500}\u{2500} ", sep),
+		Span::styled("  \u{2713} ", ok),
 		Span::styled(
 			format!(
 				"\u{2191}{}", resp.usage.input_tokens,
@@ -101,9 +103,6 @@ pub(super) fn meta_lines(
 			format!("${:.4}", cost), dim,
 		));
 	}
-	spans.push(Span::styled(
-		"  \u{2500}\u{2500}", sep,
-	));
 	vec![
 		Line::from(""),
 		Line::from(spans),

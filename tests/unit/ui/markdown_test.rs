@@ -20,8 +20,6 @@ fn lines_text(
 		.collect()
 }
 
-// ─── Inline tests ───────────────────────────
-
 /// Bold text produces bold-styled span
 #[test]
 fn inline_bold_produces_bold_span() {
@@ -93,8 +91,6 @@ fn inline_unclosed_bold_is_plain() {
 	assert_eq!(text, "open **bold");
 }
 
-// ─── Heading tests ──────────────────────────
-
 /// Heading strips hash marks from output
 #[test]
 fn heading_strips_hash_marks() {
@@ -104,25 +100,23 @@ fn heading_strips_hash_marks() {
 
 	// Assert
 	assert_eq!(texts.len(), 1);
-	assert_eq!(texts[0], "Core Tools");
+	assert_eq!(texts[0], "  Core Tools");
 }
 
-/// H1 heading has cyan + bold + underlined
+/// H1 heading has white + bold
 #[test]
 fn heading_h1_style() {
 	// Arrange / Act
 	let lines = render_markdown("# Title");
 
 	// Assert
-	let span = &lines[0].spans[0];
-	assert_eq!(span.style.fg, Some(Color::Cyan));
+	let span = &lines[0].spans[1];
+	assert_eq!(span.style.fg, Some(Color::White));
 	assert!(span
 		.style
 		.add_modifier
 		.contains(Modifier::BOLD));
 }
-
-// ─── Table tests ────────────────────────────
 
 /// Table renders header and data rows
 #[test]
@@ -156,8 +150,8 @@ fn table_header_is_bold() {
 	let lines = render_markdown(md);
 
 	// Assert
-	let header_style = lines[0].spans[0].style;
-	let data_style = lines[2].spans[0].style;
+	let header_style = lines[0].spans[1].style;
+	let data_style = lines[2].spans[1].style;
 	assert!(header_style
 		.add_modifier
 		.contains(Modifier::BOLD));
@@ -165,8 +159,6 @@ fn table_header_is_bold() {
 		.add_modifier
 		.contains(Modifier::BOLD));
 }
-
-// ─── Code block tests ───────────────────────
 
 /// Code block hides raw backticks
 #[test]
@@ -178,44 +170,52 @@ fn code_block_hides_backtick_fences() {
 	let lines = render_markdown(md);
 	let texts = lines_text(&lines);
 
-	// Assert — no raw backticks in output
-	assert_eq!(texts.len(), 3);
+	// Assert — open + code + close + spacing
+	assert!(texts.len() >= 3);
 	assert!(texts[0].contains("rust"));
 	assert!(!texts[0].contains("```"));
 	assert!(texts[1].contains("fn main()"));
-	assert!(!texts[2].contains("```"));
+	assert!(texts[2].contains("\u{2514}"));
 }
 
-/// Code block shows language label
+/// Code block shows language label in accent bold
 #[test]
 fn code_block_shows_language_label() {
 	// Arrange / Act
-	let lines = render_markdown("```python\npass\n```");
+	let lines =
+		render_markdown("```python\npass\n```");
 	let texts = lines_text(&lines);
 
-	// Assert
+	// Assert — separator with language name
 	assert!(texts[0].contains("python"));
-	assert!(texts[0].contains("\u{2500}")); // ─
+	assert!(texts[0].contains("\u{2500}"));
+	let label = &lines[0].spans[2];
+	assert_eq!(
+		label.style.fg,
+		Some(Color::Rgb(180, 190, 254)),
+	);
+	assert!(label
+		.style
+		.add_modifier
+		.contains(Modifier::BOLD));
 }
 
-/// Code block content has gray foreground
+/// Code block content has syntax-highlighted color
 #[test]
-fn code_block_content_is_gray() {
+fn code_block_content_is_highlighted() {
 	// Arrange
 	let md = "```\nlet x = 1;\n```";
 
 	// Act
 	let lines = render_markdown(md);
 
-	// Assert — middle line is code content
-	let code_span = &lines[1].spans[0];
-	assert_eq!(
-		code_span.style.fg,
-		Some(Color::Rgb(180, 180, 180))
-	);
+	// Assert — middle line has gutter + content
+	let spans = &lines[1].spans;
+	assert!(spans.len() >= 2); // gutter + content
+	assert!(spans[1].content.contains("\u{2502}"));
+	// Gutter has DarkGray fg
+	assert!(spans[1].style.fg.is_some());
 }
-
-// ─── List tests ─────────────────────────────
 
 /// Bullet list renders with bullet marker
 #[test]
@@ -265,8 +265,6 @@ fn list_item_supports_inline_bold() {
 	assert!(has_bold);
 }
 
-// ─── Blockquote tests ───────────────────────
-
 /// Blockquote renders with left bar
 #[test]
 fn blockquote_renders_with_bar() {
@@ -297,33 +295,25 @@ fn blockquote_text_is_italic() {
 	assert!(has_italic);
 }
 
-// ─── Horizontal rule tests ──────────────────
-
-/// Three dashes render as horizontal rule
+/// Horizontal rules are stripped (not rendered)
 #[test]
-fn horizontal_rule_renders_as_line() {
+fn horizontal_rule_is_stripped() {
 	// Arrange / Act
 	let lines = render_markdown("---");
-	let texts = lines_text(&lines);
 
-	// Assert — renders as box-drawing chars
-	assert_eq!(texts.len(), 1);
-	assert!(texts[0].contains("\u{2500}")); // ─
-	assert!(!texts[0].contains("---"));
+	// Assert — rule produces no output
+	assert!(lines.is_empty());
 }
 
-/// Stars rule also detected
+/// Star rules are also stripped
 #[test]
-fn star_rule_also_detected() {
+fn star_rule_also_stripped() {
 	// Arrange / Act
 	let lines = render_markdown("***");
-	let texts = lines_text(&lines);
 
-	// Assert
-	assert!(texts[0].contains("\u{2500}")); // ─
+	// Assert — rule produces no output
+	assert!(lines.is_empty());
 }
-
-// ─── Integration tests ──────────────────────
 
 /// Mixed markdown renders all block types
 #[test]

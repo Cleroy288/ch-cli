@@ -1,67 +1,50 @@
 use ratatui::style::{Color, Modifier, Style};
 
-/// Color constants for consistent UI theming
-///
-/// Rust-inspired dark orange palette with
-/// monochrome accents for a tech aesthetic.
 pub mod colors {
 	use super::Color;
 
-	/// Rust orange — primary brand color
-	pub const RUST_ORANGE: Color =
-		Color::Rgb(183, 65, 14);
-
-	/// Darker orange for secondary elements
-	pub const DARK_ORANGE: Color =
-		Color::Rgb(140, 50, 10);
-
-	/// Muted amber for highlights
-	pub const AMBER: Color =
-		Color::Rgb(200, 120, 40);
-
-	/// Primary accent for titles
-	pub const TITLE: Color = RUST_ORANGE;
-
-	/// Color for normal input text
-	pub const INPUT_TEXT: Color = AMBER;
-
-	/// Background color for file references
-	pub const FILE_REF_BG: Color = DARK_ORANGE;
-
-	/// Background color for folder references
+	pub const ACCENT: Color =
+		Color::Rgb(180, 190, 254);
+	pub const ACCENT_DIM: Color =
+		Color::Rgb(137, 180, 250);
+	pub const TEXT_LIGHT: Color =
+		Color::Rgb(205, 214, 244);
+	pub const TOOL_BLUE: Color =
+		Color::Rgb(137, 180, 250);
+	pub const STATUS_DIM: Color =
+		Color::Rgb(127, 132, 156);
+	pub const TITLE: Color = ACCENT;
+	pub const INPUT_TEXT: Color = TEXT_LIGHT;
+	pub const FILE_REF_BG: Color =
+		Color::Rgb(50, 50, 80);
 	pub const FOLDER_REF_BG: Color =
-		Color::Rgb(80, 80, 80);
-
-	/// Color for inactive/placeholder text
-	pub const PLACEHOLDER: Color = Color::DarkGray;
-
-	/// Color for picker UI elements
-	pub const PICKER: Color = AMBER;
-
-	/// Color for debug panel
+		Color::Rgb(45, 50, 65);
+	pub const PLACEHOLDER: Color =
+		Color::Rgb(88, 91, 112);
+	pub const PICKER: Color = TEXT_LIGHT;
 	pub const DEBUG: Color = Color::DarkGray;
-
-	/// Color for message headers
-	pub const MESSAGE_HEADER: Color = AMBER;
-
-	/// Color for segment labels
+	pub const MESSAGE_HEADER: Color = ACCENT_DIM;
 	pub const SEGMENT_LABEL: Color = Color::Gray;
-
-	/// Color for full paths in debug view
 	pub const PATH_DISPLAY: Color = Color::Gray;
-
-	/// Color for arrows and separators
-	pub const SEPARATOR: Color = Color::DarkGray;
-
-	/// Border color for panels
-	pub const BORDER: Color = Color::Rgb(60, 60, 60);
-
-	/// Subtle text for secondary info
+	pub const SEPARATOR: Color =
+		Color::Rgb(69, 71, 90);
+	pub const BORDER: Color =
+		Color::Rgb(49, 50, 68);
+	pub const TOOL_NAME: Color = Color::White;
 	pub const DIM_TEXT: Color =
-		Color::Rgb(100, 100, 100);
+		Color::Rgb(108, 112, 134);
+	pub const INLINE_CODE_BG: Color =
+		Color::Rgb(30, 30, 46);
+	pub const SUCCESS: Color =
+		Color::Rgb(166, 227, 161);
+	pub const USER_LABEL: Color =
+		Color::Rgb(249, 226, 175);
+	pub const BLOCKQUOTE_BAR: Color = SEPARATOR;
+	pub const FOCUS: Color = Color::Yellow;
+	pub const JIRA_IN_PROGRESS: Color =
+		Color::Rgb(66, 133, 244);
 }
 
-/// Style for file references (bold on dark orange bg)
 pub fn file_reference_style() -> Style {
 	Style::default()
 		.fg(Color::White)
@@ -69,7 +52,6 @@ pub fn file_reference_style() -> Style {
 		.add_modifier(Modifier::BOLD)
 }
 
-/// Style for folder references (bold on gray bg)
 pub fn folder_reference_style() -> Style {
 	Style::default()
 		.fg(Color::White)
@@ -77,15 +59,13 @@ pub fn folder_reference_style() -> Style {
 		.add_modifier(Modifier::BOLD)
 }
 
-/// Style for selected picker items
 pub fn picker_selected_style() -> Style {
 	Style::default()
 		.fg(Color::Black)
-		.bg(colors::RUST_ORANGE)
+		.bg(colors::ACCENT)
 		.add_modifier(Modifier::BOLD)
 }
 
-/// Style for selected file list items
 pub fn file_list_selected_style() -> Style {
 	Style::default()
 		.fg(Color::Black)
@@ -93,20 +73,18 @@ pub fn file_list_selected_style() -> Style {
 		.add_modifier(Modifier::BOLD)
 }
 
-/// Display a goodbye message after terminal restore
 pub fn show_goodbye_message() {
 	use std::io::Write;
 	let mut out = std::io::stdout();
 	let _ = writeln!(out);
-	let _ = writeln!(out);
 	let _ = writeln!(
 		out,
-		"  \x1b[38;2;183;65;14m\u{2500}\u{2500}\u{2500} \
+		"  \x1b[38;2;180;190;254m\u{2500}\u{2500}\u{2500} \
 		rustean \u{2500}\u{2500}\u{2500}\x1b[0m"
 	);
 	let _ = writeln!(
 		out,
-		"  \x1b[38;2;100;100;100m\
+		"  \x1b[38;2;108;112;134m\
 		See you next time.\x1b[0m"
 	);
 	let _ = writeln!(out);

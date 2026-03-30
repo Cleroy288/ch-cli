@@ -16,7 +16,7 @@ const BAR_WIDTH: usize = 10;
 const BLOCK_FULL: &str = "\u{2588}";
 const BLOCK_EMPTY: &str = "\u{2591}";
 /// Dim color for empty bar blocks.
-const BAR_DIM: Color = Color::Rgb(60, 60, 70);
+const BAR_DIM: Color = Color::Rgb(69, 71, 90);
 
 /// Status bar — left: model info or message;
 /// right: context bar (always visible).
@@ -63,9 +63,9 @@ fn render_context_bar(
 	let filled = (pct as usize * BAR_WIDTH) / 100;
 	let empty = BAR_WIDTH.saturating_sub(filled);
 	let color = match pct {
-		0..=50 => Color::Rgb(130, 180, 100),
-		51..=75 => Color::Rgb(200, 180, 80),
-		_ => Color::Rgb(200, 90, 80),
+		0..=50 => Color::Rgb(166, 227, 161),
+		51..=75 => Color::Rgb(249, 226, 175),
+		_ => Color::Rgb(243, 139, 168),
 	};
 	let spans = vec![
 		Span::raw(" "),

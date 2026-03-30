@@ -1,92 +1,56 @@
-//! Message-level rendering for debug panel.
-//!
-//! Builds the styled lines for a single UserMessage:
-//! header, raw input, segments label, and stats.
-
 use ratatui::{
-    style::{Modifier, Style},
-    text::{Line, Span},
+	style::{Modifier, Style},
+	text::{Line, Span},
 };
 
 use crate::message::UserMessage;
+use crate::ui::markdown::render_markdown;
 use crate::ui::styles::colors;
 
-use super::segment_lines::build_segment_line;
+use super::claude_chrome;
 
-/// Build display lines for a single message.
 pub(super) fn build_message_lines(
-    message: &UserMessage,
-    index: usize,
+	message: &UserMessage,
 ) -> Vec<Line<'static>> {
-    let mut lines = Vec::new();
-    lines.push(build_msg_header_line(index));
-    lines.push(build_raw_input_line(message));
-    lines.push(Line::from(Span::styled(
-        "Parsed Segments:",
-        Style::default().fg(colors::SEGMENT_LABEL),
-    )));
-    append_segment_lines(&mut lines, message);
-    lines.push(build_stats_line(message));
-    lines.push(Line::from(""));
-    lines
+	let mut lines = vec![
+		user_role_line(),
+		content_line(message),
+		Line::from(""),
+	];
+	if let Some(ref resp) = message.response {
+		lines.extend(response_lines(resp));
+	}
+	lines
 }
 
-/// Build the message header line
-fn build_msg_header_line(
-    index: usize,
+/// User role label with glyph.
+fn user_role_line() -> Line<'static> {
+	Line::from(Span::styled(
+		"  \u{25C6} You",
+		Style::default()
+			.fg(colors::USER_LABEL)
+			.add_modifier(Modifier::BOLD),
+	))
+}
+
+/// Message content line
+fn content_line(
+	message: &UserMessage,
 ) -> Line<'static> {
-    Line::from(Span::styled(
-        format!("--- Message {} ---", index),
-        Style::default()
-            .fg(colors::MESSAGE_HEADER)
-            .add_modifier(Modifier::BOLD),
-    ))
+	Line::from(Span::styled(
+		format!("  {}", message.raw_input),
+		Style::default().fg(colors::INPUT_TEXT),
+	))
 }
 
-/// Build the raw input display line
-fn build_raw_input_line(
-    message: &UserMessage,
-) -> Line<'static> {
-    Line::from(vec![
-        Span::styled(
-            "Raw: ",
-            Style::default().fg(colors::SEGMENT_LABEL),
-        ),
-        Span::styled(
-            message.raw_input.clone(),
-            Style::default().fg(colors::INPUT_TEXT),
-        ),
-    ])
-}
-
-/// Append individual segment lines
-fn append_segment_lines(
-    lines: &mut Vec<Line<'static>>,
-    message: &UserMessage,
-) {
-    for (idx, seg) in
-        message.segments.iter().enumerate()
-    {
-        lines.push(build_segment_line(seg, idx));
-    }
-}
-
-/// Build the stats line
-fn build_stats_line(
-    message: &UserMessage,
-) -> Line<'static> {
-    Line::from(vec![
-        Span::styled(
-            "  Stats: ",
-            Style::default().fg(colors::SEGMENT_LABEL),
-        ),
-        Span::styled(
-            format!(
-                "{} files, {} folders",
-                message.file_count(),
-                message.folder_count(),
-            ),
-            Style::default().fg(colors::PLACEHOLDER),
-        ),
-    ])
+fn response_lines(
+	text: &str,
+) -> Vec<Line<'static>> {
+	let mut lines = vec![
+		Line::from(""),
+		claude_chrome::role_line(),
+	];
+	lines.extend(render_markdown(text));
+	lines.push(Line::from(""));
+	lines
 }
