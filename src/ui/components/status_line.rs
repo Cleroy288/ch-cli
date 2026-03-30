@@ -59,9 +59,7 @@ fn render_context_bar(
 	area: Rect,
 	app: &App,
 ) {
-	let Some(pct) = app.context_percent() else {
-		return;
-	};
+	let pct = app.context_percent().unwrap_or(0);
 	let filled = (pct as usize * BAR_WIDTH) / 100;
 	let empty = BAR_WIDTH.saturating_sub(filled);
 	let color = match pct {
