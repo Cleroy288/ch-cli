@@ -36,7 +36,7 @@ SCRATCH.md
 TODO.md
 PLAN.md
 
-# Claude Code local state (worktrees, ad-hoc plans, project agents)
+# Local agent state (worktrees, ad-hoc plans, project agents)
 .claude/worktrees/
 .claude/plan.md
 .claude/agents/

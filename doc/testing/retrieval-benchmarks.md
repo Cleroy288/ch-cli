@@ -10,7 +10,7 @@ This document explains how to test and benchmark the rustean code retrieval syst
 
 - Rust toolchain installed
 - rustean project cloned
-- (Optional) Augment MCP server configured in Claude Code
+- (Optional) Augment MCP server configured in your MCP client
 
 ---
 
@@ -174,9 +174,9 @@ done
 
 ## 5. Comparing with Augment MCP
 
-### Using Claude Code
+### Using an MCP client
 
-In Claude Code, use the Augment MCP codebase-retrieval tool:
+From any MCP client, use the Augment MCP codebase-retrieval tool:
 
 ```
 Use codebase-retrieval to find: "Where is BgeEmbedder defined?"

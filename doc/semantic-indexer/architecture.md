@@ -6,7 +6,7 @@
 
 ## Project Goal
 
-Build a Claude Code-like CLI tool that allows users to:
+Build a semantic, terminal-based coding assistant that allows users to:
 - Reference files and folders interactively
 - Parse and store user requests with context
 - Maintain conversation history
@@ -252,7 +252,7 @@ See `05_FUTURE_ROADMAP.md` for detailed future enhancements.
 
 ## Conclusion
 
-This project successfully creates a solid foundation for a Claude Code-like CLI tool. The clean architecture, robust parsing system, and professional UI make it ready for advanced features like AI integration, code analysis, and automated operations.
+This project provides a solid foundation for a semantic terminal coding assistant. The clean architecture, robust parsing system, and professional UI make it ready for advanced features like AI integration, code analysis, and automated operations.
 
 **Total Development Time:** ~1 session
 **Lines of Code:** ~5,000 (including docs)
