@@ -1,5 +1,3 @@
-//! Extraction of Interaction from Tantivy documents.
-
 use tantivy::TantivyDocument;
 
 use crate::domain::memory::{

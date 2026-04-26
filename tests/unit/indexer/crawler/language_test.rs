@@ -4,128 +4,74 @@ use std::path::Path;
 
 use rustean::indexer::crawler::Language;
 
-/// Test extensions returns "rs" for Rust
+/// from_extension maps known extensions to languages
 #[test]
-fn test_extensions_rust() {
-	// extensions for Rust language
-	let exts = Language::Rust.extensions();
+fn from_extension_table() {
+	let cases: &[(&str, Option<Language>)] = &[
+		("rs", Some(Language::Rust)),
+		("md", Some(Language::Markdown)),
+		("py", None),
+		("xyz", None),
+	];
 
-	assert_eq!(exts, &["rs"]);
+	for (ext, expected) in cases {
+		assert_eq!(
+			Language::from_extension(ext),
+			*expected,
+			"from_extension({ext:?})",
+		);
+	}
 }
 
-/// Test extensions returns "md" and "txt" for Markdown
+/// from_path maps file paths to languages
 #[test]
-fn test_extensions_markdown() {
-	// extensions for Markdown language
-	let exts = Language::Markdown.extensions();
+fn from_path_table() {
+	let cases: &[(&str, Option<Language>)] = &[
+		("src/main.rs", Some(Language::Rust)),
+		("README.md", Some(Language::Markdown)),
+		("script.py", None),
+		("Makefile", None),
+	];
 
-	assert_eq!(exts, &["md", "txt"]);
+	for (path, expected) in cases {
+		assert_eq!(
+			Language::from_path(Path::new(path)),
+			*expected,
+			"from_path({path:?})",
+		);
+	}
 }
 
-/// Test from_extension detects Rust from "rs"
+/// extensions returns the right set per language
 #[test]
-fn test_from_extension_rs() {
-	// detect language from "rs"
-	let result = Language::from_extension("rs");
-
-	assert_eq!(result, Some(Language::Rust));
+fn extensions_per_language() {
+	assert_eq!(
+		Language::Rust.extensions(),
+		&["rs"],
+	);
+	assert_eq!(
+		Language::Markdown.extensions(),
+		&["md", "txt"],
+	);
 }
 
-/// Test from_extension detects Markdown from "md"
+/// display_name returns the human-readable name
 #[test]
-fn test_from_extension_md() {
-	// detect language from "md"
-	let result = Language::from_extension("md");
-
-	assert_eq!(result, Some(Language::Markdown));
+fn display_name_per_language() {
+	assert_eq!(Language::Rust.display_name(), "Rust");
+	assert_eq!(
+		Language::Markdown.display_name(),
+		"Markdown",
+	);
 }
 
-/// Test from_extension detects Python as None (unsupported)
+/// all_supported lists every supported variant
 #[test]
-fn test_from_extension_py() {
-	// detect language from "py"
-	let result = Language::from_extension("py");
-
-	assert_eq!(result, None);
-}
-
-/// Test from_extension returns None for unknown extension
-#[test]
-fn test_from_extension_unknown() {
-	// detect language from unknown ext
-	let result = Language::from_extension("xyz");
-
-	assert_eq!(result, None);
-}
-
-/// Test display_name returns "Rust" for Rust
-#[test]
-fn test_display_name_rust() {
-	// display name for Rust
-	let name = Language::Rust.display_name();
-
-	assert_eq!(name, "Rust");
-}
-
-/// Test display_name returns "Markdown" for Markdown
-#[test]
-fn test_display_name_markdown() {
-	// display name for Markdown
-	let name = Language::Markdown.display_name();
-
-	assert_eq!(name, "Markdown");
-}
-
-/// Test from_path detects Rust from .rs file
-#[test]
-fn test_from_path_rust() {
-	// Rust source file
-	let path = Path::new("src/main.rs");
-	// detect language from path
-	let result = Language::from_path(path);
-
-	assert_eq!(result, Some(Language::Rust));
-}
-
-/// Test from_path detects Markdown from .md file
-#[test]
-fn test_from_path_markdown() {
-	// Markdown file
-	let path = Path::new("README.md");
-	// detect language from path
-	let result = Language::from_path(path);
-
-	assert_eq!(result, Some(Language::Markdown));
-}
-
-/// Test from_path returns None for unsupported extension
-#[test]
-fn test_from_path_unsupported() {
-	// Python file (unsupported)
-	let path = Path::new("script.py");
-	// detect language from path
-	let result = Language::from_path(path);
-
-	assert_eq!(result, None);
-}
-
-/// Test from_path returns None for path without extension
-#[test]
-fn test_from_path_no_extension() {
-	// file without extension
-	let path = Path::new("Makefile");
-	// detect language from path
-	let result = Language::from_path(path);
-
-	assert_eq!(result, None);
-}
-
-/// Test all_supported returns all supported languages
-#[test]
-fn test_all_supported() {
-	// get all supported languages
+fn all_supported_returns_all() {
 	let langs = Language::all_supported();
 
-	assert_eq!(langs, &[Language::Rust, Language::Markdown]);
-	assert_eq!(langs.len(), 2);
+	assert_eq!(
+		langs,
+		&[Language::Rust, Language::Markdown],
+	);
 }

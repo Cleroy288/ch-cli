@@ -1,36 +1,26 @@
-//! Symbol struct representing a code element extracted from source.
-
 use std::fmt;
 
 use super::kind::SymbolKind;
 use super::location::CodeLocation;
 use super::visibility::Visibility;
 
-/// A code symbol extracted from source code.
 #[derive(Debug, Clone)]
 pub struct Symbol {
-	/// Name of the symbol
 	pub name: String,
-	/// Kind of symbol
 	pub kind: SymbolKind,
-	/// Location in source code
 	pub location: CodeLocation,
-	/// Visibility modifier
 	pub visibility: Visibility,
-	/// Function/method signature (if applicable)
 	pub signature: Option<String>,
-	/// Documentation comment (if any)
 	pub doc_comment: Option<String>,
-	/// Fully qualified name (e.g., "module::struct::method")
+	/// e.g. "module::struct::method"
 	pub fqn: Option<String>,
-	/// Parent symbol name (for methods, fields, variants)
+	/// For methods, fields, variants
 	pub parent: Option<String>,
-	/// Full content for documentation chunks
+	/// Full content for doc chunks
 	pub content: Option<String>,
 }
 
 impl Symbol {
-	/// Create a new Symbol with required fields
 	pub fn new(
 		name: String,
 		kind: SymbolKind,

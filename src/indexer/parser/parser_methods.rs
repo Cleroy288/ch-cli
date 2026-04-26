@@ -1,14 +1,9 @@
-//! Additional RustParser methods.
-//!
-//! Contains language accessor and doc extraction delegation methods.
-
 use tree_sitter::Language;
 
 use super::doc_extraction::{extract_item_doc, extract_module_docs};
 use super::rust_parser::RustParser;
 
 impl RustParser {
-	/// Get the Tree-sitter language.
 	pub fn language(&self) -> &Language {
 		&self.language
 	}

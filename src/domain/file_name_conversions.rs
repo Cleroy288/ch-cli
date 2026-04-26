@@ -1,5 +1,3 @@
-//! From/AsRef implementations for FileName.
-
 use super::FileName;
 
 impl From<String> for FileName {

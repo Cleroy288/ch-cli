@@ -1,8 +1,12 @@
-//! File statistics display
-
 use std::io::{self, Write};
 
-use crossterm::{execute, style::*};
+use crossterm::{
+	execute,
+	style::{
+		Color, Print, ResetColor,
+		SetForegroundColor,
+	},
+};
 
 /// Show file statistics
 pub fn show_file_stats(

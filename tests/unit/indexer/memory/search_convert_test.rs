@@ -8,7 +8,7 @@ use rustean::indexer::memory::search_schema::{
 
 use crate::helpers::factories::make_interaction;
 
-/// Test interaction_to_doc creates a document
+/// interaction_to_doc populates document fields
 #[test]
 fn interaction_to_doc_creates_doc() {
 	// Arrange
@@ -32,7 +32,7 @@ fn interaction_to_doc_creates_doc() {
 	);
 }
 
-/// Test flatten_response extracts text
+/// flatten_response extracts text from all variants
 #[test]
 fn flatten_response_all_variants() {
 	let cases = [
@@ -57,7 +57,7 @@ fn flatten_response_all_variants() {
 	}
 }
 
-/// Test collect_files joins with spaces
+/// collect_files joins file paths with spaces
 #[test]
 fn collect_files_joins_paths() {
 	// Arrange

@@ -1,8 +1,3 @@
-//! Symbol processing functions.
-//!
-//! Contains the logic for processing tree-sitter
-//! query matches into Symbol objects.
-
 use std::path::Path;
 
 use tree_sitter::Query;
@@ -61,7 +56,6 @@ fn extract_captures<'src>(
 	data
 }
 
-/// Apply a single capture to the data struct
 #[allow(clippy::cognitive_complexity)]
 fn apply_capture<'src>(
 	data: &mut CaptureData<'src>,

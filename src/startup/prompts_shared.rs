@@ -1,8 +1,3 @@
-//! Shared display helpers for startup prompts.
-//!
-//! Reused by both update prompts (prompts.rs) and
-//! first-launch prompts (prompts_analysis.rs).
-
 use std::io::{self, Write};
 
 use crossterm::{
@@ -13,7 +8,6 @@ use crossterm::{
     terminal::{self, ClearType},
 };
 
-/// Clear screen and show the rustean header
 pub(super) fn clear_and_show_header(
     stdout: &mut io::Stdout,
 ) -> io::Result<()> {
@@ -60,7 +54,7 @@ pub(super) fn display_ynq_buttons(
     )
 }
 
-/// Display "Press Y, N, or Q" with loading hint
+/// Display "Press Y, N, or Q" hint
 pub(super) fn display_loading_hint(
     stdout: &mut io::Stdout,
 ) -> io::Result<()> {
@@ -69,13 +63,6 @@ pub(super) fn display_loading_hint(
         SetForegroundColor(Color::DarkGrey),
         Print("  Press Y, N, or Q: "),
         ResetColor,
-        Print("\n"),
-        SetForegroundColor(Color::DarkGrey),
-        Print(
-            "  \u{2504} Loading ML models \
-            in background...",
-        ),
-        ResetColor
     )?;
     stdout.flush()
 }

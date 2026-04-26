@@ -26,7 +26,7 @@ impl IndexManager {
 			Ok(src) => src,
 			Err(err) => {
 				let parse_err =
-					crate::indexer::parser::ParseError::IoError(err);
+					crate::indexer::parser::ParseError::Io(err);
 				return error_result(path, parse_err);
 			}
 		};
@@ -53,12 +53,9 @@ fn enrich_with_docs(
 	symbols: &mut [Symbol],
 ) {
 	for symbol in symbols.iter_mut() {
-		let doc = RustParser::extract_item_doc(
+		symbol.doc_comment = RustParser::extract_item_doc(
 			source, symbol.location.line,
 		);
-		if let Some(doc) = doc {
-			symbol.doc_comment = Some(doc);
-		}
 	}
 }
 

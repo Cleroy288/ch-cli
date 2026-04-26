@@ -1,5 +1,3 @@
-//! Conversion from Interaction to Tantivy document.
-
 use tantivy::TantivyDocument;
 
 use crate::domain::memory::{
@@ -9,7 +7,6 @@ use crate::domain::memory_helpers;
 
 use super::search_schema::MemoryFields;
 
-/// Convert an Interaction to a Tantivy document
 pub fn interaction_to_doc(
 	fields: &MemoryFields,
 	interaction: &Interaction,
@@ -33,7 +30,6 @@ pub fn interaction_to_doc(
 	doc
 }
 
-/// Add response-related fields to the document
 fn add_response_fields(
 	doc: &mut TantivyDocument,
 	fields: &MemoryFields,
@@ -53,7 +49,6 @@ fn add_response_fields(
 	doc.add_text(fields.files, &files_str);
 }
 
-/// Flatten AI response variants to plain text
 pub fn flatten_response(
 	response: &AiResponse,
 ) -> String {
@@ -66,7 +61,6 @@ pub fn flatten_response(
 	}
 }
 
-/// Collect all referenced files as a string
 pub fn collect_files(
 	interaction: &Interaction,
 ) -> String {

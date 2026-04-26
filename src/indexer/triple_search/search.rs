@@ -1,7 +1,3 @@
-//! Triple Search Operations
-//!
-//! Contains search methods for code, doc, notes, and parallel/sequential search.
-
 use crate::indexer::search::{SearchHit, SearchResult};
 
 use super::index::TripleSearchIndex;

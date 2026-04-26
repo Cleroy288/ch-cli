@@ -28,7 +28,8 @@ fn test_debug_info_type_default() {
 #[test]
 fn test_build_message_history_lines_empty() {
     let history = ConversationHistory::new();
-    let lines = build_message_history_lines(&history);
+    let lines =
+        build_message_history_lines(&history);
 
     assert!(lines.len() >= 2);
 }
@@ -45,23 +46,8 @@ fn test_build_message_history_lines_messages() {
     );
     history.add_message(message);
 
-    let lines = build_message_history_lines(&history);
+    let lines =
+        build_message_history_lines(&history);
 
     assert!(lines.len() > 2);
-}
-
-/// Doc-related variants use " doc preview " title
-#[test]
-fn test_doc_variants_panel_title() {
-    let preview = DebugInfoType::DocPreview;
-    let not_found = DebugInfoType::DocNotFound;
-
-    assert_eq!(
-        preview.panel_title(),
-        " doc preview ",
-    );
-    assert_eq!(
-        not_found.panel_title(),
-        " doc preview ",
-    );
 }

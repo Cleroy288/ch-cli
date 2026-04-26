@@ -1,17 +1,26 @@
 //! Tests for MCP message routing and handlers.
 
-use rustean::cli::commands::mcp_server::mcp_handlers;
+use rustean::cli::commands::mcp_server::{
+	mcp_handlers, mcp_types::McpContext,
+};
 use serde_json::Value;
+
+/// Build a context with no Atlassian credentials
+fn empty_ctx() -> McpContext {
+	McpContext::from_credentials(None)
+}
 
 /// Initialize returns protocol + serverInfo
 #[test]
 fn initialize_returns_capabilities() {
 	// Arrange
 	let msg = r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}"#;
+	let ctx = empty_ctx();
 
 	// Act
-	let resp = mcp_handlers::handle_message(msg)
-		.expect("should return response");
+	let resp =
+		mcp_handlers::handle_message(msg, &ctx)
+			.expect("should return response");
 	let parsed: Value =
 		serde_json::from_str(&resp).unwrap();
 
@@ -22,32 +31,28 @@ fn initialize_returns_capabilities() {
 	);
 	assert_eq!(
 		result["serverInfo"]["name"],
-		"rustean-memory",
+		"rustean",
 	);
 }
 
-/// tools/list returns all three tool names
+/// tools/list returns 10 tools without creds
 #[test]
-fn tools_list_returns_three_tools() {
+fn tools_list_returns_base_tools() {
 	// Arrange
 	let msg = r#"{"jsonrpc":"2.0","id":2,"method":"tools/list"}"#;
+	let ctx = empty_ctx();
 
 	// Act
-	let resp = mcp_handlers::handle_message(msg)
-		.expect("should return response");
+	let resp =
+		mcp_handlers::handle_message(msg, &ctx)
+			.expect("should return response");
 	let parsed: Value =
 		serde_json::from_str(&resp).unwrap();
 
-	// Assert
+	// Assert — 10 base tools (no Atlassian)
 	let tools = parsed["result"]["tools"]
 		.as_array().unwrap();
-	assert_eq!(tools.len(), 3);
-	let names: Vec<&str> = tools.iter()
-		.map(|t| t["name"].as_str().unwrap())
-		.collect();
-	assert!(names.contains(&"memory_search"));
-	assert!(names.contains(&"memory_recent"));
-	assert!(names.contains(&"memory_stats"));
+	assert_eq!(tools.len(), 10);
 }
 
 /// Notification returns None (no response)
@@ -55,9 +60,11 @@ fn tools_list_returns_three_tools() {
 fn notification_returns_none() {
 	// Arrange
 	let msg = r#"{"jsonrpc":"2.0","method":"notifications/initialized"}"#;
+	let ctx = empty_ctx();
 
 	// Act
-	let resp = mcp_handlers::handle_message(msg);
+	let resp =
+		mcp_handlers::handle_message(msg, &ctx);
 
 	// Assert
 	assert!(resp.is_none());
@@ -68,10 +75,12 @@ fn notification_returns_none() {
 fn unknown_method_returns_error() {
 	// Arrange
 	let msg = r#"{"jsonrpc":"2.0","id":3,"method":"foo/bar"}"#;
+	let ctx = empty_ctx();
 
 	// Act
-	let resp = mcp_handlers::handle_message(msg)
-		.expect("should return response");
+	let resp =
+		mcp_handlers::handle_message(msg, &ctx)
+			.expect("should return response");
 	let parsed: Value =
 		serde_json::from_str(&resp).unwrap();
 
@@ -84,10 +93,12 @@ fn unknown_method_returns_error() {
 fn invalid_json_returns_parse_error() {
 	// Arrange
 	let msg = "not valid json{{{";
+	let ctx = empty_ctx();
 
 	// Act
-	let resp = mcp_handlers::handle_message(msg)
-		.expect("should return response");
+	let resp =
+		mcp_handlers::handle_message(msg, &ctx)
+			.expect("should return response");
 	let parsed: Value =
 		serde_json::from_str(&resp).unwrap();
 

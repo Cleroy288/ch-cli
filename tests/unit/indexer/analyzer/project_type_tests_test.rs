@@ -3,37 +3,42 @@
 use rustean::indexer::analyzer::ProjectType;
 use rustean::indexer::crawler::DetectedLanguage;
 
-/// Test expected_language returns Java for Maven
+/// expected_language for remaining project types
 #[test]
-fn test_expected_language_maven() {
-	let result = ProjectType::Maven.expected_language();
-	assert_eq!(result, Some(DetectedLanguage::Java));
+fn expected_language_extra_table() {
+	use DetectedLanguage::*;
+	use ProjectType::*;
+	let cases: &[(
+		ProjectType,
+		Option<DetectedLanguage>,
+	)] = &[
+		(Maven, Some(Java)),
+		(DotNet, Some(CSharp)),
+		(Unknown, None),
+	];
+
+	for (proj, expected) in cases {
+		assert_eq!(
+			proj.expected_language(),
+			*expected,
+			"expected_language for {proj:?}",
+		);
+	}
 }
 
-/// Test expected_language returns CSharp for DotNet
+/// display_name returns human-readable labels
 #[test]
-fn test_expected_language_dotnet() {
-	let result = ProjectType::DotNet.expected_language();
-	assert_eq!(result, Some(DetectedLanguage::CSharp));
-}
+fn display_name_table() {
+	let cases: &[(ProjectType, &str)] = &[
+		(ProjectType::RustCargo, "Rust (Cargo)"),
+		(ProjectType::NodeJs, "Node.js"),
+	];
 
-/// Test expected_language returns None for Unknown
-#[test]
-fn test_expected_language_unknown() {
-	let result = ProjectType::Unknown.expected_language();
-	assert_eq!(result, None);
-}
-
-/// Test display_name returns correct string for RustCargo
-#[test]
-fn test_display_name_rust() {
-	let name = ProjectType::RustCargo.display_name();
-	assert_eq!(name, "Rust (Cargo)");
-}
-
-/// Test display_name returns correct string for NodeJs
-#[test]
-fn test_display_name_nodejs() {
-	let name = ProjectType::NodeJs.display_name();
-	assert_eq!(name, "Node.js");
+	for (proj, expected) in cases {
+		assert_eq!(
+			proj.display_name(),
+			*expected,
+			"display_name for {proj:?}",
+		);
+	}
 }

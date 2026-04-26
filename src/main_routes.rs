@@ -1,7 +1,6 @@
 use super::main_routes_extra as extra;
-use rustean::cli::{self, DaemonAction};
+use rustean::cli;
 use rustean::domain::errors::command::CommandResult;
-use rustean::retrieval::daemon::ensure_daemon_ready;
 use rustean::Commands;
 
 /// Route command to the right handler function
@@ -10,18 +9,11 @@ pub(crate) fn route_command(
 ) -> CommandResult {
     match cmd {
         Commands::Tui => Ok(()),
-        Commands::Search { .. } => route_search(cmd),
-        Commands::Retrieve { .. } => {
-            extra::route_retrieve(cmd)
+        Commands::Search { .. } => {
+            route_search(cmd)
         }
         Commands::Info { .. } => {
             extra::route_info(cmd)
-        }
-        Commands::Daemon { action } => {
-            route_daemon(action)
-        }
-        Commands::Docs { action } => {
-            extra::route_docs(action)
         }
         Commands::Memory { action } => {
             extra::route_memory(action)
@@ -38,11 +30,11 @@ fn route_simple_command(
     cmd: Commands,
 ) -> CommandResult {
     match cmd {
-        Commands::Index {
-            path, semantic, verbose,
-        } => cli::commands::index_command(
-            &path, semantic, verbose,
-        ),
+        Commands::Index { path, verbose } => {
+            cli::commands::index_command(
+                &path, verbose,
+            )
+        }
         Commands::Goto { symbol } => {
             cli::commands::goto_command(&symbol)
         }
@@ -56,9 +48,6 @@ fn route_simple_command(
         }
         Commands::Stats => {
             cli::commands::stats_command()
-        }
-        Commands::Embed { path, force } => {
-            extra::route_embed(&path, force)
         }
         _ => Ok(()),
     }
@@ -74,21 +63,16 @@ fn route_symbols(
     )
 }
 
-/// Route search command variants
-#[allow(clippy::fn_params_excessive_bools)]
+/// Route search command
 fn route_search(cmd: Commands) -> CommandResult {
     let Commands::Search {
-        query, limit, fuzzy, kind,
-        semantic, context, rerank, full,
+        query, limit, fuzzy, kind, full,
     } = cmd
     else {
         return Ok(());
     };
-    if semantic && !ensure_daemon_ready() {
-        crate::log_warning("Daemon not ready");
-    }
     let flags = cli::commands::SearchCommandFlags {
-        fuzzy, semantic, context, rerank, full,
+        fuzzy, full,
     };
     let opts = cli::commands::SearchCommandOptions {
         limit,
@@ -96,29 +80,4 @@ fn route_search(cmd: Commands) -> CommandResult {
         flags,
     };
     cli::commands::search_command(&query, &opts)
-}
-
-/// Route daemon subcommands
-fn route_daemon(
-    action: DaemonAction,
-) -> CommandResult {
-    match action {
-        DaemonAction::Start => {
-            cli::commands::daemon_start_command()
-        }
-        DaemonAction::Stop => {
-            cli::commands::daemon_stop_command()
-        }
-        DaemonAction::Status => {
-            cli::commands::daemon_status_command()
-        }
-        DaemonAction::Restart => {
-            cli::commands::daemon_restart_command()
-        }
-        DaemonAction::Run { socket } => {
-            cli::commands::daemon_run_command(
-                socket.as_deref(),
-            )
-        }
-    }
 }

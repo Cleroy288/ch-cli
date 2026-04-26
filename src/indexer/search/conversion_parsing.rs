@@ -1,9 +1,11 @@
-//! Parse functions for converting string representations back to types.
+use crate::indexer::symbols::SymbolKind;
 
-use crate::indexer::symbols::{SymbolKind, Visibility};
+pub use crate::indexer::parser::parse_visibility;
 
-/// Parse a SymbolKind from its string representation
-pub fn parse_symbol_kind(text: &str) -> Option<SymbolKind> {
+/// Exact match only (Tantivy round-trip).
+pub fn parse_symbol_kind(
+	text: &str,
+) -> Option<SymbolKind> {
 	match text {
 		"fn" => Some(SymbolKind::Function),
 		"method" => Some(SymbolKind::Method),
@@ -20,15 +22,5 @@ pub fn parse_symbol_kind(text: &str) -> Option<SymbolKind> {
 		"field" => Some(SymbolKind::Field),
 		"doc" => Some(SymbolKind::DocumentChunk),
 		_ => None,
-	}
-}
-
-/// Parse a Visibility from its string representation
-pub fn parse_visibility(text: &str) -> Visibility {
-	match text {
-		"pub" => Visibility::Public,
-		"pub(crate)" => Visibility::PublicCrate,
-		"pub(super)" => Visibility::PublicSuper,
-		_ => Visibility::Private,
 	}
 }

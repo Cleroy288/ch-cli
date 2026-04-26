@@ -1,5 +1,3 @@
-//! Display helpers for memory commands.
-
 use std::io::Write;
 
 use crate::domain::memory::Interaction;
@@ -40,17 +38,17 @@ pub fn print_interaction(
 	let rtype = memory_helpers::response_type_label(
 		&interaction.response,
 	);
+	let text = truncate_text(
+		&interaction.input.text, TRUNCATE_LEN,
+	);
 	writeln!(
 		out,
 		"  {}. [{}] {} ({})",
 		idx + 1,
 		rtype,
-		truncate_text(
-			&interaction.input.text, TRUNCATE_LEN,
-		),
+		text,
 		&interaction.session_id,
-	)?;
-	Ok(())
+	)
 }
 
 /// Print search hits with scores
@@ -105,7 +103,6 @@ pub fn print_stats(
 	Ok(())
 }
 
-/// Truncate text to max_len, add "..." if needed
 pub fn truncate_text(
 	text: &str,
 	max_len: usize,

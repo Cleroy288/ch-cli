@@ -1,9 +1,3 @@
-//! Symbol selection finalization.
-//!
-//! Handles building symbol info from the picker,
-//! inserting text into input, and creating the
-//! SymbolSelector that tracks the selection.
-
 use crate::app::App;
 use crate::domain::symbol_ref::build_symbol_path;
 use crate::domain::{
@@ -27,8 +21,6 @@ impl App {
         &mut self,
         leaf_name: String,
     ) {
-        self.doc_preview = None;
-
         let symbol_info =
             self.build_symbol_info(&leaf_name);
         let Some(info) = symbol_info else {
@@ -73,22 +65,14 @@ impl App {
         })
     }
 
-    /// Insert symbol path and closing paren
     fn insert_symbol_text(
         &mut self,
         symbol_path: &str,
     ) {
         let display = format!("{})", symbol_path);
-        for chr in display.chars() {
-            let pos = self.cursor_position.get();
-            self.input.insert(pos, chr);
-            self.cursor_position.move_right(
-                self.input.len(),
-            );
-        }
+        self.insert_text_at_cursor(&display);
     }
 
-    /// Get file reference start position
     fn get_file_ref_start(
         &self,
         fallback: usize,
@@ -118,6 +102,6 @@ fn create_symbol_selector(
                 .to_string(),
         ),
         FileName::from(info.file_name),
-        info.symbol_path.clone(),
+        info.symbol_path,
     )
 }

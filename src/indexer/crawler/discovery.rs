@@ -1,9 +1,3 @@
-//! File system discovery for the semantic indexer.
-//!
-//! This module provides efficient directory traversal with:
-//! - `.gitignore` support via the `ignore` crate
-//! - Language-based file filtering
-
 use std::path::{Path, PathBuf};
 
 use ignore::WalkBuilder;
@@ -11,35 +5,30 @@ use ignore::WalkBuilder;
 use super::language::Language;
 use super::types::CrawlerConfig;
 
-/// File system crawler for discovering and indexing source files
 pub struct Crawler {
-	config: CrawlerConfig, // configuration for the crawler
+	config: CrawlerConfig,
 }
 
 impl Crawler {
-	/// Create a new crawler with default configuration
 	pub fn new() -> Self {
 		Self {
 			config: CrawlerConfig::default(),
 		}
 	}
 
-	/// Create a new crawler with custom configuration
 	pub fn with_config(config: CrawlerConfig) -> Self {
 		Self { config }
 	}
 
-	/// Get the configuration
 	pub fn config(&self) -> &CrawlerConfig {
 		&self.config
 	}
 
-	/// Discover all indexable files in a directory
-	///
-	/// Walks the directory tree respecting gitignore rules and filters
-	/// files by supported languages and size limits.
-	pub fn discover_files<P: AsRef<Path>>(&self, root: P) -> Vec<PathBuf> {
-		let root = root.as_ref(); // root directory
+	pub fn discover_files<P: AsRef<Path>>(
+		&self,
+		root: P,
+	) -> Vec<PathBuf> {
+		let root = root.as_ref();
 		let builder = self.build_walker(root);
 
 		builder
@@ -55,7 +44,6 @@ impl Crawler {
 			.collect()
 	}
 
-	/// Create a walker builder with configured options
 	fn build_walker(&self, root: &Path) -> WalkBuilder {
 		let mut builder = WalkBuilder::new(root);
 		builder
@@ -71,7 +59,6 @@ impl Crawler {
 		builder
 	}
 
-	/// Check if a file exceeds the configured max size
 	fn exceeds_max_size(
 		&self,
 		path: &Path,

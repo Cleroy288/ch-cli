@@ -1,5 +1,3 @@
-//! Tantivy search index for memory interactions.
-
 use std::path::Path;
 
 use tantivy::{Index, IndexReader, ReloadPolicy};
@@ -12,11 +10,9 @@ use super::search_schema::{
 	MemoryFields, build_memory_schema,
 };
 
-/// Search index for memory interactions
+/// Tantivy-backed search index for memory interactions
 pub struct MemorySearchIndex {
-	/// Tantivy index handle
 	pub(crate) index: Index,
-	/// Schema field handles
 	pub(crate) fields: MemoryFields,
 }
 
@@ -45,7 +41,6 @@ impl MemorySearchIndex {
 		Ok(Self { index, fields })
 	}
 
-	/// Get an index reader
 	pub(crate) fn reader(
 		&self,
 	) -> MemoryResult<IndexReader> {
@@ -75,7 +70,6 @@ fn open_index(
 	}
 }
 
-/// Map tantivy errors to MemoryError::Search
 pub(crate) fn map_tantivy(
 	err: impl std::fmt::Display,
 ) -> MemoryError {

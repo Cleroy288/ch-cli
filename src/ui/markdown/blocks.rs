@@ -1,110 +1,123 @@
-//! Block-level markdown parser.
-//!
-//! Walks lines with a state machine, dispatching
-//! headings, code blocks, tables, lists, quotes,
-//! and rules to specialized renderers.
-
-use ratatui::text::Line;
+use ratatui::text::{Line, Span};
 
 use super::{
-	blockquote, code_block, heading, inline, list,
-	rule, table,
+	blockquote, code_block, heading, inline,
+	list, rule, table,
+	sections::{self, ContentSection},
 };
 
-/// Parse markdown text into styled ratatui lines.
+///
+/// Splits into sections, then renders each section
+/// with the appropriate renderer. Adds 1-space
+/// left margin so content aligns with role headers.
 pub fn render_markdown(
 	text: &str,
 ) -> Vec<Line<'static>> {
-	let lines: Vec<&str> = text.lines().collect();
-	let mut result = Vec::new();
+	let secs = sections::parse_sections(text);
+	let mut lines = render_sections(&secs);
+	for line in &mut lines {
+		if !line.spans.is_empty() {
+			line.spans.insert(
+				0, Span::from("  "),
+			);
+		}
+	}
+	lines
+}
+
+///
+/// Adds blank lines around code blocks for
+/// visual separation from surrounding text.
+fn render_sections(
+	sections: &[ContentSection],
+) -> Vec<Line<'static>> {
+	let mut out = Vec::new();
+	for (i, section) in sections.iter().enumerate() {
+		match section {
+			ContentSection::Text(text) => {
+				out.extend(
+					render_text_lines(text),
+				);
+			}
+			ContentSection::Code { lang, code } => {
+				if i > 0 { ensure_blank(&mut out); }
+				let lines: Vec<&str> =
+					code.split('\n').collect();
+				out.push(
+					code_block::render_open(lang),
+				);
+				out.extend(
+					code_block::render_lines(
+						lang, &lines,
+					),
+				);
+				out.push(code_block::render_close());
+				ensure_blank(&mut out);
+			}
+		}
+	}
+	out
+}
+
+fn ensure_blank(lines: &mut Vec<Line<'static>>) {
+	let blank = lines
+		.last()
+		.is_some_and(|l| l.spans.is_empty());
+	if !blank {
+		lines.push(Line::from(""));
+	}
+}
+
+/// blockquotes, lists, and plain inline text.
+fn render_text_lines(
+	text: &str,
+) -> Vec<Line<'static>> {
+	let lines: Vec<&str> =
+		text.split('\n').collect();
+	let mut out = Vec::new();
 	let mut idx = 0;
 
 	while idx < lines.len() {
 		let trimmed = lines[idx].trim_start();
-		if trimmed.starts_with("```") {
-			idx = process_code_block(
-				&lines, idx, &mut result,
-			);
-		} else if trimmed.starts_with('#') {
-			result.push(heading::render(lines[idx]));
+		if trimmed.starts_with('#') {
+			out.push(heading::render(lines[idx]));
 			idx += 1;
 		} else if trimmed.starts_with('|') {
-			idx = process_table(
-				&lines, idx, &mut result,
+			let start = idx;
+			while idx < lines.len()
+				&& lines[idx]
+					.trim_start()
+					.starts_with('|')
+			{
+				idx += 1;
+			}
+			out.extend(
+				table::render(&lines[start..idx]),
 			);
 		} else if rule::is_rule(trimmed) {
-			result.push(rule::render());
-			idx += 1;
-		} else if trimmed.starts_with('>') {
-			result.push(
-				blockquote::render(lines[idx]),
-			);
-			idx += 1;
-		} else if list::is_item(trimmed) {
-			result.push(
-				list::render_item(lines[idx]),
-			);
 			idx += 1;
 		} else {
-			result.push(render_text_line(lines[idx]));
+			out.push(
+				render_leaf(trimmed, lines[idx]),
+			);
 			idx += 1;
 		}
 	}
-	result
+	out
 }
 
-/// Collect code block lines between ``` fences.
-fn process_code_block(
-	lines: &[&str],
-	start: usize,
-	out: &mut Vec<Line<'static>>,
-) -> usize {
-	let fence = lines[start].trim_start();
-	let lang =
-		fence.trim_start_matches('`').trim();
-	out.push(code_block::render_open(lang));
-
-	let mut idx = start + 1;
-	while idx < lines.len() {
-		let trimmed = lines[idx].trim_start();
-		if trimmed.starts_with("```") {
-			out.push(code_block::render_close());
-			return idx + 1;
-		}
-		out.push(code_block::render_line(lines[idx]));
-		idx += 1;
-	}
-	out.push(code_block::render_close());
-	idx
-}
-
-/// Collect consecutive table rows.
-fn process_table(
-	lines: &[&str],
-	start: usize,
-	out: &mut Vec<Line<'static>>,
-) -> usize {
-	let mut rows = Vec::new();
-	let mut idx = start;
-
-	while idx < lines.len() {
-		let trimmed = lines[idx].trim_start();
-		if !trimmed.starts_with('|') {
-			break;
-		}
-		rows.push(lines[idx]);
-		idx += 1;
-	}
-	out.extend(table::render(&rows));
-	idx
-}
-
-/// Render a text line with inline styles.
-fn render_text_line(
-	line: &str,
+fn render_leaf(
+	trimmed: &str,
+	raw: &str,
 ) -> Line<'static> {
-	if line.is_empty() {
+	if trimmed.starts_with('>') {
+		return blockquote::render(raw);
+	}
+	if list::is_item(trimmed) {
+		return list::render_item(raw);
+	}
+	if raw.is_empty() {
 		return Line::from("");
 	}
-	Line::from(inline::parse(line))
+	Line::from(inline::parse(raw))
 }

@@ -1,11 +1,8 @@
-//! Boost factor calculations for symbol kinds based on query intent.
-
-use crate::retrieval::daemon::protocol::QueryIntent;
+use crate::domain::query_intent::QueryIntent;
 
 use super::kind::SymbolKind;
 
 impl SymbolKind {
-	/// Get boost factor for ranking
 	/// Functions/methods ranked higher than fields/constants
 	pub fn boost_factor(&self) -> f32 {
 		match self {
@@ -34,82 +31,81 @@ impl SymbolKind {
 		}
 	}
 
-	/// Get boost factor adjusted for query intent
-	/// Boosts functions for understanding queries, deprioritizes fields
-	pub fn boost_factor_for_intent(&self, intent: &QueryIntent) -> f32 {
-		let base_boost = self.boost_factor(); // base symbol kind boost
-
-		match intent {
-			QueryIntent::Understand => {
-				// For "how does X work" queries, prioritize behavior over data
-				self.apply_understand_boost(base_boost)
-			}
-			QueryIntent::FindDefinition => {
-				// For definition queries, prioritize type definitions
-				self.apply_find_definition_boost(base_boost)
-			}
-			QueryIntent::Debug => {
-				// For debugging queries, prioritize functions with error handling
-				self.apply_debug_boost(base_boost)
-			}
-			_ => base_boost, // other intents use base boost
-		}
+	/// Multiplies base boost by an intent-specific factor.
+	pub fn boost_factor_for_intent(
+		&self,
+		intent: &QueryIntent,
+	) -> f32 {
+		self.boost_factor()
+			* intent_multiplier(self, intent)
 	}
+}
 
-	/// Apply boost multiplier for Understand intent
-	/// Boosts functions/methods (1.5x), deprioritizes fields/docs (0.3x)
-	fn apply_understand_boost(&self, base_boost: f32) -> f32 {
-		match self {
-			// Functions/methods explain behavior - heavily boost them
-			SymbolKind::Function | SymbolKind::Method => base_boost * 1.5,
-			// Structs/impls can show structure - slightly boost
-			SymbolKind::Struct | SymbolKind::Impl => base_boost * 1.2,
-			// Fields are data, not behavior - deprioritize
-			SymbolKind::Field => base_boost * 0.3,
-			// Documentation chunks are docs, not code - heavily deprioritize
-			SymbolKind::DocumentChunk => base_boost * 0.2,
-			_ => base_boost,
-		}
-	}
-
-	/// Apply boost multiplier for Debug intent
-	/// Boosts functions/methods for debugging, deprioritizes fields
-	fn apply_debug_boost(&self, base_boost: f32) -> f32 {
-		match self {
-			// Functions/methods likely contain error handling - boost
-			SymbolKind::Function | SymbolKind::Method => base_boost * 1.3,
-			// Structs that might be error types - slight boost
-			SymbolKind::Struct | SymbolKind::Enum => base_boost * 1.1,
-			// Fields less relevant for debugging - deprioritize
-			SymbolKind::Field => base_boost * 0.5,
-			_ => base_boost,
-		}
-	}
-
-	/// Apply boost multiplier for FindDefinition intent
-	/// Boosts struct/enum/trait definitions (2.0x), reduces docs (0.2x)
-	fn apply_find_definition_boost(&self, base_boost: f32) -> f32 {
-		match self {
-			// Type definitions - strong boost
-			SymbolKind::Struct => base_boost * 2.0,
-			SymbolKind::Enum => base_boost * 2.0,
-			SymbolKind::Trait => base_boost * 2.0,
-			SymbolKind::TypeAlias => base_boost * 1.8,
-
-			// Function definitions - strong boost
-			// increased for definition priority
-			SymbolKind::Function => base_boost * 1.8,
-			SymbolKind::Method => base_boost * 1.6,
-			// boost module definitions
-			SymbolKind::Module => base_boost * 1.5,
-
-			// Impl blocks are usages - reduce
-			SymbolKind::Impl => base_boost * 0.5,
-
-			// Docs are not definitions - heavily reduce
-			SymbolKind::DocumentChunk => base_boost * 0.1,
-
-			_ => base_boost,
-		}
+/// Intent-based multiplier for symbol kind boost.
+/// Flattened (intent, kind) match for readability.
+fn intent_multiplier(
+	kind: &SymbolKind,
+	intent: &QueryIntent,
+) -> f32 {
+	match (intent, kind) {
+		// Understand: behavior over data
+		(
+			QueryIntent::Understand,
+			SymbolKind::Function | SymbolKind::Method,
+		) => 1.5,
+		(
+			QueryIntent::Understand,
+			SymbolKind::Struct | SymbolKind::Impl,
+		) => 1.2,
+		(
+			QueryIntent::Understand,
+			SymbolKind::Field,
+		) => 0.3,
+		(
+			QueryIntent::Understand,
+			SymbolKind::DocumentChunk,
+		) => 0.2,
+		// FindDefinition: type/fn defs first
+		(
+			QueryIntent::FindDefinition,
+			SymbolKind::Struct
+			| SymbolKind::Enum
+			| SymbolKind::Trait,
+		) => 2.0,
+		(
+			QueryIntent::FindDefinition,
+			SymbolKind::TypeAlias,
+		) => 1.8,
+		(
+			QueryIntent::FindDefinition,
+			SymbolKind::Function,
+		) => 1.8,
+		(
+			QueryIntent::FindDefinition,
+			SymbolKind::Method,
+		) => 1.6,
+		(
+			QueryIntent::FindDefinition,
+			SymbolKind::Module,
+		) => 1.5,
+		(
+			QueryIntent::FindDefinition,
+			SymbolKind::Impl,
+		) => 0.5,
+		(
+			QueryIntent::FindDefinition,
+			SymbolKind::DocumentChunk,
+		) => 0.1,
+		// Debug: functions/error types
+		(
+			QueryIntent::Debug,
+			SymbolKind::Function | SymbolKind::Method,
+		) => 1.3,
+		(
+			QueryIntent::Debug,
+			SymbolKind::Struct | SymbolKind::Enum,
+		) => 1.1,
+		(QueryIntent::Debug, SymbolKind::Field) => 0.5,
+		_ => 1.0,
 	}
 }

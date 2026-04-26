@@ -7,7 +7,7 @@ use crate::helpers::factories::{
 	make_memory_test_dir,
 };
 
-/// Test compute_stats on empty directory
+/// compute_stats on empty directory returns zeros
 #[test]
 fn stats_empty_dir() {
 	// Arrange
@@ -17,15 +17,15 @@ fn stats_empty_dir() {
 	let result = stats::compute_stats(&dir);
 
 	// Assert
-	assert!(result.is_ok());
-	let stats = result.unwrap();
+	let stats =
+		result.expect("compute_stats failed");
 	assert_eq!(stats.total, 0);
 	assert_eq!(stats.sessions, 0);
 
 	cleanup_test_dir(&dir);
 }
 
-/// Test compute_stats with data
+/// compute_stats counts interactions and sessions
 #[test]
 fn stats_with_data() {
 	// Arrange
@@ -58,7 +58,7 @@ fn stats_with_data() {
 	cleanup_test_dir(&dir);
 }
 
-/// Test save and load cached stats
+/// save then load_cached round-trips correctly
 #[test]
 fn save_and_load_cached() {
 	// Arrange
@@ -81,7 +81,7 @@ fn save_and_load_cached() {
 	cleanup_test_dir(&dir);
 }
 
-/// Test load_cached on missing file
+/// load_cached returns Err when no cache exists
 #[test]
 fn load_cached_missing_returns_err() {
 	// Arrange

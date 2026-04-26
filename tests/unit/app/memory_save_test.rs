@@ -14,16 +14,19 @@ fn make_response(
 	ClaudeResponse {
 		result: text.to_string(),
 		session_id: "test-sess".to_string(),
+		subtype: "success".to_string(),
 		is_error,
 		num_turns: 1,
 		cost_usd: Some(0.001),
 		duration_ms: 500,
+		duration_api_ms: 300,
 		usage: ClaudeUsage {
 			input_tokens: 10,
 			output_tokens: 5,
 			cache_read_tokens: 0,
 			cache_creation_tokens: 0,
 		},
+		intent: Default::default(),
 	}
 }
 

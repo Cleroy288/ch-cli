@@ -1,8 +1,12 @@
-//! Language information display
-
 use std::io::{self, Write};
 
-use crossterm::{execute, style::*};
+use crossterm::{
+	execute,
+	style::{
+		Color, Print, ResetColor,
+		SetForegroundColor,
+	},
+};
 
 use crate::indexer::{DetectedLanguage, Language};
 

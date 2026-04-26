@@ -35,7 +35,6 @@ impl App {
         false
     }
 
-    /// Count of current visible symbol items
     fn symbol_items_count(&self) -> usize {
         let Some(browser) = self.picker.symbol_browser()
         else {

@@ -1,7 +1,7 @@
 //! Unit tests for cli::commands::info::info_source
 //! — migrated from inline tests
 
-use rustean::cli::commands::info::info_source::find_symbol_end;
+use rustean::cli::commands::info::find_symbol_end;
 
 #[test]
 fn find_end_simple_function() {

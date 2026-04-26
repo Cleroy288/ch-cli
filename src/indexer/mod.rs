@@ -1,55 +1,3 @@
-//! Semantic Code Indexer Module
-//!
-//! This module provides semantic code indexing capabilities using Tree-sitter
-//! for parsing and symbol extraction, Tantivy for full-text search, and
-//! semantic analysis for name resolution.
-//!
-//! # Architecture
-//!
-//! - `symbols`: Core data types (Symbol, SymbolKind, CodeLocation)
-//! - `parser`: Tree-sitter parser wrapper and query execution
-//! - `queries`: Tree-sitter query definitions for each language
-//! - `crawler`: File system traversal with .gitignore support
-//! - `manager`: High-level orchestration for indexing projects
-//! - `search`: Tantivy-based full-text search engine
-//! - `semantic`: Definition/reference tracking and name resolution
-//!
-//! # Example - Parse a single file
-//!
-//! ```ignore
-//! use rustean::indexer::RustParser;
-//!
-//! let mut parser = RustParser::new()?;
-//! let symbols = parser.parse_file("src/main.rs")?;
-//!
-//! for symbol in symbols {
-//!     println!("{}: {} at line {}",
-//!         symbol.kind, symbol.name,
-//!         symbol.location.line);
-//! }
-//! ```
-//!
-//! # Example - Index and search a project
-//!
-//! ```ignore
-//! use rustean::indexer::{IndexManager, SearchIndex};
-//!
-//! let manager = IndexManager::new();
-//! let result = manager.index_project(".");
-//!
-//! // Create search index and add symbols
-//! let search = SearchIndex::in_memory()?;
-//! search.index_symbols(&result.symbols)?;
-//!
-//! // Search for symbols
-//! let hits = search.search("handle", 10)?;
-//! for hit in hits {
-//!     println!("{}: {} (score: {})",
-//!         hit.symbol.kind, hit.symbol.name,
-//!         hit.score);
-//! }
-//! ```
-
 pub mod analyzer;
 pub mod crawler;
 pub mod doc_parser;
@@ -83,7 +31,7 @@ pub use semantic::{
 	ResolutionResult, SemanticGraph,
 	SemanticStats, SymbolReference,
 };
-pub use state::{ChangeSet, FileState, IndexState, INDEX_DIR_NAME};
+pub use state::{ChangeSet, FileState, IndexState};
 pub use symbols::{
 	ByteSpan, CodeLocation, ContentType,
 	DocumentType, Symbol, SymbolKind, Visibility,

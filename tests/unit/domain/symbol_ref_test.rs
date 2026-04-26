@@ -8,87 +8,77 @@ use rustean::domain::{
     FileName, FilePath, InputSpan,
 };
 
-// -----------------------------------------------------------
-// SymbolSelector::display_text tests
-// -----------------------------------------------------------
-
 /// Display text shows compact format
 #[test]
-fn test_display_text_simple() {
+fn display_text_nested_symbol() {
     let span = InputSpan { start: 0, end: 20 };
+    let path: FilePath = "src/app.rs".into();
     let selector = SymbolSelector::new(
         span,
-        FilePath::from_string("src/app.rs"),
-        FileName::new("app.rs".to_string()),
+        path,
+        FileName::from("app.rs".to_string()),
         "App::run".to_string(),
     );
 
     assert_eq!(
         selector.display_text(),
-        "app.rs(App::run)"
+        "app.rs(App::run)",
     );
 }
 
 /// Display text for top-level symbol
 #[test]
-fn test_display_text_top_level() {
+fn display_text_top_level_symbol() {
     let span = InputSpan { start: 0, end: 10 };
+    let path: FilePath = "src/main.rs".into();
     let selector = SymbolSelector::new(
         span,
-        FilePath::from_string("src/main.rs"),
-        FileName::new("main.rs".to_string()),
+        path,
+        FileName::from("main.rs".to_string()),
         "main".to_string(),
     );
 
     assert_eq!(
         selector.display_text(),
-        "main.rs(main)"
+        "main.rs(main)",
     );
 }
 
-// -----------------------------------------------------------
-// build_symbol_path tests
-// -----------------------------------------------------------
-
-/// Build path with no parents
+/// build_symbol_path with varying parent depth
 #[test]
-fn test_build_symbol_path_no_parents() {
-    let result = build_symbol_path(&[], "main");
-    assert_eq!(result, "main");
-}
-
-/// Build path with one parent
-#[test]
-fn test_build_symbol_path_one_parent() {
-    let parents = vec!["App".to_string()];
-    let result = build_symbol_path(&parents, "run");
-    assert_eq!(result, "App::run");
-}
-
-/// Build path with multiple parents
-#[test]
-fn test_build_symbol_path_multiple_parents() {
-    let parents = vec![
-        "Module".to_string(),
-        "Struct".to_string(),
+fn build_symbol_path_cases() {
+    let cases: &[(&[&str], &str, &str)] = &[
+        (&[], "main", "main"),
+        (&["App"], "run", "App::run"),
+        (
+            &["Module", "Struct"],
+            "method",
+            "Module::Struct::method",
+        ),
     ];
-    let result =
-        build_symbol_path(&parents, "method");
-    assert_eq!(result, "Module::Struct::method");
+    for (parents, leaf, expected) in cases {
+        let owned: Vec<String> = parents
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+        let result =
+            build_symbol_path(&owned, leaf);
+        assert_eq!(
+            result, *expected,
+            "build_symbol_path({parents:?}, {leaf})",
+        );
+    }
 }
-
-// -----------------------------------------------------------
-// SymbolSelector fields tests
-// -----------------------------------------------------------
 
 /// Selector stores span positions correctly
 #[test]
-fn test_selector_stores_positions() {
+fn selector_stores_positions() {
     let span = InputSpan { start: 5, end: 25 };
+    let path: FilePath = "test.rs".into();
     let selector = SymbolSelector::new(
         span,
-        FilePath::from_string("test.rs"),
-        FileName::new("test.rs".to_string()),
+        path,
+        FileName::from("test.rs".to_string()),
         "Foo".to_string(),
     );
 
@@ -97,36 +87,19 @@ fn test_selector_stores_positions() {
     assert_eq!(selector.symbol_path, "Foo");
 }
 
-// -----------------------------------------------------------
-// extract_leaf_name tests
-// -----------------------------------------------------------
-
-/// Extracts leaf from nested path
+/// extract_leaf_name extracts last :: segment
 #[test]
-fn test_extract_leaf_name_nested() {
-    assert_eq!(
-        extract_leaf_name("Calculator::add"),
-        "add",
-    );
-}
-
-/// Returns same string when no :: present
-#[test]
-fn test_extract_leaf_name_simple() {
-    assert_eq!(extract_leaf_name("main"), "main");
-}
-
-/// Handles deeply nested paths
-#[test]
-fn test_extract_leaf_name_deep() {
-    assert_eq!(
-        extract_leaf_name("A::B::C::method"),
-        "method",
-    );
-}
-
-/// Handles empty string
-#[test]
-fn test_extract_leaf_name_empty() {
-    assert_eq!(extract_leaf_name(""), "");
+fn extract_leaf_name_cases() {
+    let cases = [
+        ("Calculator::add", "add"),
+        ("main", "main"),
+        ("A::B::C::method", "method"),
+        ("", ""),
+    ];
+    for (input, expected) in cases {
+        assert_eq!(
+            extract_leaf_name(input), expected,
+            "extract_leaf_name({input:?})",
+        );
+    }
 }

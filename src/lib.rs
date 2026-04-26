@@ -6,13 +6,10 @@ pub mod fs;
 pub mod indexer;
 pub mod message;
 pub mod picker;
-pub mod retrieval;
+pub mod review;
 pub mod service;
 pub mod startup;
 pub mod ui;
 
 pub use app::App;
-pub use cli::{
-	Cli, Commands, DaemonAction, MemoryAction,
-};
-pub use retrieval::RetrievalConfig;
+pub use cli::{Cli, Commands, MemoryAction};

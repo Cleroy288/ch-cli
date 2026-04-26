@@ -1,9 +1,12 @@
 //! app unit tests
 mod app_test;
+mod claude_request_agent_test;
+mod preflight_handler_test;
+mod parser_agent_response_test;
+mod parser_agent_test;
+mod mcp_discovery_poll_test;
 mod claude_poll_test;
 mod memory_save_test;
-mod doc_preview_poll_test;
-mod doc_progress_test;
 mod handler_enter_test;
 mod handler_input_test;
 mod handler_picker_test;
@@ -11,4 +14,8 @@ mod handler_symbol_trigger_test;
 mod parser_symbol_test;
 mod parser_test;
 mod status_message_test;
+mod slash_model_test;
+mod slash_picker_test;
 mod symbol_resolver_test;
+mod tool_picker_test;
+mod browse_tab_test;

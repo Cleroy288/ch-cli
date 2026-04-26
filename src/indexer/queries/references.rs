@@ -1,12 +1,9 @@
-//! Tree-sitter query for extracting Rust references (symbol usages).
-
-/// Tree-sitter query for extracting Rust references (symbol usages).
+/// Tree-sitter query for Rust symbol references.
 ///
-/// This query captures:
-/// - Function/method calls
-/// - Type references
-/// - Identifiers (variable usages)
-/// - Field accesses
+/// NOTE: `(identifier) @ident.name` is intentionally
+/// broad -- it captures definition-site identifiers
+/// too. Deduplication in `reference_processing.rs`
+/// and downstream def/ref separation handle this.
 pub const RUST_REFERENCES_QUERY: &str = r#"
 ; Function calls - capture the function name being called
 (call_expression

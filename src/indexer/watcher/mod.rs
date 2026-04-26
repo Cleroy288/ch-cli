@@ -1,9 +1,3 @@
-//! File watcher for automatic re-indexing on file changes.
-//!
-//! This module provides file system watching capabilities using
-//! the `notify` crate, with debouncing to avoid excessive
-//! re-indexing on rapid file changes.
-
 mod error;
 mod event;
 mod file_watcher;

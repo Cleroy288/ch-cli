@@ -3,20 +3,13 @@ use std::collections::VecDeque;
 use crate::domain::DEFAULT_MAX_MESSAGES;
 use crate::message::UserMessage;
 
-/// Stores the conversation history.
-///
-/// Uses a VecDeque for efficient FIFO operations with automatic
-/// size limiting to prevent unbounded memory growth.
 #[derive(Debug)]
 pub struct ConversationHistory {
-    /// Messages in chronological order (newest at the back)
     pub(crate) messages: VecDeque<UserMessage>,
-    /// Maximum number of messages to keep
     pub(crate) max_messages: usize,
 }
 
 impl ConversationHistory {
-    /// Create a new conversation history with default capacity
     pub fn new() -> Self {
         Self {
             messages: VecDeque::new(),
@@ -24,7 +17,6 @@ impl ConversationHistory {
         }
     }
 
-    /// Create with a specific max size
     pub fn with_capacity(max_messages: usize) -> Self {
         Self {
             messages: VecDeque::with_capacity(max_messages),
@@ -32,9 +24,7 @@ impl ConversationHistory {
         }
     }
 
-    /// Add a new message to the history.
-    ///
-    /// Automatically removes oldest messages if max_messages is exceeded.
+    /// Drops oldest when max_messages exceeded.
     pub fn add_message(&mut self, message: UserMessage) {
         self.messages.push_back(message);
 
@@ -44,7 +34,12 @@ impl ConversationHistory {
         }
     }
 
-    /// Get a debug string showing all messages
+    pub fn set_last_response(&mut self, text: String) {
+        if let Some(msg) = self.messages.back_mut() {
+            msg.response = Some(text);
+        }
+    }
+
     pub fn debug_string(&self) -> String {
         let mut result = String::new();
         result.push_str(&format!(

@@ -1,29 +1,25 @@
-//! Schema definition and field handles for the search index.
-
-use tantivy::schema::*;
+use tantivy::schema::{Field, Schema};
 
 use crate::indexer::search::error::{SearchError, SearchResult};
 
 pub use super::schema_builder::build_schema;
 
-/// Field handles for the search schema
 #[derive(Clone)]
 pub struct SchemaFields {
-	pub symbol_name: Field,   // primary search field
-	pub symbol_kind: Field,   // symbol kind (string)
-	pub file_path: Field,     // file path (string)
-	pub line: Field,          // line number (u64)
-	pub column: Field,        // column number (u64)
-	pub visibility: Field,    // visibility modifier
-	pub signature: Field,     // function signature
-	pub fqn: Field,           // fully qualified name
-	pub parent: Field,        // parent symbol name
-	pub content: Field,       // documentation content
-	pub document_type: Field, // document type for boost
+	pub symbol_name: Field,
+	pub symbol_kind: Field,
+	pub file_path: Field,
+	pub line: Field,
+	pub column: Field,
+	pub visibility: Field,
+	pub signature: Field,
+	pub fqn: Field,
+	pub parent: Field,
+	pub content: Field,
+	pub document_type: Field,
 }
 
 impl SchemaFields {
-	/// Extract all field handles from the schema
 	pub fn from_schema(
 		schema: &Schema,
 	) -> SearchResult<Self> {
@@ -43,7 +39,6 @@ impl SchemaFields {
 	}
 }
 
-/// Get a field from schema, returning SearchError on failure
 fn get(
 	schema: &Schema,
 	name: &str,

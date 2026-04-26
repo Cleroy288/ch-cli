@@ -10,15 +10,14 @@ use super::error::IndexManagerResult;
 use super::types::IndexResult;
 
 impl IndexManager {
-	/// Watch a project directory for changes and auto-reindex
+	/// Watch a project directory and auto-reindex
 	///
-	/// This method:
 	/// 1. Performs an initial full/incremental index
 	/// 2. Starts watching for file changes
 	/// 3. Re-indexes changed files automatically
-	/// 4. Calls the optional callback when changes are detected
+	/// 4. Calls callback when changes are detected
 	///
-	/// The watch loop runs until `stop_flag` returns true.
+	/// Runs until `stop_flag` returns true.
 	pub fn watch_project<P, F, C>(
 		&self,
 		root: P,
@@ -33,15 +32,18 @@ impl IndexManager {
 		let root = root
 			.as_ref()
 			.canonicalize()
-			.unwrap_or_else(|_| root.as_ref().to_path_buf());
-		let manager = self.clone_with_persistence();
+			.unwrap_or_else(|_| {
+				root.as_ref().to_path_buf()
+			});
+		let mgr = self.clone_with_persistence();
 
-		let mut result = manager.index_project(&root)?;
+		let mut result =
+			mgr.index_project(&root)?;
 		let mut watcher = FileWatcher::new(&root)?;
 		watcher.start()?;
 
 		result = watch_loop(
-			&manager, &root, &stop_flag,
+			&mgr, &root, &stop_flag,
 			&on_change, &watcher, result,
 		)?;
 
@@ -49,7 +51,7 @@ impl IndexManager {
 		Ok(result)
 	}
 
-	/// Create a copy of self with persistence enabled
+	/// Copy self with persistence enabled
 	fn clone_with_persistence(&self) -> IndexManager {
 		let mut flags = self.flags.clone();
 		flags.persistence = true;
@@ -82,7 +84,9 @@ fn watch_loop(
 	while !stop_flag() {
 		match watcher.wait(Duration::from_millis(100)) {
 			Ok(Some(evt)) => {
-				accumulate_changes(&mut pending, evt.paths);
+				accumulate_changes(
+					&mut pending, evt.paths,
+				);
 				last_change = Some(Instant::now());
 				continue;
 			}
@@ -90,7 +94,9 @@ fn watch_loop(
 			Err(WatcherError::Timeout) => continue,
 			Err(err) => return Err(err.into()),
 		}
-		if !should_debounce_flush(last_change, debounce, &pending) {
+		if !should_debounce_flush(
+			last_change, debounce, &pending,
+		) {
 			continue;
 		}
 		let changed = std::mem::take(&mut pending);
@@ -113,7 +119,7 @@ fn accumulate_changes(
 	}
 }
 
-/// Check if debounce period has elapsed with pending changes
+/// Check if debounce period elapsed with pending changes
 fn should_debounce_flush(
 	last_change: Option<Instant>,
 	debounce: Duration,

@@ -1,6 +1,23 @@
 //! domain unit tests
+mod agent_result_test;
+mod agent_spec_test;
+mod agent_suggest_test;
+mod agent_test;
+mod backend_kind_test;
+mod cursor_grid_test;
 mod claude_test;
+mod config_test;
+mod data_paths_test;
+mod manifest_test;
+mod mcp_config_test;
 mod domain_test;
+mod jira_detail_test;
+mod jira_test;
 mod memory_helpers_test;
 mod memory_test;
+mod preflight_test;
 mod symbol_ref_test;
+mod repo_info_test;
+mod review_path_test;
+mod review_test;
+mod tool_ref_test;

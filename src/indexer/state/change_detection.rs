@@ -1,7 +1,3 @@
-//! Change detection for incremental indexing.
-//!
-//! Detects added, modified, deleted, and unchanged files.
-
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
@@ -9,33 +5,27 @@ use std::time::SystemTime;
 use super::types::{ChangeSet, FileState, IndexState};
 
 impl IndexState {
-	/// Update file state after indexing
 	pub fn update_file(
 		&mut self,
 		path: &Path,
 		symbol_count: usize,
 	) -> std::io::Result<()> {
-		// canonicalized path to match the root
 		let canonical_path = path
 			.canonicalize()
 			.unwrap_or_else(|_| path.to_path_buf());
-
-		// file_state: new FileState created from the canonical path
-		let mut file_state = FileState::from_path(&canonical_path, &self.root)?;
+		let mut file_state = FileState::from_path(
+			&canonical_path, &self.root,
+		)?;
 		file_state.symbol_count = symbol_count;
 
 		self.files.insert(file_state.path.clone(), file_state);
 		Ok(())
 	}
 
-	/// Remove a file from the index
 	pub fn remove_file(&mut self, path: &Path) {
-		// canonicalized path to match stored paths
 		let canonical_path = path
 			.canonicalize()
 			.unwrap_or_else(|_| path.to_path_buf());
-
-		// path relative to the root
 		let relative = canonical_path
 			.strip_prefix(&self.root)
 			.unwrap_or(&canonical_path);
@@ -43,19 +33,18 @@ impl IndexState {
 		self.files.remove(relative);
 	}
 
-	/// Detect changes between current disk state and indexed state
-	pub fn detect_changes(&self, current_files: &[PathBuf]) -> ChangeSet {
-		// changes: accumulator for detected file changes
+	pub fn detect_changes(
+		&self,
+		current_files: &[PathBuf],
+	) -> ChangeSet {
 		let mut changes = ChangeSet::default();
 
-		// Check for added and modified files
 		for file_path in current_files {
 			self.classify_file(
 				file_path, &mut changes,
 			);
 		}
 
-		// current_set: set of current file paths for lookup
 		let current_set: HashSet<_> = current_files
 			.iter()
 			.filter_map(|path| {
@@ -104,7 +93,6 @@ impl IndexState {
 		}
 	}
 
-	/// Update the last_updated timestamp
 	pub fn touch(&mut self) {
 		self.last_updated = SystemTime::now()
 			.duration_since(SystemTime::UNIX_EPOCH)

@@ -1,15 +1,15 @@
 //! Tests for memory domain types — serde round-trips.
 
 use rustean::domain::memory::{
-	AiResponse, FileChange, Interaction,
-	UserInput,
+	AiResponse, FileAction, FileChange,
+	Interaction, UserInput,
 };
 
 use crate::helpers::factories::{
 	make_ai_answer, make_user_input,
 };
 
-/// Test Interaction serializes and deserializes
+/// Interaction serde round-trip preserves fields
 #[test]
 fn serialize_interaction_roundtrip() {
 	// Arrange
@@ -32,7 +32,7 @@ fn serialize_interaction_roundtrip() {
 	assert_eq!(parsed.session_id, "s-1");
 }
 
-/// Test AiResponse::Answer serializes correctly
+/// AiResponse::Answer serializes with type tag
 #[test]
 fn serialize_answer_variant() {
 	// Arrange
@@ -47,13 +47,13 @@ fn serialize_answer_variant() {
 	assert!(json.contains("hello"));
 }
 
-/// Test AiResponse::CodeChange with FileChange
+/// AiResponse::CodeChange round-trips with changes
 #[test]
 fn serialize_code_change_with_files() {
 	// Arrange
 	let change = FileChange {
 		file: "src/main.rs".to_string(),
-		action: "modify".to_string(),
+		action: FileAction::Modify,
 		diff: Some("+line".to_string()),
 	};
 	let resp = AiResponse::CodeChange {
@@ -80,7 +80,7 @@ fn serialize_code_change_with_files() {
 	}
 }
 
-/// Test UserInput with empty files list
+/// UserInput round-trips with empty files
 #[test]
 fn serialize_user_input_empty_files() {
 	// Arrange
@@ -97,7 +97,7 @@ fn serialize_user_input_empty_files() {
 	assert!(parsed.files.is_empty());
 }
 
-/// Test AiResponse::Question variant
+/// AiResponse::Question serializes with type tag
 #[test]
 fn serialize_question_variant() {
 	// Arrange

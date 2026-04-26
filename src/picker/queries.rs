@@ -1,15 +1,10 @@
-/// Query operations for the Picker.
-///
-/// Handles search query manipulation and result filtering.
+/// Query and selection state for the Picker.
 pub struct PickerQuery {
-    /// Search query for filtering
     pub(super) query: String,
-    /// Currently selected index in the results
     pub(super) selected_index: usize,
 }
 
 impl PickerQuery {
-    /// Create a new PickerQuery
     pub fn new() -> Self {
         Self {
             query: String::new(),
@@ -17,21 +12,47 @@ impl PickerQuery {
         }
     }
 
-    /// Add a character to the search query
+    pub fn query(&self) -> &str {
+        &self.query
+    }
+
     pub fn push(&mut self, chr: char) {
         self.query.push(chr);
-        self.reset_selection();
+        self.selected_index = 0;
     }
 
-    /// Remove the last character from the query
     pub fn pop(&mut self) {
         self.query.pop();
-        self.reset_selection();
+        self.selected_index = 0;
     }
 
-    /// Clear the query
     pub fn clear(&mut self) {
         self.query.clear();
-        self.reset_selection();
+        self.selected_index = 0;
+    }
+
+    pub fn selected_index(&self) -> usize {
+        self.selected_index
+    }
+
+    pub fn move_up(&mut self) {
+        self.selected_index =
+            self.selected_index.saturating_sub(1);
+    }
+
+    pub fn move_down(&mut self, max_items: usize) {
+        if self.selected_index + 1 < max_items {
+            self.selected_index += 1;
+        }
+    }
+
+    pub fn set_selected_index(&mut self, idx: usize) {
+        self.selected_index = idx;
+    }
+}
+
+impl Default for PickerQuery {
+    fn default() -> Self {
+        Self::new()
     }
 }

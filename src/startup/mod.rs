@@ -1,19 +1,27 @@
-//! Startup flow for rustean.
-//!
-//! Handles index checking, user prompting, and progress
-//! display during indexing.
-
+mod action;
+pub mod agent_discovery;
+pub mod agent_select;
+mod boot;
 mod checks;
+pub mod credentials;
+mod credentials_collect;
 mod key_reader;
 pub mod mcp_registration;
+mod mcp_registration_io;
+pub mod migration;
+mod migration_legacy;
+pub mod migration_config;
+mod migration_config_loaders;
+mod migration_config_readers;
+pub mod integration_mode;
 mod progress;
-mod progress_docgen;
-mod progress_docgen_draw;
-mod progress_docgen_render;
-mod progress_docgen_stats;
-mod progress_helpers;
+mod progress_draw;
+pub mod repo_scan;
+mod repo_scan_display;
 mod progress_incremental;
+mod progress_incremental_draw;
 mod progress_shared;
+mod progress_spawn;
 mod prompts;
 mod prompts_analysis;
 mod prompts_analysis_display;
@@ -21,142 +29,25 @@ mod prompts_index;
 mod prompts_shared;
 mod unsupported_display;
 pub mod watcher;
+mod watcher_handle;
+mod watcher_loop;
 
-use std::io;
-
-use crate::indexer::{ChangeSet, IndexResult};
-
+pub use action::StartupAction;
+pub(crate) use boot::mark_setup_done;
+pub use boot::run_startup;
 pub use checks::{
 	analyze_codebase, check_index_exists,
 	detect_codebase_changes,
 };
 pub use mcp_registration::ensure_mcp_registered;
 pub use progress::index_with_progress;
-pub use progress_docgen::generate_docs_with_progress;
-pub use progress_incremental::index_with_progress_incremental;
+pub use progress_incremental
+	::index_with_progress_incremental;
 pub use prompts::prompt_for_update;
+pub use prompts_analysis
+	::prompt_for_indexing_with_analysis;
 pub use prompts_index::prompt_for_indexing;
-pub use prompts_analysis::prompt_for_indexing_with_analysis;
+pub use agent_discovery::start_mcp_discovery;
+pub use agent_select::check_and_prompt_agent;
+pub use credentials::check_and_prompt_credentials;
 pub use watcher::{spawn_watcher, WatcherHandle};
-
-use unsupported_display::display_unsupported_language_message;
-
-/// Result of the startup check
-pub enum StartupAction {
-	/// User wants to index the codebase (full index)
-	Index,
-	/// User wants to update the index (incremental)
-	Update(ChangeSet),
-	/// User declined indexing
-	Skip,
-	/// Index already exists and is up to date
-	UpToDate,
-	/// User wants to quit
-	Quit,
-	/// User wants to index + generate docs (first-launch setup)
-	IndexAndGenerateDocs,
-}
-
-/// Run the complete startup flow
-pub fn run_startup() -> io::Result<Option<IndexResult>> {
-	// Step 0: Ensure MCP server is registered
-	ensure_mcp_registered();
-
-	// Step 1: Analyze codebase language
-	let analysis = analyze_codebase();
-
-	// Step 2: Check if primary language is supported
-	if !analysis.is_primary_supported
-		&& !analysis.has_supported_files()
-	{
-		if let Some(primary) = analysis.primary_language {
-			display_unsupported_language_message(
-				primary,
-				0,
-				analysis.total_source_files,
-			)?;
-		}
-		return Ok(None);
-	}
-
-	// Step 3: Check if index already exists
-	if check_index_exists() {
-		handle_existing_index()
-	} else {
-		handle_first_launch(&analysis)
-	}
-}
-
-/// Handle startup when index already exists
-fn handle_existing_index() -> io::Result<Option<IndexResult>> {
-	if let Some(changes) = detect_codebase_changes() {
-		match prompt_for_update(&changes)? {
-			StartupAction::Update(_) => {
-				// run incremental index (blocking, fast)
-				let result = index_with_progress_incremental(&changes)?;
-
-				// spawn background doc update (non-blocking)
-				spawn_background_doc_update();
-
-				Ok(result)
-			}
-			StartupAction::Skip => Ok(None),
-			StartupAction::Quit => {
-				Err(io::Error::new(io::ErrorKind::Interrupted, "User quit"))
-			}
-			_ => Ok(None),
-		}
-	} else {
-		// no changes, index is up to date
-		Ok(None)
-	}
-}
-
-/// Handle first-launch setup (no index exists)
-fn handle_first_launch(
-	analysis: &crate::indexer::CodebaseAnalysis,
-) -> io::Result<Option<IndexResult>> {
-	let show_partial_note = !analysis.is_primary_supported
-		&& analysis.has_supported_files();
-
-	match prompt_for_indexing_with_analysis(
-		show_partial_note,
-		analysis,
-	)? {
-		StartupAction::Index
-		| StartupAction::IndexAndGenerateDocs => {
-			let result = index_with_progress()?;
-			if result.is_some() {
-				// returns true if user sent to bg
-				generate_docs_with_progress()?;
-			}
-			Ok(result)
-		}
-		StartupAction::Skip => Ok(None),
-		StartupAction::Quit => {
-			Err(io::Error::new(io::ErrorKind::Interrupted, "User quit"))
-		}
-		_ => Ok(None),
-	}
-}
-
-/// Spawn background thread to update docs
-fn spawn_background_doc_update() {
-	std::thread::spawn(|| {
-		let client =
-			crate::retrieval::daemon::DaemonClient::new();
-
-		if client.ping().is_err() {
-			return;
-		}
-
-		let project_path = std::env::current_dir()
-			.unwrap_or_default()
-			.to_string_lossy()
-			.to_string();
-
-		let _ = client.start_doc_gen(
-			project_path, false,
-		);
-	});
-}

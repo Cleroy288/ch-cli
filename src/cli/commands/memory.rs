@@ -1,13 +1,9 @@
-//! Memory system CLI command handlers.
-//!
-//! Thin handlers that delegate to MemoryService
-//! for all memory operations.
-
 use std::io::Write;
 use std::path::Path;
 
-use crate::domain::memory::UserInput;
+use crate::domain::memory::{Interaction, UserInput};
 use crate::domain::memory_helpers;
+use crate::service::memory::id_gen;
 use crate::service::{
 	DefaultMemoryService, MemoryService,
 };
@@ -21,15 +17,14 @@ pub fn memory_show_command(
 	limit: usize,
 	session: Option<&str>,
 ) -> CommandResult {
-	let svc = DefaultMemoryService::new();
+	let svc = DefaultMemoryService::default();
 	let root = Path::new(".");
 	let mut out = std::io::stdout().lock();
-
-	let items = match session {
-		Some(sid) => svc.show_recent(root, limit)
-			.map(|all| filter_session(all, sid))?,
-		None => svc.show_recent(root, limit)?,
-	};
+	let mut items =
+		svc.show_recent(root, limit)?;
+	if let Some(sid) = session {
+		items = filter_session(items, sid);
+	}
 	memory_display::print_interactions(
 		&mut out, &items,
 	)?;
@@ -41,7 +36,7 @@ pub fn memory_search_command(
 	query: &str,
 	limit: usize,
 ) -> CommandResult {
-	let svc = DefaultMemoryService::new();
+	let svc = DefaultMemoryService::default();
 	let root = Path::new(".");
 	let mut out = std::io::stdout().lock();
 
@@ -59,7 +54,7 @@ pub fn memory_search_command(
 
 /// Execute `memory stats` command
 pub fn memory_stats_command() -> CommandResult {
-	let svc = DefaultMemoryService::new();
+	let svc = DefaultMemoryService::default();
 	let root = Path::new(".");
 	let mut out = std::io::stdout().lock();
 
@@ -76,7 +71,7 @@ pub fn memory_add_command(
 	response_text: &str,
 	response_type: &str,
 ) -> CommandResult {
-	let svc = DefaultMemoryService::new();
+	let svc = DefaultMemoryService::default();
 	let root = Path::new(".");
 	let mut out = std::io::stdout().lock();
 
@@ -89,9 +84,9 @@ pub fn memory_add_command(
 		response_type,
 		response_text.to_string(),
 	);
-	let session = memory_helpers::new_session_id();
+	let session = id_gen::new_session_id();
 	let interaction =
-		memory_helpers::new_interaction(
+		id_gen::new_interaction(
 			&session, user_input, response,
 		);
 	svc.add(root, &interaction)?;
@@ -99,14 +94,12 @@ pub fn memory_add_command(
 	Ok(())
 }
 
-/// Filter interactions to a specific session
 pub fn filter_session(
-	items: Vec<crate::domain::memory::Interaction>,
+	items: Vec<Interaction>,
 	session_id: &str,
-) -> Vec<crate::domain::memory::Interaction> {
+) -> Vec<Interaction> {
 	items
 		.into_iter()
 		.filter(|i| i.session_id == session_id)
 		.collect()
 }
-

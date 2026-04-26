@@ -29,7 +29,7 @@ fn add_items(
 fn add_stores_interaction() {
 	// Arrange
 	let dir = TempMemDir::new("svc-add");
-	let svc = DefaultMemoryService::new();
+	let svc = DefaultMemoryService::default();
 	let item = make_interaction("hello world");
 
 	// Act
@@ -47,7 +47,7 @@ fn add_stores_interaction() {
 fn show_recent_returns_all() {
 	// Arrange
 	let dir = TempMemDir::new("svc-recent");
-	let svc = DefaultMemoryService::new();
+	let svc = DefaultMemoryService::default();
 	add_items(&svc, &dir, 3);
 
 	// Act
@@ -63,7 +63,7 @@ fn show_recent_returns_all() {
 fn show_recent_empty_returns_none() {
 	// Arrange
 	let dir = TempMemDir::new("svc-empty");
-	let svc = DefaultMemoryService::new();
+	let svc = DefaultMemoryService::default();
 
 	// Act
 	let recent =
@@ -78,7 +78,7 @@ fn show_recent_empty_returns_none() {
 fn search_finds_matching() {
 	// Arrange
 	let dir = TempMemDir::new("svc-search");
-	let svc = DefaultMemoryService::new();
+	let svc = DefaultMemoryService::default();
 	let item = make_interaction_with_text(
 		"authentication", "JWT middleware",
 	);
@@ -90,7 +90,11 @@ fn search_finds_matching() {
 		.unwrap();
 
 	// Assert
-	assert!(!hits.is_empty());
+	assert_eq!(hits.len(), 1);
+	assert_eq!(
+		hits[0].interaction.input.text,
+		"authentication",
+	);
 }
 
 /// search returns empty when nothing matches
@@ -98,7 +102,7 @@ fn search_finds_matching() {
 fn search_no_results() {
 	// Arrange
 	let dir = TempMemDir::new("svc-no-match");
-	let svc = DefaultMemoryService::new();
+	let svc = DefaultMemoryService::default();
 	let item = make_interaction("hello");
 	svc.add(&dir.path, &item).unwrap();
 
@@ -116,7 +120,7 @@ fn search_no_results() {
 fn stats_returns_counts() {
 	// Arrange
 	let dir = TempMemDir::new("svc-stats");
-	let svc = DefaultMemoryService::new();
+	let svc = DefaultMemoryService::default();
 	add_items(&svc, &dir, 4);
 
 	// Act

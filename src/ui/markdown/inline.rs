@@ -1,23 +1,16 @@
-//! Inline markdown parser.
-//!
-//! Converts bold (**), italic (*), and inline
-//! code (`) markers into styled ratatui Spans.
-
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::Span;
 
-/// Bold text style
+use crate::ui::styles::colors;
+
 const BOLD: Style =
 	Style::new().add_modifier(Modifier::BOLD);
-/// Italic text style
 const ITALIC: Style =
 	Style::new().add_modifier(Modifier::ITALIC);
-/// Inline code: light text on dark background
 const CODE: Style = Style::new()
 	.fg(Color::White)
-	.bg(Color::Rgb(50, 50, 50));
+	.bg(colors::INLINE_CODE_BG);
 
-/// Parse inline markdown into styled spans.
 pub fn parse(text: &str) -> Vec<Span<'static>> {
 	let mut spans = Vec::new();
 	let mut buf = String::new();
@@ -33,7 +26,7 @@ pub fn parse(text: &str) -> Vec<Span<'static>> {
 	flush(&mut buf, &mut spans);
 
 	if spans.is_empty() {
-		vec![Span::from(text.to_string())]
+		vec![Span::from(text.to_owned())]
 	} else {
 		spans
 	}

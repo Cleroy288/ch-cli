@@ -1,5 +1,3 @@
-//! User prompts for update and first-time indexing.
-
 use std::io::{self, Write};
 
 use crossterm::{
@@ -28,7 +26,6 @@ pub fn prompt_for_update(
     read_update_choice(&mut stdout, changes)
 }
 
-/// Display the update prompt screen
 fn display_update_prompt(
     stdout: &mut io::Stdout,
     changes: &ChangeSet,
@@ -92,22 +89,21 @@ fn print_change_if_nonempty<T>(
     )
 }
 
-/// Read the user's Y/N/Q choice for update
 fn read_update_choice(
     stdout: &mut io::Stdout,
     changes: &ChangeSet,
 ) -> io::Result<StartupAction> {
     terminal::enable_raw_mode()?;
 
-    let result = match read_ynq_key()? {
+    let result = read_ynq_key();
+    terminal::disable_raw_mode()?;
+    let action = match result? {
         KeyAction::Yes => {
             StartupAction::Update(changes.clone())
         }
         KeyAction::No => StartupAction::Skip,
         KeyAction::Quit => StartupAction::Quit,
     };
-
-    terminal::disable_raw_mode()?;
     writeln!(stdout)?;
-    Ok(result)
+    Ok(action)
 }

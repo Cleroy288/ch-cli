@@ -8,7 +8,7 @@ use rustean::indexer::semantic::{ReferenceContext, SymbolReference};
 use rustean::indexer::state::IndexState;
 use rustean::indexer::symbols::CodeLocation;
 
-/// Test save and load roundtrip preserves state
+/// save then load roundtrips state correctly
 #[test]
 fn test_save_load_roundtrip() {
 	let temp_dir = tempdir().unwrap(); // temporary directory for test
@@ -32,7 +32,7 @@ fn test_save_load_roundtrip() {
 	assert_eq!(loaded_state.last_updated, original_state.last_updated);
 }
 
-/// Test load returns error for non-existent state
+/// load returns error when no state file exists
 #[test]
 fn test_load_nonexistent_returns_error() {
 	let temp_dir = tempdir().unwrap(); // temporary directory for test
@@ -44,7 +44,7 @@ fn test_load_nonexistent_returns_error() {
 	assert!(result.is_err());
 }
 
-/// Test load rejects incompatible version
+/// load rejects state with incompatible version
 #[test]
 fn test_load_rejects_incompatible_version() {
 	let temp_dir = tempdir().unwrap(); // temporary directory for test
@@ -64,7 +64,7 @@ fn test_load_rejects_incompatible_version() {
 	assert!(err_msg.contains("version mismatch"));
 }
 
-/// Test save creates index directory
+/// save creates the index directory on disk
 #[test]
 fn test_save_creates_index_dir() {
 	let temp_dir = tempdir().unwrap(); // temporary directory for test
@@ -82,7 +82,7 @@ fn test_save_creates_index_dir() {
 	assert!(index_dir.is_dir());
 }
 
-/// Test save_references and load_references roundtrip
+/// save_references then load_references roundtrips
 #[test]
 fn test_save_load_references_roundtrip() {
 	let temp_dir = tempdir().unwrap(); // temporary directory for test
@@ -129,7 +129,7 @@ fn test_save_load_references_roundtrip() {
 	assert_eq!(names, vec!["MyType", "test_func"]);
 }
 
-/// Test load_references returns empty vec for non-existent file
+/// load_references returns empty when no refs file
 #[test]
 fn test_load_references_nonexistent_returns_empty() {
 	let temp_dir = tempdir().unwrap(); // temporary directory for test
@@ -141,7 +141,7 @@ fn test_load_references_nonexistent_returns_empty() {
 	assert!(refs.is_empty());
 }
 
-/// Test exists returns true when state file exists
+/// exists is true after save
 #[test]
 fn test_exists_returns_true_when_present() {
 	let temp_dir = tempdir().unwrap(); // temporary directory for test
@@ -154,7 +154,7 @@ fn test_exists_returns_true_when_present() {
 	assert!(IndexState::exists(&root));
 }
 
-/// Test exists returns false when state file does not exist
+/// exists is false when no state file on disk
 #[test]
 fn test_exists_returns_false_when_absent() {
 	let temp_dir = tempdir().unwrap(); // temporary directory for test

@@ -1,24 +1,14 @@
-//! Chunk extraction from markdown content.
-//!
-//! Processes markdown lines into DocChunks using
-//! header detection and content accumulation.
-
 use super::chunk::DocChunk;
 
-/// Mutable state for chunk extraction
 #[derive(Default)]
 pub struct ChunkState {
-	/// collected finished chunks
 	pub chunks: Vec<DocChunk>,
-	/// chunk currently being built
 	pub current_chunk: Option<DocChunk>,
-	/// hierarchy stack: (level, title)
+	/// (level, title)
 	pub parent_stack: Vec<(usize, String)>,
-	/// accumulated content for current chunk
 	pub content_buffer: String,
 }
 
-/// Process a single markdown line
 pub fn process_line(
 	line: &str,
 	line_num: usize,
@@ -43,7 +33,6 @@ pub fn process_line(
 	}
 }
 
-/// Parse a markdown header line (# Title)
 pub fn parse_header(
 	line: &str,
 ) -> Option<(usize, String)> {
@@ -68,7 +57,6 @@ pub fn parse_header(
 	Some((level, title.to_string()))
 }
 
-/// Handle a header line: flush previous, start new
 fn start_header(
 	level: usize,
 	title: String,
@@ -102,7 +90,6 @@ fn start_header(
 	state.parent_stack.push((level, title));
 }
 
-/// Flush current chunk into the chunks vec
 pub fn flush_chunk(state: &mut ChunkState) {
 	let Some(mut chunk) =
 		state.current_chunk.take()

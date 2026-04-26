@@ -1,7 +1,3 @@
-//! Search functions for trigram index
-//!
-//! Functions to find candidate files and retrieve statistics
-
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
@@ -24,12 +20,10 @@ impl TrigramIndex {
 		intersect_trigram_matches(&self.index, &trigrams)
 	}
 
-	/// Get all indexed files
 	pub fn all_files(&self) -> HashSet<PathBuf> {
 		self.index.values().flatten().cloned().collect()
 	}
 
-	/// Get statistics about the index
 	pub fn stats(&self) -> TrigramStats {
 		let avg = if self.index.is_empty() {
 			0.0

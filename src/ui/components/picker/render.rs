@@ -9,7 +9,6 @@ use ratatui::{
 use crate::picker::{Picker, PickerMode};
 use crate::ui::styles::colors;
 
-/// Render a message when no results are found.
 pub fn render_empty_results(
     frame: &mut Frame,
     picker_area: Rect,
@@ -29,7 +28,7 @@ pub fn render_empty_results(
         .alignment(Alignment::Center)
         .block(
             Block::default()
-                .borders(Borders::ALL)
+                .borders(Borders::TOP)
                 .title(title)
                 .title_alignment(Alignment::Left)
                 .style(
@@ -40,14 +39,15 @@ pub fn render_empty_results(
     frame.render_widget(paragraph, picker_area);
 }
 
-/// Render help text at the bottom of the picker.
 pub fn render_picker_help_text(
     frame: &mut Frame,
     picker_area: Rect,
 ) {
     let help_area = Rect {
-        x: picker_area.x + 2,
-        y: picker_area.y + picker_area.height,
+        x: picker_area.x.saturating_add(2),
+        y: picker_area
+            .y
+            .saturating_add(picker_area.height),
         width: picker_area.width.saturating_sub(4),
         height: 1,
     };
@@ -59,56 +59,70 @@ pub fn render_picker_help_text(
     frame.render_widget(paragraph, help_area);
 }
 
-/// Build help text spans
 fn build_help_spans() -> Line<'static> {
+    let bold = |key: &'static str, color: Color| {
+        Span::styled(
+            key,
+            Style::default()
+                .fg(color)
+                .add_modifier(Modifier::BOLD),
+        )
+    };
     Line::from(vec![
-        bold_key_span("↑↓", colors::TITLE),
+        bold("↑↓", colors::TITLE),
         Span::raw(" navigate  "),
-        bold_key_span("Enter", colors::PICKER),
+        bold("Enter", colors::PICKER),
         Span::raw(" select  "),
-        bold_key_span("F5", colors::MESSAGE_HEADER),
+        bold("Tab", colors::TITLE),
+        Span::raw(" folder  "),
+        bold("F5", colors::MESSAGE_HEADER),
         Span::raw(" refresh  "),
-        bold_key_span("ESC", colors::FILE_REF_BG),
+        bold("ESC", colors::FILE_REF_BG),
         Span::raw(" cancel"),
     ])
 }
 
-/// Build a bold key hint span
-fn bold_key_span(
-    key: &'static str,
-    color: Color,
-) -> Span<'static> {
-    Span::styled(
-        key,
-        Style::default()
-            .fg(color)
-            .add_modifier(Modifier::BOLD),
-    )
-}
-
-/// Build the picker title based on mode and query.
-pub fn build_picker_title(picker: &Picker) -> String {
-    let label = match picker.mode() {
-        PickerMode::Browse { .. } => "Browse",
+pub fn build_picker_title(
+    picker: &Picker,
+) -> String {
+    match picker.mode() {
+        PickerMode::Browse { .. } => format!(
+            " Browse (query: '{}') ",
+            picker.query()
+        ),
         PickerMode::Symbols { .. } => {
-            return build_symbols_title(picker);
+            let parent = picker
+                .symbol_browser()
+                .and_then(|b| b.current_parent())
+                .unwrap_or("top-level");
+            format!(
+                " Symbols [{}] (query: '{}') ",
+                parent,
+                picker.query()
+            )
         }
-        PickerMode::Tools => return " Tools ".into(),
-        PickerMode::DocBrowser => "Doc Browser",
-        PickerMode::Inactive => return " Search ".into(),
-    };
-    format!(" {} (query: '{}') ", label, picker.query())
-}
-
-/// Build title for Symbols mode with parent info
-fn build_symbols_title(picker: &Picker) -> String {
-    let parent = picker
-        .symbol_browser()
-        .and_then(|brow| brow.current_parent())
-        .unwrap_or("top-level");
-    format!(
-        " Symbols [{}] (query: '{}') ",
-        parent,
-        picker.query()
-    )
+        PickerMode::ToolResults { tool } => {
+            format!(" {} ", tool.display_name())
+        }
+        PickerMode::Tools => " Tools ".into(),
+        PickerMode::ToolLoading { .. } => {
+            " Loading... ".into()
+        }
+        PickerMode::RepoSelect { .. } => {
+            " Select Repo ".into()
+        }
+        PickerMode::McpToolBrowse => {
+            " MCP Tools ".into()
+        }
+        PickerMode::SlashCommand => {
+            " Commands ".into()
+        }
+        PickerMode::SlashArg { .. } => {
+            " Model ".into()
+        }
+        PickerMode::JiraTicketDetail => {
+            " Ticket Detail ".into()
+        }
+        _ => " Search ".into(),
+    }
 }

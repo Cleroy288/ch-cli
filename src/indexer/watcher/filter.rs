@@ -1,25 +1,24 @@
-//! Event filtering for file watcher.
-
 use notify::Event;
 
-use crate::indexer::watcher::event::{ChangeKind, FileChangeEvent};
+use crate::indexer::crawler::Language;
+use crate::indexer::watcher::event::{
+	ChangeKind, FileChangeEvent,
+};
 
-/// Filter event paths to only include Rust files
-pub fn filter_rust_paths(event: Event) -> Option<FileChangeEvent> {
-	let rust_paths: Vec<_> = event
+pub fn filter_supported_paths(
+	event: Event,
+) -> Option<FileChangeEvent> {
+	let paths: Vec<_> = event
 		.paths
 		.into_iter()
-		.filter(|path| {
-			path.extension().is_some_and(|ext| ext == "rs")
-		})
+		.filter(|p| Language::from_path(p).is_some())
 		.collect();
 
-	if rust_paths.is_empty() {
-		None
-	} else {
-		Some(FileChangeEvent {
-			paths: rust_paths,
-			kind: ChangeKind::from(&event.kind),
-		})
+	if paths.is_empty() {
+		return None;
 	}
+	Some(FileChangeEvent {
+		paths,
+		kind: ChangeKind::from(&event.kind),
+	})
 }

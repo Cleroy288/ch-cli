@@ -1,8 +1,3 @@
-//! Codebase language analyzer.
-//!
-//! Detects the primary programming language(s) used in a codebase
-//! by analyzing file extensions and project configuration files.
-
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -12,29 +7,21 @@ use crate::indexer::crawler::DetectedLanguage;
 use super::detection::{detect_project_type, should_skip_path};
 use super::CodebaseAnalysis;
 
-/// Language counts mapped by detected language, plus total
 type LangCounts = (HashMap<DetectedLanguage, usize>, usize);
 
-/// Analyzes a codebase to determine its primary programming language
 pub struct CodebaseAnalyzer {
-	/// Maximum files to scan (for performance on large repos)
 	max_files: usize,
 }
 
 impl CodebaseAnalyzer {
-	/// Create a new analyzer with default settings
 	pub fn new() -> Self {
-		Self {
-			max_files: 10_000, // Reasonable limit for quick analysis
-		}
+		Self { max_files: 10_000 }
 	}
 
-	/// Create an analyzer with custom max file limit
 	pub fn with_max_files(max_files: usize) -> Self {
 		Self { max_files }
 	}
 
-	/// Analyze a codebase and return language composition
 	pub fn analyze<P: AsRef<Path>>(&self, root: P) -> CodebaseAnalysis {
 		let root = root.as_ref();
 		let project_type = detect_project_type(root);
@@ -60,7 +47,6 @@ impl CodebaseAnalyzer {
 		}
 	}
 
-	/// Walk directory tree and count files per language
 	fn count_languages(
 		&self,
 		root: &Path,

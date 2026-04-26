@@ -1,4 +1,43 @@
+# Build artifacts
 /target
-.ch-index/
-.rustean-index/
-.rustean-memory/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Env / secrets (defensive — none currently used by the app)
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+
+# Local credential files (defensive — runtime credentials live in ~/.config/rustean/)
+config.json
+credentials.json
+.credentials.json
+!config.example.json
+
+# Logs
+*.log
+
+# Local notes / scratchpads / personal drafts
+note.txt
+notes/
+NOTES.md
+SCRATCH.md
+TODO.md
+PLAN.md
+
+# Claude Code local state (worktrees, ad-hoc plans, project agents)
+.claude/worktrees/
+.claude/plan.md
+.claude/agents/
+.claude/settings.local.json

@@ -10,7 +10,7 @@ use rustean::indexer::symbols::{
 };
 use rustean::indexer::Symbol;
 
-/// Test symbol_to_doc creates correct document for function symbol
+/// symbol_to_doc populates all fields for a function symbol
 #[test]
 fn test_symbol_to_doc_function() {
 	let schema = build_schema(); // create schema
@@ -46,7 +46,7 @@ fn test_symbol_to_doc_function() {
 	);
 }
 
-/// Test symbol_to_doc handles optional fields correctly
+/// symbol_to_doc handles missing optional fields
 #[test]
 fn test_symbol_to_doc_minimal() {
 	let schema = build_schema(); // create schema
@@ -68,7 +68,7 @@ fn test_symbol_to_doc_minimal() {
 	assert_eq!(kind.as_str().unwrap(), "struct");
 }
 
-/// Test doc_to_symbol roundtrip for function
+/// doc_to_symbol roundtrip preserves function fields
 #[test]
 fn test_roundtrip_function() {
 	let schema = build_schema(); // create schema
@@ -98,7 +98,7 @@ fn test_roundtrip_function() {
 	assert_eq!(restored.parent, Some("MyModule".to_string()));
 }
 
-/// Test doc_to_symbol roundtrip for struct
+/// doc_to_symbol roundtrip preserves struct fields
 #[test]
 fn test_roundtrip_struct() {
 	let schema = build_schema(); // create schema
@@ -123,7 +123,7 @@ fn test_roundtrip_struct() {
 	assert_eq!(restored.visibility, Visibility::Public);
 }
 
-/// Test doc_to_symbol handles all symbol kinds
+/// doc_to_symbol roundtrip preserves all SymbolKind variants
 #[test]
 fn test_symbol_kinds_roundtrip() {
 	let schema = build_schema(); // create schema

@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use rustean::domain::{DIR_SYMBOL, FILE_SYMBOL};
 use rustean::fs::FsEntry;
 
-/// Test FsEntry::new() creates entry with correct fields
+/// FsEntry::new sets path, name, and is_dir for a file
 #[test]
 fn test_new_file() {
     let path = PathBuf::from("/home/user/test.txt");
@@ -16,7 +16,7 @@ fn test_new_file() {
     assert!(!entry.is_dir);
 }
 
-/// Test FsEntry::new() creates directory entry correctly
+/// FsEntry::new sets is_dir true for a directory
 #[test]
 fn test_new_directory() {
     let path = PathBuf::from("/home/user/projects");
@@ -27,7 +27,7 @@ fn test_new_directory() {
     assert!(entry.is_dir);
 }
 
-/// Test display_name() returns file with FILE_SYMBOL prefix
+/// display_name prefixes files with FILE_SYMBOL
 #[test]
 fn test_display_name_file() {
     let path = PathBuf::from("test.rs");
@@ -39,7 +39,7 @@ fn test_display_name_file() {
     );
 }
 
-/// Test display_name() returns dir with DIR_SYMBOL prefix
+/// display_name prefixes directories with DIR_SYMBOL
 #[test]
 fn test_display_name_directory() {
     let path = PathBuf::from("src");
@@ -51,7 +51,7 @@ fn test_display_name_directory() {
     );
 }
 
-/// Test path_string() converts PathBuf to String
+/// path_string converts PathBuf to String
 #[test]
 fn test_path_string() {
     let path = PathBuf::from("src/main.rs");
@@ -60,7 +60,7 @@ fn test_path_string() {
     assert_eq!(entry.path_string(), "src/main.rs");
 }
 
-/// Test name_only() returns just the filename
+/// name_only returns the filename without path
 #[test]
 fn test_name_only() {
     let path =

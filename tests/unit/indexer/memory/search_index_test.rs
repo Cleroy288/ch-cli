@@ -6,14 +6,14 @@ use crate::helpers::factories::{
 	make_interaction_with_text,
 };
 
-/// Test in_memory index creation succeeds
+/// in_memory constructor succeeds
 #[test]
 fn in_memory_creation_succeeds() {
 	let idx = MemorySearchIndex::in_memory();
 	assert!(idx.is_ok());
 }
 
-/// Test index then search finds result
+/// Indexed interaction is found by query term
 #[test]
 fn index_then_search_finds_result() {
 	// Arrange
@@ -31,7 +31,7 @@ fn index_then_search_finds_result() {
 	assert!(!hits.is_empty());
 }
 
-/// Test search on empty index returns nothing
+/// Empty index yields no search results
 #[test]
 fn search_empty_index_returns_empty() {
 	// Arrange
@@ -45,7 +45,7 @@ fn search_empty_index_returns_empty() {
 	assert!(hits.is_empty());
 }
 
-/// Test count returns correct number
+/// count reflects number of indexed documents
 #[test]
 fn count_matches_indexed_documents() {
 	// Arrange
@@ -63,7 +63,7 @@ fn count_matches_indexed_documents() {
 	assert_eq!(count, 1);
 }
 
-/// Test search matches on response text
+/// Search matches terms in the response text
 #[test]
 fn search_matches_response_text() {
 	// Arrange

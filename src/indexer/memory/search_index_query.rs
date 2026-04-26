@@ -1,5 +1,3 @@
-//! Query execution helpers for memory search.
-
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::{Index, Searcher};
@@ -15,7 +13,6 @@ use super::types::MemoryHit;
 pub(crate) type ScoredDoc =
 	(f32, tantivy::DocAddress);
 
-/// Build a query parser for input + response
 pub(crate) fn build_parser(
 	index: &Index,
 	fields: &MemoryFields,
@@ -29,7 +26,6 @@ pub(crate) fn build_parser(
 	)
 }
 
-/// Execute search and return scored addresses
 pub(crate) fn execute_search(
 	parser: &QueryParser,
 	searcher: &Searcher,
@@ -46,7 +42,6 @@ pub(crate) fn execute_search(
 		.map_err(map_tantivy)
 }
 
-/// Collect scored docs into MemoryHits
 pub(crate) fn collect_hits(
 	fields: &MemoryFields,
 	searcher: &Searcher,

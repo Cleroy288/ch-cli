@@ -1,18 +1,12 @@
-//! Bulk loading: retrieve all symbols from the Tantivy index.
-//!
-//! Used when incremental indexing detects 0 changes
-//! but consumers still need the full symbol set.
-
 use tantivy::query::AllQuery;
 use tantivy::TantivyDocument;
 
-use crate::indexer::search::conversion::doc_to_symbol;
+use super::conversion_read::doc_to_symbol;
 use crate::indexer::search::error::SearchResult;
 use crate::indexer::search::index_core::SearchIndex;
 use crate::indexer::Symbol;
 
 impl SearchIndex {
-	/// Load every symbol stored in the Tantivy index.
 	///
 	/// Iterates all live documents, converts each back
 	/// to a `Symbol` via `doc_to_symbol`. Returns an
@@ -20,8 +14,8 @@ impl SearchIndex {
 	pub fn load_all_symbols(
 		&self,
 	) -> SearchResult<Vec<Symbol>> {
-		let reader = self.reader()?; // index reader
-		let searcher = reader.searcher(); // searcher
+		let reader = self.reader()?;
+		let searcher = reader.searcher();
 		let count = searcher.num_docs() as usize;
 
 		if count == 0 {

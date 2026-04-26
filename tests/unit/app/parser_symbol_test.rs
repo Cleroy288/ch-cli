@@ -15,15 +15,11 @@ fn make_selector(
     let span = InputSpan { start, end };
     SymbolSelector::new(
         span,
-        FilePath::from_string("src/app.rs"),
-        FileName::new("app.rs".to_string()),
+        FilePath::from("src/app.rs"),
+        FileName::from("app.rs".to_string()),
         symbol_path.to_string(),
     )
 }
-
-// -----------------------------------------------------------
-// Symbol ref parsing tests
-// -----------------------------------------------------------
 
 /// Symbol ref creates a SymbolReference segment
 #[test]

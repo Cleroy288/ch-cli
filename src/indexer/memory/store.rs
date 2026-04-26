@@ -1,8 +1,3 @@
-//! JSONL persistence for memory interactions.
-//!
-//! Each session gets its own `.jsonl` file.
-//! One interaction per line, append-only.
-
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::Path;
@@ -37,7 +32,6 @@ pub fn append(
 	Ok(())
 }
 
-/// Load all interactions for a session
 pub fn load_session(
 	root: &Path,
 	session_id: &str,
@@ -52,7 +46,6 @@ pub fn load_session(
 	Ok(store_helpers::read_lines(&file_path))
 }
 
-/// Load recent interactions across all sessions
 pub fn load_recent(
 	root: &Path,
 	limit: usize,

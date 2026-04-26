@@ -1,8 +1,3 @@
-//! List item renderer.
-//!
-//! Handles bullet (- * +) and numbered (1.)
-//! list items with inline formatting support.
-
 use ratatui::text::{Line, Span};
 
 use super::inline;
@@ -10,7 +5,6 @@ use super::inline;
 /// Bullet character for unordered lists
 const BULLET: &str = "\u{2022}";
 
-/// Check if a trimmed line is a list item.
 ///
 /// Matches: `- item`, `* item`, `+ item`,
 /// and `1. item` style numbered lists.
@@ -22,7 +16,7 @@ pub fn is_item(trimmed: &str) -> bool {
 		return true;
 	}
 	let dot = trimmed.find(". ");
-	dot.map_or(false, |pos| {
+	dot.is_some_and(|pos| {
 		pos > 0
 			&& trimmed[..pos]
 				.chars()
@@ -30,7 +24,6 @@ pub fn is_item(trimmed: &str) -> bool {
 	})
 }
 
-/// Render a list item with marker and indent.
 pub fn render_item(line: &str) -> Line<'static> {
 	let trimmed = line.trim_start();
 	let (marker, text) = split_marker(trimmed);

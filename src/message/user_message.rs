@@ -2,35 +2,30 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::message::MessageSegment;
 
-/// Represents a complete user message.
-///
-/// Contains the parsed segments, timestamp, and raw input for reference.
 #[derive(Debug, Clone)]
 pub struct UserMessage {
-    /// The segments that make up this message
     pub segments: Vec<MessageSegment>,
-    /// When this message was created
+    /// Unix epoch seconds
     pub timestamp: u64,
-    /// The raw input text (for reference)
     pub raw_input: String,
+    pub response: Option<String>,
 }
 
 impl UserMessage {
-    /// Create a new user message
     pub fn new(segments: Vec<MessageSegment>, raw_input: String) -> Self {
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .unwrap_or_default()
             .as_secs();
 
         Self {
             segments,
             timestamp,
             raw_input,
+            response: None,
         }
     }
 
-    /// Get a human-readable representation of this message
     pub fn as_display_string(&self) -> String {
         self.segments
             .iter()
@@ -39,17 +34,20 @@ impl UserMessage {
             .join("")
     }
 
-    /// Get a debug representation showing the parsed structure
     pub fn debug_string(&self) -> String {
         let mut result = String::new();
         result.push_str("Message Segments:\n");
         for (idx, segment) in self.segments.iter().enumerate() {
-            result.push_str(&format!("  [{}] {}\n", idx, segment.debug_string()));
+            let line = format!(
+                "  [{}] {}\n",
+                idx,
+                segment.debug_string(),
+            );
+            result.push_str(&line);
         }
         result
     }
 
-    /// Count the number of file references in this message
     pub fn file_count(&self) -> usize {
         self.segments
             .iter()
@@ -57,7 +55,6 @@ impl UserMessage {
             .count()
     }
 
-    /// Count the number of folder references in this message
     pub fn folder_count(&self) -> usize {
         self.segments
             .iter()

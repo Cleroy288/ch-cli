@@ -1,8 +1,3 @@
-//! Index cache for the search service.
-//!
-//! Avoids rebuilding IndexManager on every call
-//! by caching the IndexResult per project root.
-
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
@@ -15,18 +10,16 @@ use super::cache_helpers::{
 	read_disk_timestamp,
 };
 
-/// Cache holding IndexResult per project root
+/// Caches IndexResult per canonical project root
 #[derive(Default)]
 pub struct IndexCache {
-	/// cached entries keyed by canonical root
 	entries: Mutex<HashMap<PathBuf, CachedEntry>>,
 }
 
-/// A single cached index entry
+/// Cached index with staleness tracking
 struct CachedEntry {
-	/// the cached index result
 	result: IndexResult,
-	/// timestamp when cached (secs since epoch)
+	/// seconds since epoch when cached
 	cached_at: u64,
 }
 
@@ -38,12 +31,10 @@ impl IndexCache {
 		}
 	}
 
-	/// Get or build index, calling `f` with result.
 	/// Rebuilds when persisted state is newer.
 	pub fn with_index<F, R>(
 		&self,
 		path: &Path,
-		semantic: bool,
 		func: F,
 	) -> Result<R, SearchError>
 	where
@@ -52,8 +43,7 @@ impl IndexCache {
 		) -> Result<R, SearchError>,
 	{
 		let root = canonicalize(path);
-		let disk_ts = read_disk_timestamp(&root);
-		self.ensure_fresh(&root, disk_ts, semantic)?;
+		self.ensure_fresh(&root)?;
 		let guard = self
 			.entries
 			.lock()
@@ -64,44 +54,46 @@ impl IndexCache {
 		func(&entry.result)
 	}
 
-	/// Ensure the cache has a fresh entry
+	/// Check + rebuild under a single lock to
+	/// prevent duplicate rebuilds (TOCTOU).
 	fn ensure_fresh(
 		&self,
-		root: &PathBuf,
-		disk_ts: u64,
-		semantic: bool,
+		root: &Path,
 	) -> Result<(), SearchError> {
-		let stale = self.is_stale(root, disk_ts)?;
-		if !stale {
-			return Ok(());
-		}
-		let result = build_index(root, semantic)?;
-		let stamp = read_disk_timestamp(root);
-		let entry = CachedEntry {
-			result,
-			cached_at: stamp,
-		};
-		let mut guard = self
-			.entries
-			.lock()
-			.map_err(|_| io_err("lock poisoned"))?;
-		guard.insert(root.clone(), entry);
-		Ok(())
-	}
-
-	/// Check if cache entry is stale or missing
-	fn is_stale(
-		&self,
-		root: &PathBuf,
-		disk_ts: u64,
-	) -> Result<bool, SearchError> {
+		let disk_ts = read_disk_timestamp(root);
 		let guard = self
 			.entries
 			.lock()
 			.map_err(|_| io_err("lock poisoned"))?;
-		Ok(match guard.get(root) {
+		let stale = match guard.get(root) {
 			None => true,
 			Some(ent) => ent.cached_at < disk_ts,
-		})
+		};
+		if !stale {
+			return Ok(());
+		}
+		// Drop lock before expensive I/O, then
+		// re-check after rebuild.
+		drop(guard);
+		let result = build_index(root)?;
+		let stamp = read_disk_timestamp(root);
+		let mut guard = self
+			.entries
+			.lock()
+			.map_err(|_| io_err("lock poisoned"))?;
+		// Only store if still stale (another thread
+		// may have rebuilt while we were working).
+		let still_stale = match guard.get(root) {
+			None => true,
+			Some(ent) => ent.cached_at < stamp,
+		};
+		if still_stale {
+			let entry = CachedEntry {
+				result,
+				cached_at: stamp,
+			};
+			guard.insert(root.to_path_buf(), entry);
+		}
+		Ok(())
 	}
 }

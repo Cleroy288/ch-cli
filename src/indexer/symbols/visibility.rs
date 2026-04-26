@@ -1,5 +1,3 @@
-//! Visibility modifiers for code symbols.
-
 use std::fmt;
 
 /// Visibility of a symbol

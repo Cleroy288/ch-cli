@@ -42,8 +42,8 @@ fn test_parse_with_file_reference() {
     let span = InputSpan { start: 6, end: 14 };
     let file_ref = FileReference::new(
         span,
-        FilePath::from_string("./src/main.rs"),
-        FileName::new("main.rs".to_string()),
+        FilePath::from("./src/main.rs"),
+        FileName::from("main.rs".to_string()),
         false,
     );
     let result = parse_input_to_message(

@@ -1,8 +1,9 @@
-//! Error types for watcher operations.
-//!
-//! Re-exports from domain::errors::watcher for
-//! backward compatibility.
-
 pub use crate::domain::errors::watcher::{
 	WatcherError, WatcherResult,
 };
+
+impl From<notify::Error> for WatcherError {
+	fn from(err: notify::Error) -> Self {
+		Self::Notify(err.to_string())
+	}
+}

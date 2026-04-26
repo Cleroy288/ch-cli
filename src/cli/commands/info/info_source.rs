@@ -1,5 +1,3 @@
-//! Source code display for info command.
-
 use std::io::Write;
 
 use crate::indexer::Symbol;
@@ -91,7 +89,6 @@ pub fn find_symbol_end(
 	(start + 10).min(lines.len())
 }
 
-/// Count braces in a single line,
 /// returning updated state
 fn count_braces(
 	line: &str,

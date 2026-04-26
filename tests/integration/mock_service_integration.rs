@@ -7,16 +7,10 @@
 use std::path::Path;
 
 use rustean::domain::errors::index::IndexError;
-use rustean::service::daemon::types::{
-	DaemonStatusInfo,
-};
-use rustean::service::{
-	DaemonService, IndexService, SearchService,
-};
+use rustean::service::{IndexService, SearchService};
 
 use crate::helpers::mocks::{
-	MockDaemonService, MockIndexService,
-	MockSearchService,
+	MockIndexService, MockSearchService,
 };
 use crate::helpers::factories_service::{
 	make_index_options, make_search_options,
@@ -86,27 +80,4 @@ fn mock_index_returns_preset_error() {
 	assert!(got.is_err());
 	let msg = got.unwrap_err().to_string();
 	assert!(msg.contains("test error"));
-}
-
-#[test]
-fn mock_daemon_status_returns_preset() {
-	// Arrange
-	let mock = MockDaemonService::new();
-	let info = DaemonStatusInfo {
-		is_running: true,
-		pid: Some(1234),
-		..DaemonStatusInfo::default()
-	};
-	mock.on_status(Ok(info));
-
-	// Act
-	let got = mock.status();
-
-	// Assert
-	let status = got.unwrap();
-	assert!(status.is_running);
-	assert_eq!(status.pid, Some(1234));
-	let log = mock.call_log.borrow();
-	assert_eq!(log.len(), 1);
-	assert_eq!(log[0], "status");
 }

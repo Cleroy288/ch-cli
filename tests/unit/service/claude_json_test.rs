@@ -51,7 +51,7 @@ fn parse_minimal_json_uses_defaults() {
 	assert_eq!(resp.usage.input_tokens, 0);
 }
 
-/// Invalid JSON returns ClaudeError::InvalidJson
+/// Invalid JSON returns ClaudeError::Json
 #[test]
 fn parse_invalid_json_returns_error() {
 	// Arrange
@@ -64,11 +64,11 @@ fn parse_invalid_json_returns_error() {
 	assert!(result.is_err());
 	let err = result.unwrap_err();
 	assert!(
-		format!("{}", err).contains("Invalid JSON")
+		format!("{}", err).contains("invalid JSON")
 	);
 }
 
-/// Error response returns ClaudeError::ApiError
+/// Error response returns ClaudeError::Api
 #[test]
 fn parse_error_response_returns_api_error() {
 	// Arrange
@@ -85,7 +85,7 @@ fn parse_error_response_returns_api_error() {
 	assert!(result.is_err());
 	let err = result.unwrap_err();
 	assert!(
-		format!("{}", err).contains("API error")
+		format!("{}", err).contains("claude API")
 	);
 }
 

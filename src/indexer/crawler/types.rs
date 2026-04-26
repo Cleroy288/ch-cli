@@ -1,8 +1,3 @@
-//! Types and configuration for the file system crawler.
-//!
-//! This module contains data structures for crawl statistics,
-//! file results, and crawler configuration.
-
 use std::path::PathBuf;
 
 use crate::indexer::parser::ParseError;
@@ -10,46 +5,32 @@ use crate::indexer::Symbol;
 
 use super::language::Language;
 
-/// Statistics about a crawl/index operation
 #[derive(Debug, Clone, Default)]
 pub struct CrawlStats {
-	/// Total files discovered
 	pub files_found: usize,
-	/// Files successfully parsed
 	pub files_parsed: usize,
-	/// Files that failed to parse
 	pub files_failed: usize,
-	/// Total symbols extracted
 	pub symbols_found: usize,
-	/// Time taken in milliseconds
+	/// Wall-clock ms
 	pub duration_ms: u64,
 }
 
-/// Result of crawling a single file
 #[derive(Debug)]
 pub struct FileResult {
-	/// Path to the file
 	pub path: PathBuf,
-	/// Symbols found (empty if parsing failed)
 	pub symbols: Vec<Symbol>,
-	/// Error if parsing failed
 	pub error: Option<ParseError>,
 }
 
-/// Configuration for the crawler
 #[derive(Debug, Clone)]
 pub struct CrawlerConfig {
-	/// Languages to index
 	pub languages: Vec<Language>,
-	/// Whether to respect .gitignore
 	pub respect_gitignore: bool,
-	/// Whether to follow symlinks
 	pub follow_symlinks: bool,
-	/// Maximum file size to parse (in bytes)
+	/// In bytes
 	pub max_file_size: Option<u64>,
-	/// Additional patterns to ignore
 	pub ignore_patterns: Vec<String>,
-	/// Number of threads (0 = auto)
+	/// 0 = auto-detect
 	pub num_threads: usize,
 }
 

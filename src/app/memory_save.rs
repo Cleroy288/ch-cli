@@ -1,20 +1,13 @@
-//! Auto-save TUI interactions to memory.
-//!
-//! Captures user input at handle_enter() time,
-//! then persists the full interaction when
-//! Claude responds in tick_claude_response().
-
 use std::path::Path;
 
 use crate::domain::claude::ClaudeResponse;
 use crate::domain::memory::{AiResponse, UserInput};
-use crate::domain::memory_helpers;
+use crate::service::memory::id_gen;
 use crate::message::segment::MessageSegment;
 use crate::service::{
 	DefaultMemoryService, MemoryService,
 };
 
-/// Extract UserInput from raw text + segments
 pub fn extract_user_input(
 	raw_input: &str,
 	segments: &[MessageSegment],
@@ -27,7 +20,6 @@ pub fn extract_user_input(
 	}
 }
 
-/// Collect file paths from segments
 fn extract_file_paths(
 	segments: &[MessageSegment],
 ) -> Vec<String> {
@@ -37,7 +29,6 @@ fn extract_file_paths(
 		.collect()
 }
 
-/// Get path from a single segment if it's a ref
 fn segment_path(
 	seg: &MessageSegment,
 ) -> Option<String> {
@@ -52,7 +43,6 @@ fn segment_path(
 	}
 }
 
-/// Convert ClaudeResponse to AiResponse
 pub fn build_ai_response(
 	resp: &ClaudeResponse,
 ) -> AiResponse {
@@ -75,11 +65,11 @@ pub fn save_to_memory(
 	resp: &ClaudeResponse,
 ) {
 	let ai_resp = build_ai_response(resp);
-	let interaction = memory_helpers::new_interaction(
+	let interaction = id_gen::new_interaction(
 		session_id, user_input, ai_resp,
 	);
 	let root = Path::new(".");
-	let svc = DefaultMemoryService::new();
+	let svc = DefaultMemoryService::default();
 	if let Err(err) = svc.add(root, &interaction) {
 		eprintln!("[memory] auto-save failed: {err}");
 	}

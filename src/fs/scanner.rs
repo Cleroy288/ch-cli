@@ -4,27 +4,17 @@ use std::path::Path;
 use crate::domain::MAX_RECURSION_DEPTH;
 use crate::fs::FsEntry;
 
-/// File system scanner for indexing files and dirs.
-///
-/// Recursively scans directories up to
-/// MAX_RECURSION_DEPTH and provides methods for
-/// filtering and searching entries.
 pub struct FileScanner {
 	entries: Vec<FsEntry>,
 }
 
 impl FileScanner {
-	/// Create a new FileScanner
 	pub fn new() -> Self {
 		Self {
 			entries: Vec::new(),
 		}
 	}
 
-	/// Scan a directory and index all entries.
-	///
-	/// Entries are sorted: directories first, then
-	/// files, alphabetically within each group.
 	pub fn scan_directory<P: AsRef<Path>>(
 		&mut self,
 		path: P,
@@ -50,18 +40,12 @@ impl FileScanner {
 		Ok(())
 	}
 
-	/// Get all entries
 	pub fn entries(&self) -> &[FsEntry] {
 		&self.entries
 	}
 }
 
-/// Recursive scanning implementation.
 impl FileScanner {
-	/// Recursively scan a directory.
-	///
-	/// Uses let-else pattern for clean error
-	/// handling. Unreadable entries are skipped.
 	fn scan_recursive(
 		&mut self,
 		path: &Path,
@@ -81,8 +65,6 @@ impl FileScanner {
 		Ok(())
 	}
 
-	/// Process a single directory entry,
-	/// adding it and recursing into subdirs.
 	fn process_entry(
 		&mut self,
 		dir_entry: &fs::DirEntry,

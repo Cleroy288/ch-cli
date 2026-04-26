@@ -1,20 +1,16 @@
-//! Error types for Claude CLI interactions.
-
-/// Errors from Claude Code CLI operations
 #[derive(Debug, thiserror::Error)]
 pub enum ClaudeError {
-	#[error("Claude CLI not installed on PATH")]
+	#[error("claude CLI not found on PATH")]
 	NotInstalled,
 
-	#[error("Claude process failed: {0}")]
-	ProcessFailed(String),
+	#[error("claude process: {0}")]
+	Process(String),
 
-	#[error("Invalid JSON response: {0}")]
-	InvalidJson(String),
+	#[error("invalid JSON response: {0}")]
+	Json(String),
 
-	#[error("Claude API error: {0}")]
-	ApiError(String),
+	#[error("claude API: {0}")]
+	Api(String),
 }
 
-/// Convenience alias for Claude results
 pub type ClaudeResult<T> = Result<T, ClaudeError>;

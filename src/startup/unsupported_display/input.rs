@@ -1,5 +1,3 @@
-//! User input handling
-
 use std::io;
 use std::time::Duration;
 

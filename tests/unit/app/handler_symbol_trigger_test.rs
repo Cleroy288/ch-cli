@@ -40,30 +40,47 @@ fn paren_after_text_no_trigger() {
     assert_eq!(app.input(), "hi(");
 }
 
-/// Ctrl+C sets should_quit and returns true
+/// Double Ctrl+C sets should_quit
 #[test]
 fn ctrl_c_quits_app() {
     // Arrange
     let mut app = App::default();
 
-    // Act
-    let quit = app.handle_key(
+    // Act — first Ctrl+C shows hint
+    let first = app.handle_key(
+        KeyCode::Char('c'),
+        KeyModifiers::CONTROL,
+    );
+
+    // Assert — not quit yet
+    assert!(!first);
+    assert!(!app.should_quit());
+
+    // Act — second Ctrl+C quits
+    let second = app.handle_key(
         KeyCode::Char('c'),
         KeyModifiers::CONTROL,
     );
 
     // Assert
-    assert!(quit);
+    assert!(second);
     assert!(app.should_quit());
 }
 
-/// Esc in input mode sets should_quit
+/// Double Esc in input mode sets should_quit
 #[test]
-fn esc_in_input_mode_quits() {
+fn double_esc_in_input_mode_quits() {
     // Arrange
     let mut app = App::default();
 
-    // Act
+    // Act — first Esc shows hint
+    let first = app.handle_key(
+        KeyCode::Esc,
+        KeyModifiers::NONE,
+    );
+    assert!(!first);
+
+    // Act — second Esc quits
     let quit = app.handle_key(
         KeyCode::Esc,
         KeyModifiers::NONE,

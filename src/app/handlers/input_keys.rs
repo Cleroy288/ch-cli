@@ -1,97 +1,132 @@
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, KeyModifiers};
+use std::time::Instant;
 
 use crate::app::App;
+use crate::ui::strings::tui_labels;
+
+const DOUBLE_ESC_MS: u128 = 1500;
 
 impl App {
-    /// Handle regular input keyboard events.
-    ///
-    /// Processes character input, backspace, delete,
-    /// cursor movement, and Enter.
     /// Returns true if the app should quit.
     pub(crate) fn handle_input_key(
         &mut self,
         key: KeyCode,
+        mods: KeyModifiers,
     ) -> bool {
+        if is_ctrl_char(key, mods, 'e') {
+            self.start_enhance();
+            return false;
+        }
+        if is_ctrl_char(key, mods, 'r') {
+            self.activate_review_mode();
+            return false;
+        }
+        if is_shift_enter(key, mods) {
+            self.insert_newline();
+            return false;
+        }
+        self.dispatch_input_key(key, mods)
+    }
+
+    fn dispatch_input_key(
+        &mut self,
+        key: KeyCode,
+        mods: KeyModifiers,
+    ) -> bool {
+        if key != KeyCode::Up
+            && key != KeyCode::Down
+        {
+            self.history_index = None;
+        }
         match key {
             KeyCode::Char(chr) => {
                 self.handle_char_input(chr)
             }
-            KeyCode::Backspace => self.handle_backspace(),
+            KeyCode::Backspace => {
+                self.handle_backspace()
+            }
             KeyCode::Delete => self.handle_delete(),
-            KeyCode::Left => self.handle_cursor_left(),
-            KeyCode::Right => self.handle_cursor_right(),
-            KeyCode::Up => self.scroll_up(),
-            KeyCode::Down => self.scroll_down(),
-            KeyCode::Home => self.handle_home(),
-            KeyCode::End => self.handle_end(),
+            KeyCode::Left => {
+                self.handle_cursor_left()
+            }
+            KeyCode::Right => {
+                self.handle_cursor_right()
+            }
+            KeyCode::Up => self.handle_up(),
+            KeyCode::Down => self.handle_down(),
+            KeyCode::Home => {
+                self.handle_home_key(mods)
+            }
+            KeyCode::End => {
+                self.handle_end_key(mods)
+            }
             KeyCode::Enter => self.handle_enter(),
             KeyCode::Esc => {
-                self.should_quit = true;
-                return true;
+                return self.handle_esc()
             }
             _ => {}
         }
         false
     }
 
-    /// Insert a character at the cursor position
-    fn handle_char_input(&mut self, chr: char) {
-        let cursor_pos = self.cursor_position.get();
-        self.input.insert(cursor_pos, chr);
-        self.cursor_position.move_right(
-            self.input.len(),
+    /// Up: move up in multiline, or history.
+    fn handle_up(&mut self) {
+        if self.input.contains('\n')
+            && !self.cursor_on_first_line()
+        {
+            self.cursor_move_up();
+        } else {
+            self.history_prev();
+        }
+    }
+
+    /// Down: move down in multiline, or history.
+    fn handle_down(&mut self) {
+        if self.input.contains('\n')
+            && !self.cursor_on_last_line()
+        {
+            self.cursor_move_down();
+        } else {
+            self.history_next();
+        }
+    }
+
+    /// Double-Esc within 1.5s to quit.
+    fn handle_esc(&mut self) -> bool {
+        if let Some(ts) = self.esc_pressed_at {
+            let elapsed = ts.elapsed().as_millis();
+            if elapsed <= DOUBLE_ESC_MS {
+                self.should_quit = true;
+                return true;
+            }
+        }
+        self.esc_pressed_at = Some(Instant::now());
+        self.status_message = Some(
+            tui_labels::QUIT_HINT.to_string(),
         );
-
-        if chr == '@' {
-            self.picker.activate(cursor_pos);
-            return;
-        }
-
-        if chr == '#' {
-            self.picker.activate_tools(cursor_pos);
-            return;
-        }
-
-        // Check if ( typed right after a file ref
-        if chr == '(' {
-            self.try_open_symbol_picker();
-        }
+        false
     }
+}
 
-    /// Check if cursor is right after a FileReference
-    /// and open symbol picker if so.
-    pub(crate) fn try_open_symbol_picker(&mut self) {
-        let cursor = self.cursor_position.get();
-        // The ( was inserted at cursor-1
-        let paren_pos = cursor - 1;
+fn is_ctrl_char(
+    key: KeyCode,
+    mods: KeyModifiers,
+    c: char,
+) -> bool {
+    key == KeyCode::Char(c)
+        && mods.contains(KeyModifiers::CONTROL)
+}
 
-        // Find a file ref that ends exactly at paren_pos
-        let ref_idx = self
-            .file_references
-            .iter()
-            .position(|fref| fref.end == paren_pos && !fref.is_dir);
-
-        if let Some(idx) = ref_idx {
-            self.activate_symbol_picker(idx);
-        }
+/// Shift+Enter or Char('\n') with no modifiers.
+fn is_shift_enter(
+    key: KeyCode,
+    mods: KeyModifiers,
+) -> bool {
+    if key == KeyCode::Enter
+        && mods.contains(KeyModifiers::SHIFT)
+    {
+        return true;
     }
-
-    /// Handle backspace key
-    fn handle_backspace(&mut self) {
-        let cursor_pos = self.cursor_position.get();
-        if cursor_pos > 0 {
-            self.cursor_position.move_left();
-            self.input.remove(cursor_pos - 1);
-            self.update_file_references();
-        }
-    }
-
-    /// Handle delete key
-    fn handle_delete(&mut self) {
-        let cursor_pos = self.cursor_position.get();
-        if cursor_pos < self.input.len() {
-            self.input.remove(cursor_pos);
-            self.update_file_references();
-        }
-    }
+    // Some terminals send Char('\n') for Shift+Enter
+    key == KeyCode::Char('\n')
 }

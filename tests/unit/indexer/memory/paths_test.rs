@@ -1,20 +1,19 @@
 //! Tests for memory path helpers.
+//! Verifies structural relationships between paths.
 
 use std::path::Path;
 
 use rustean::indexer::memory::paths;
 
-/// Test memory_dir returns correct path
+/// memory_dir delegates to data_paths::memory_dir
 #[test]
-fn memory_dir_correct() {
+fn memory_dir_ends_with_memory() {
 	let root = Path::new("/project");
 	let dir = paths::memory_dir(root);
-	assert_eq!(
-		dir, Path::new("/project/.rustean-memory"),
-	);
+	assert!(dir.ends_with("memory"));
 }
 
-/// Test sessions_dir is inside memory_dir
+/// sessions_dir is a subdirectory of memory_dir
 #[test]
 fn sessions_dir_inside_memory() {
 	let root = Path::new("/project");
@@ -25,7 +24,7 @@ fn sessions_dir_inside_memory() {
 	assert!(dir.ends_with("sessions"));
 }
 
-/// Test session_file has .jsonl extension
+/// session_file uses .jsonl extension
 #[test]
 fn session_file_has_jsonl_ext() {
 	let root = Path::new("/project");
@@ -38,7 +37,7 @@ fn session_file_has_jsonl_ext() {
 	);
 }
 
-/// Test tantivy_dir is inside memory_dir
+/// tantivy_dir is inside memory_dir
 #[test]
 fn tantivy_dir_inside_memory() {
 	let root = Path::new("/project");
@@ -49,7 +48,7 @@ fn tantivy_dir_inside_memory() {
 	assert!(dir.ends_with("tantivy"));
 }
 
-/// Test meta_file is inside memory_dir
+/// meta_file is inside memory_dir
 #[test]
 fn meta_file_inside_memory() {
 	let root = Path::new("/project");

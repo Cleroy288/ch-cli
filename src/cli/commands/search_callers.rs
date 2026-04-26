@@ -1,20 +1,14 @@
-//! Display callers/callees from SemanticGraph.
-//!
-//! Pure presentation: formats caller/callee
-//! results for CLI output.
-
 use std::io::Write;
 
 use crate::indexer::semantic::{
 	ReferenceContext, SemanticGraph,
 };
-use crate::retrieval::query::{
+use crate::service::search::caller::{
 	CallerDirection, CallerQuery,
 };
 
 use super::error::CommandResult;
 
-/// Handle a caller query using the semantic graph
 pub fn handle_caller_query(
 	query: &CallerQuery,
 	graph: &SemanticGraph,
@@ -30,7 +24,6 @@ pub fn handle_caller_query(
 	}
 }
 
-/// Display all functions that call the symbol
 fn display_callers(
 	name: &str,
 	graph: &SemanticGraph,
@@ -61,7 +54,6 @@ fn display_callers(
 	print_caller_entries(&mut out, name, &calls)
 }
 
-/// Print caller entries with file locations
 fn print_caller_entries(
 	out: &mut impl Write,
 	name: &str,
@@ -95,7 +87,6 @@ fn print_caller_entries(
 	Ok(())
 }
 
-/// Display all functions called by the symbol
 fn display_callees(
 	name: &str,
 	graph: &SemanticGraph,
@@ -107,48 +98,32 @@ fn display_callees(
 			out,
 			"Symbol '{}' not found \
 			in definitions",
-			name
+			name,
 		)?;
 		return Ok(());
 	}
-	print_callee_header(&mut out, name)?;
-	print_callee_defs(&mut out, &defs)?;
-	Ok(())
-}
-
-/// Print callee section header
-fn print_callee_header(
-	out: &mut impl Write,
-	name: &str,
-) -> std::io::Result<()> {
+	writeln!(out, "Callees of '{name}':")?;
 	writeln!(
 		out,
-		"Callees of '{}' \
-		(functions it calls):\n",
-		name
+		"\nNote: Callee tracking requires \
+		body analysis (not yet implemented)"
 	)?;
-	writeln!(
-		out,
-		"Note: Callee tracking requires body \
-		analysis (not yet fully implemented)"
-	)?;
-	Ok(())
+	writeln!(out, "\nDefinition locations:")?;
+	print_def_entries(&mut out, &defs)
 }
 
-/// Print callee definition locations
-fn print_callee_defs(
+fn print_def_entries(
 	out: &mut impl Write,
 	defs: &[&crate::indexer::semantic
 		::Definition],
-) -> std::io::Result<()> {
-	writeln!(out, "\nDefinition locations:")?;
+) -> CommandResult {
 	for (idx, def) in defs.iter().enumerate() {
 		let file = def
 			.symbol
 			.location
 			.file
 			.file_name()
-			.and_then(|fname| fname.to_str())
+			.and_then(|f| f.to_str())
 			.unwrap_or("?");
 		writeln!(
 			out,
@@ -156,7 +131,7 @@ fn print_callee_defs(
 			idx + 1,
 			def.fqn,
 			file,
-			def.symbol.location.line
+			def.symbol.location.line,
 		)?;
 	}
 	Ok(())

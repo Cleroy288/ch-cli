@@ -1,5 +1,3 @@
-//! Default implementation of MemoryService.
-
 use std::path::Path;
 
 use crate::domain::errors::memory::MemoryResult;
@@ -13,21 +11,9 @@ use crate::indexer::memory::types::{
 
 use super::MemoryService;
 
-/// Default memory service backed by JSONL + Tantivy
+/// Memory service backed by JSONL + Tantivy
+#[derive(Default)]
 pub struct DefaultMemoryService;
-
-impl Default for DefaultMemoryService {
-	fn default() -> Self {
-		Self
-	}
-}
-
-impl DefaultMemoryService {
-	/// Create a new default memory service
-	pub fn new() -> Self {
-		Self
-	}
-}
 
 impl MemoryService for DefaultMemoryService {
 	fn add(

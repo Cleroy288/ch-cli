@@ -8,7 +8,7 @@ use rustean::ui::styles::{
     folder_reference_style, picker_selected_style,
 };
 
-/// Test file_reference_style returns correct colors
+/// file_reference_style applies white-on-bg with bold
 #[test]
 fn test_file_reference_style() {
     let style = file_reference_style();
@@ -19,7 +19,7 @@ fn test_file_reference_style() {
     assert!(style.add_modifier.contains(Modifier::BOLD));
 }
 
-/// Test folder_reference_style returns correct colors
+/// folder_reference_style applies white-on-bg with bold
 #[test]
 fn test_folder_reference_style() {
     let style = folder_reference_style();
@@ -30,7 +30,7 @@ fn test_folder_reference_style() {
     assert!(style.add_modifier.contains(Modifier::BOLD));
 }
 
-/// Test picker_selected_style returns correct colors
+/// picker_selected_style applies black-on-title with bold
 #[test]
 fn test_picker_selected_style() {
     let style = picker_selected_style();
@@ -41,7 +41,7 @@ fn test_picker_selected_style() {
     assert!(style.add_modifier.contains(Modifier::BOLD));
 }
 
-/// Test file_list_selected_style returns correct colors
+/// file_list_selected_style applies black-on-picker with bold
 #[test]
 fn test_file_list_selected_style() {
     let style = file_list_selected_style();

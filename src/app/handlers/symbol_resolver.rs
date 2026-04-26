@@ -1,15 +1,12 @@
-use crate::domain::SymbolSelector;
 use crate::indexer::parser::RustParser;
 use crate::indexer::symbols::Symbol;
 use crate::message::MessageSegment;
 
-/// Resolve symbol references: parse files and extract
-/// source code for each SymbolSelector.
+/// source code for each SymbolReference segment.
 ///
 /// Called at message-send time (lazy extraction).
 pub fn resolve_symbols(
     segments: &mut [MessageSegment],
-    _selectors: &[SymbolSelector],
 ) {
     for seg in segments.iter_mut() {
         attach_source_code(seg);
@@ -65,7 +62,6 @@ fn find_symbol<'a>(
     })
 }
 
-/// Read source code bytes for a symbol
 fn read_symbol_source(
     file_path: &str,
     symbol: &Symbol,

@@ -1,10 +1,6 @@
-//! Symbol types for the semantic indexer.
-//!
-//! This module defines the core data structures used to represent
-//! code symbols extracted from source files.
-
 mod content_type;
 mod document_type;
+mod document_type_boost;
 mod kind;
 mod kind_boost;
 mod location;

@@ -1,12 +1,8 @@
-//! Markdown table renderer.
-//!
-//! Parses pipe-delimited table rows, computes
-//! column widths, and produces padded output.
-
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 
-/// Parse table rows into formatted lines.
+use crate::ui::styles::colors;
+
 pub fn render(rows: &[&str]) -> Vec<Line<'static>> {
 	let parsed: Vec<Vec<String>> = rows
 		.iter()
@@ -44,7 +40,6 @@ fn parse_cells(row: &str) -> Vec<String> {
 		.collect()
 }
 
-/// Compute max width per column across rows.
 fn compute_widths(
 	rows: &[Vec<String>],
 ) -> Vec<usize> {
@@ -65,7 +60,6 @@ fn compute_widths(
 		.collect()
 }
 
-/// Render one row with padded cells.
 fn render_row(
 	cells: &[String],
 	widths: &[usize],
@@ -94,7 +88,6 @@ fn render_row(
 	))
 }
 
-/// Render a horizontal divider line.
 fn render_divider(
 	widths: &[usize],
 ) -> Line<'static> {
@@ -106,6 +99,6 @@ fn render_divider(
 
 	Line::from(Span::styled(
 		format!("  {}", text),
-		Style::default().fg(Color::DarkGray),
+		Style::default().fg(colors::DEBUG),
 	))
 }

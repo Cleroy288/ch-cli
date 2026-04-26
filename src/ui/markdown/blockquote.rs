@@ -1,29 +1,25 @@
-//! Blockquote renderer.
-//!
-//! Renders > prefixed lines with a styled left
-//! bar indicator and italic text.
-
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
+
+use crate::ui::styles::colors;
 
 /// Left bar style
 const BAR_STYLE: Style =
-	Style::new().fg(Color::DarkGray);
+	Style::new().fg(colors::BLOCKQUOTE_BAR);
 
 /// Quoted text style — gray italic
 const QUOTE_STYLE: Style = Style::new()
-	.fg(Color::Gray)
+	.fg(colors::SEGMENT_LABEL)
 	.add_modifier(Modifier::ITALIC);
 
-/// Render a blockquote line with left bar.
 ///
 /// Strips the > prefix and applies italic
 /// styling with inline formatting support.
 pub fn render(line: &str) -> Line<'static> {
 	let text = strip_prefix(line);
-	let bar =
-		Span::styled("  \u{2502} ".to_string(), BAR_STYLE);
-	let mut spans = vec![bar];
+	let prefix =
+		Span::styled("  \u{2502} ", BAR_STYLE);
+	let mut spans = vec![prefix];
 	for src in super::inline::parse(text) {
 		spans.push(Span::styled(
 			src.content.into_owned(),

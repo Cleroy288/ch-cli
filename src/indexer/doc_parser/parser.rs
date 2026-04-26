@@ -1,5 +1,3 @@
-//! DocParser for markdown documentation files
-
 use std::path::Path;
 
 use crate::indexer::{
@@ -16,7 +14,6 @@ use super::chunk_extract::{
 pub struct DocParser;
 
 impl DocParser {
-	/// Parse a markdown file into documentation chunks
 	pub fn parse(
 		path: &Path,
 		content: &str,
@@ -40,7 +37,6 @@ impl DocParser {
 		state.chunks
 	}
 
-	/// Convert documentation chunks to Symbols
 	fn chunks_to_symbols(
 		path: &Path,
 		chunks: Vec<DocChunk>,
@@ -52,7 +48,6 @@ impl DocParser {
 	}
 }
 
-/// Convert a single DocChunk into a Symbol
 fn chunk_to_symbol(
 	path: &Path,
 	chunk: DocChunk,

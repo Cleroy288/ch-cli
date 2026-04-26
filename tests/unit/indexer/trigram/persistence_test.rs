@@ -9,7 +9,7 @@ use rustean::indexer::trigram::{
 	Trigram, TrigramIndex, string_to_trigram, trigram_to_string,
 };
 
-/// Test save and load roundtrip preserves index data
+/// save then load roundtrip preserves index data
 #[test]
 fn test_save_load_roundtrip() {
 	let dir = tempdir().unwrap(); // temp directory
@@ -27,7 +27,7 @@ fn test_save_load_roundtrip() {
 	assert_eq!(loaded.index.len(), index.index.len());
 }
 
-/// Test save creates valid JSON file
+/// save creates the JSON file on disk
 #[test]
 fn test_save_creates_file() {
 	let dir = tempdir().unwrap(); // temp directory
@@ -39,7 +39,7 @@ fn test_save_creates_file() {
 	assert!(file_path.exists());
 }
 
-/// Test load fails gracefully for non-existent file
+/// load returns error for non-existent file
 #[test]
 fn test_load_nonexistent_file() {
 	let path = Path::new("/nonexistent/path.json");
@@ -48,7 +48,7 @@ fn test_load_nonexistent_file() {
 	assert!(result.is_err());
 }
 
-/// Test trigram_to_string converts correctly
+/// trigram_to_string encodes bytes as hex string
 #[test]
 fn test_trigram_to_string() {
 	let trigram: Trigram = [0x48, 0x65, 0x6c]; // "Hel" in hex
@@ -57,7 +57,7 @@ fn test_trigram_to_string() {
 	assert_eq!(s, "48656c");
 }
 
-/// Test string_to_trigram converts correctly
+/// string_to_trigram decodes hex string to bytes
 #[test]
 fn test_string_to_trigram() {
 	let result = string_to_trigram("48656c"); // convert to trigram
@@ -65,7 +65,7 @@ fn test_string_to_trigram() {
 	assert_eq!(result, Some([0x48, 0x65, 0x6c]));
 }
 
-/// Test string_to_trigram returns None for invalid length
+/// string_to_trigram returns None for invalid length
 #[test]
 fn test_string_to_trigram_invalid_length() {
 	let result = string_to_trigram("abc"); // invalid length string
@@ -73,7 +73,7 @@ fn test_string_to_trigram_invalid_length() {
 	assert_eq!(result, None);
 }
 
-/// Test string_to_trigram returns None for invalid hex
+/// string_to_trigram returns None for invalid hex chars
 #[test]
 fn test_string_to_trigram_invalid_hex() {
 	let result = string_to_trigram("gggggg"); // invalid hex characters
@@ -81,7 +81,7 @@ fn test_string_to_trigram_invalid_hex() {
 	assert_eq!(result, None);
 }
 
-/// Test save and load preserves trigram search functionality
+/// save then load preserves trigram search results
 #[test]
 fn test_save_load_preserves_search() {
 	let dir = tempdir().unwrap(); // temp directory

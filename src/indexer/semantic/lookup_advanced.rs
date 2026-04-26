@@ -1,5 +1,3 @@
-//! Advanced lookup methods for semantic graph.
-
 use std::collections::HashMap;
 
 use crate::indexer::symbols::SymbolKind;
@@ -22,7 +20,6 @@ impl SemanticGraph {
 			.unwrap_or_default()
 	}
 
-	/// Find all implementations of a trait
 	/// Searches for impl blocks whose signature contains the trait name
 	pub fn find_trait_implementations(
 		&self,
@@ -44,19 +41,21 @@ impl SemanticGraph {
 			.collect()
 	}
 
-	/// Find all usages grouped by context type
 	/// Returns a map from ReferenceContext to list of references
 	pub fn find_usages_by_context(
 		&self,
 		name: &str,
 	) -> HashMap<ReferenceContext, Vec<SymbolReference>> {
-		let mut grouped = HashMap::new();
+		let mut grouped: HashMap<
+			ReferenceContext,
+			Vec<SymbolReference>,
+		> = HashMap::new();
 
 		if let Some(refs) = self.references_by_name.get(name) {
 			for reference in refs {
 				grouped
 					.entry(reference.context)
-					.or_insert_with(Vec::new)
+					.or_default()
 					.push(reference.clone());
 			}
 		}

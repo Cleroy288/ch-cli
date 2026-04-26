@@ -1,0 +1,25 @@
+{
+  "_comment": "Runtime config lives in ~/.config/rustean/projects/{hash}/config.json — this file documents the expected shape. Do NOT commit a real config.json.",
+  "credentials": {
+    "bitbucket": {
+      "email": "you@example.com",
+      "token": "ATBB...your-bitbucket-app-password",
+      "workspace": "your-workspace-slug",
+      "repo_slug": "optional-auto-detected-from-git"
+    },
+    "jira": {
+      "email": "you@example.com",
+      "token": "ATATT...your-jira-api-token",
+      "base_url": "https://your-tenant.atlassian.net",
+      "cloud_id": "your-atlassian-cloud-id",
+      "project_key": "EVB"
+    },
+    "aikido": {
+      "client_id": "your-aikido-client-id",
+      "client_secret": "your-aikido-client-secret"
+    }
+  },
+  "setup": {
+    "credentials": true
+  }
+}

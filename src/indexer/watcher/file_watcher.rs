@@ -1,5 +1,3 @@
-//! File system watcher for code changes.
-
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{channel, Receiver};
 use std::time::Duration;
@@ -16,7 +14,6 @@ pub struct FileWatcher {
 }
 
 impl FileWatcher {
-	/// Create a new file watcher for the given root directory
 	pub fn new<P: AsRef<Path>>(
 		root: P,
 	) -> WatcherResult<Self> {
@@ -39,20 +36,17 @@ impl FileWatcher {
 		})
 	}
 
-	/// Start watching the root directory
 	pub fn start(&mut self) -> WatcherResult<()> {
 		self.watcher
 			.watch(&self.root, RecursiveMode::Recursive)?;
 		Ok(())
 	}
 
-	/// Stop watching
 	pub fn stop(&mut self) -> WatcherResult<()> {
 		self.watcher.unwatch(&self.root)?;
 		Ok(())
 	}
 
-	/// Get the root directory being watched
 	pub fn root(&self) -> &Path {
 		&self.root
 	}

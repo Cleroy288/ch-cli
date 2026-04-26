@@ -1,5 +1,3 @@
-//! Shared key-reading helper for startup prompts.
-
 use std::io;
 use std::time::Duration;
 
@@ -7,7 +5,6 @@ use crossterm::event::{
 	self, Event, KeyCode, KeyEvent, KeyEventKind,
 };
 
-/// Read a single key press (Y/N/Q) in raw mode
 ///
 /// Blocks until a valid key is pressed, polling at
 /// 100ms intervals.

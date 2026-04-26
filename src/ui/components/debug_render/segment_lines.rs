@@ -1,8 +1,3 @@
-//! Segment-level rendering for debug panel.
-//!
-//! Builds styled lines for individual message segments:
-//! text, file references, folder references.
-
 use ratatui::{
     style::Style,
     text::{Line, Span},
@@ -15,7 +10,6 @@ use super::ref_spans::{
     RefSpanInfo, append_ref_spans, append_text_spans,
 };
 
-/// Build a styled line for a single segment.
 pub(super) fn build_segment_line(
     segment: &MessageSegment,
     idx: usize,
@@ -25,7 +19,6 @@ pub(super) fn build_segment_line(
     Line::from(spans)
 }
 
-/// Build the index prefix for a segment line
 fn build_segment_prefix(
     idx: usize,
 ) -> Vec<Span<'static>> {

@@ -3,9 +3,9 @@
 use std::path::Path;
 
 use rustean::indexer::symbols::{is_test_file, ContentType, DocumentType, SymbolKind};
-use rustean::retrieval::daemon::protocol::QueryIntent;
+use rustean::service::search::boost::QueryIntent;
 
-/// Test DocumentType::from_path with benchmark paths
+/// DocumentType::from_path classifies benchmark paths
 #[test]
 fn test_document_type_from_path_benchmark() {
     let path = Path::new("/project/notes/benchmarks/perf.md");
@@ -15,7 +15,7 @@ fn test_document_type_from_path_benchmark() {
     assert_eq!(DocumentType::from_path(path), DocumentType::Benchmark);
 }
 
-/// Test DocumentType::from_path with notes paths
+/// DocumentType::from_path classifies notes paths
 #[test]
 fn test_document_type_from_path_notes() {
     let path = Path::new("/project/notes/implementation.md");
@@ -25,7 +25,7 @@ fn test_document_type_from_path_notes() {
     assert_eq!(DocumentType::from_path(path), DocumentType::Notes);
 }
 
-/// Test DocumentType::from_path with documentation paths
+/// DocumentType::from_path classifies doc paths
 #[test]
 fn test_document_type_from_path_documentation() {
     let path = Path::new("/project/doc/api.md");
@@ -36,7 +36,7 @@ fn test_document_type_from_path_documentation() {
     assert_eq!(DocumentType::from_path(path), DocumentType::SourceCode);
 }
 
-/// Test DocumentType::from_path with test paths - /tests/ directory
+/// DocumentType::from_path classifies /tests/ dir
 #[test]
 fn test_document_type_from_path_test_directory() {
     let path = Path::new("/project/tests/unit_tests.rs");
@@ -46,7 +46,7 @@ fn test_document_type_from_path_test_directory() {
     assert_eq!(DocumentType::from_path(path), DocumentType::Test);
 }
 
-/// Test DocumentType::from_path with _test.rs suffix
+/// DocumentType::from_path classifies _test.rs suffix
 #[test]
 fn test_document_type_from_path_test_suffix() {
     let path = Path::new("/project/src/parser_test.rs");
@@ -56,7 +56,7 @@ fn test_document_type_from_path_test_suffix() {
     assert_eq!(DocumentType::from_path(path), DocumentType::Test);
 }
 
-/// Test DocumentType::from_path with _tests.rs suffix
+/// DocumentType::from_path classifies _tests.rs suffix
 #[test]
 fn test_document_type_from_path_tests_suffix() {
     let path = Path::new("/project/src/parser_tests.rs");
@@ -66,7 +66,7 @@ fn test_document_type_from_path_tests_suffix() {
     assert_eq!(DocumentType::from_path(path), DocumentType::Test);
 }
 
-/// Test DocumentType::from_path with test_ prefix
+/// DocumentType::from_path classifies test_ prefix
 #[test]
 fn test_document_type_from_path_test_prefix() {
     let path = Path::new("/project/src/test_parser.rs");
@@ -76,7 +76,7 @@ fn test_document_type_from_path_test_prefix() {
     assert_eq!(DocumentType::from_path(path), DocumentType::Test);
 }
 
-/// Test DocumentType::from_path with source code paths
+/// DocumentType::from_path classifies source files
 #[test]
 fn test_document_type_from_path_source_code() {
     let path = Path::new("/project/src/main.rs");
@@ -92,7 +92,7 @@ fn test_document_type_from_path_source_code() {
     assert_eq!(DocumentType::from_path(path), DocumentType::SourceCode);
 }
 
-/// Test DocumentType::boost_factor returns correct values
+/// DocumentType::boost_factor returns per-variant values
 #[test]
 fn test_document_type_boost_factor() {
     assert_eq!(DocumentType::SourceCode.boost_factor(), 1.5);
@@ -102,7 +102,7 @@ fn test_document_type_boost_factor() {
     assert_eq!(DocumentType::Benchmark.boost_factor(), 0.3);
 }
 
-/// Test DocumentType::boost_factor ordering (source > doc > test > notes > benchmark)
+/// boost_factor ordering: source > doc > test > notes > bench
 #[test]
 fn test_document_type_boost_factor_ordering() {
     assert!(DocumentType::SourceCode.boost_factor() > DocumentType::Documentation.boost_factor());
@@ -111,7 +111,7 @@ fn test_document_type_boost_factor_ordering() {
     assert!(DocumentType::Notes.boost_factor() > DocumentType::Benchmark.boost_factor());
 }
 
-/// Test SymbolKind::boost_factor for high priority symbols
+/// SymbolKind boost_factor: high priority symbols
 #[test]
 fn test_symbol_kind_boost_factor_high_priority() {
     assert_eq!(SymbolKind::Function.boost_factor(), 1.4);
@@ -123,7 +123,7 @@ fn test_symbol_kind_boost_factor_high_priority() {
     assert_eq!(SymbolKind::Module.boost_factor(), 1.3); // increased for better definition ranking
 }
 
-/// Test SymbolKind::boost_factor for medium priority symbols
+/// SymbolKind boost_factor: medium priority symbols
 #[test]
 fn test_symbol_kind_boost_factor_medium_priority() {
     assert_eq!(SymbolKind::Macro.boost_factor(), 1.0);
@@ -133,14 +133,14 @@ fn test_symbol_kind_boost_factor_medium_priority() {
     assert_eq!(SymbolKind::EnumVariant.boost_factor(), 0.8);
 }
 
-/// Test SymbolKind::boost_factor for low priority symbols
+/// SymbolKind boost_factor: low priority symbols
 #[test]
 fn test_symbol_kind_boost_factor_low_priority() {
     assert_eq!(SymbolKind::Field.boost_factor(), 0.7);
     assert_eq!(SymbolKind::DocumentChunk.boost_factor(), 0.6);
 }
 
-/// Test SymbolKind::boost_factor ordering (function > field > doc_chunk)
+/// SymbolKind ordering: function > struct > macro > const > field
 #[test]
 fn test_symbol_kind_boost_factor_ordering() {
     assert!(SymbolKind::Function.boost_factor() > SymbolKind::Struct.boost_factor());
@@ -152,7 +152,7 @@ fn test_symbol_kind_boost_factor_ordering() {
     assert!(SymbolKind::Field.boost_factor() > SymbolKind::DocumentChunk.boost_factor());
 }
 
-/// Test is_test_file helper detects all test patterns
+/// is_test_file detects all test file patterns
 #[test]
 fn test_is_test_file_all_patterns() {
     // /tests/ directory pattern
@@ -172,7 +172,7 @@ fn test_is_test_file_all_patterns() {
     assert!(is_test_file("/src/test_utils.rs"));
 }
 
-/// Test is_test_file helper rejects non-test files
+/// is_test_file rejects non-test source files
 #[test]
 fn test_is_test_file_non_test_files() {
     // Regular source files should not match
@@ -182,7 +182,7 @@ fn test_is_test_file_non_test_files() {
     assert!(!is_test_file("/project/src/contest.rs"));
 }
 
-/// Test boost_factor_for_query reduces doc boost for "implementation" query
+/// boost_factor_for_query reduces docs for implementation queries
 #[test]
 fn test_boost_factor_for_query_implementation() {
     let query = "show me the implementation"; // implementation keyword present
@@ -204,7 +204,7 @@ fn test_boost_factor_for_query_implementation() {
     assert_eq!(test_boost, 0.8);
 }
 
-/// Test boost_factor_for_query unchanged for "where is X" query
+/// boost_factor_for_query unchanged for non-impl queries
 #[test]
 fn test_boost_factor_for_query_where_is() {
     let query = "where is the AuthService defined"; // no implementation keywords
@@ -220,7 +220,7 @@ fn test_boost_factor_for_query_where_is() {
     assert_eq!(DocumentType::Benchmark.boost_factor_for_query(query), 0.3);
 }
 
-/// Test boost_factor_for_query with various implementation keywords
+/// boost_factor_for_query triggers on all impl keywords
 #[test]
 fn test_boost_factor_for_query_all_keywords() {
     let keywords = [
@@ -245,7 +245,7 @@ fn test_boost_factor_for_query_all_keywords() {
     }
 }
 
-/// Test boost_factor_for_query is case insensitive
+/// boost_factor_for_query is case insensitive
 #[test]
 fn test_boost_factor_for_query_case_insensitive() {
     let queries = ["IMPLEMENTATION", "Implementation", "iMpLeMeNtAtIoN"];
@@ -256,7 +256,7 @@ fn test_boost_factor_for_query_case_insensitive() {
     }
 }
 
-/// Test boost_factor_for_intent boosts functions for Understand intent
+/// Understand intent boosts Function 1.5x
 #[test]
 fn test_boost_factor_for_intent_understand_boosts_function() {
     let base_func = SymbolKind::Function.boost_factor();
@@ -267,7 +267,7 @@ fn test_boost_factor_for_intent_understand_boosts_function() {
     assert!(boosted > base_func);
 }
 
-/// Test boost_factor_for_intent boosts methods for Understand intent
+/// Understand intent boosts Method 1.5x
 #[test]
 fn test_boost_factor_for_intent_understand_boosts_method() {
     let base_method = SymbolKind::Method.boost_factor();
@@ -278,7 +278,7 @@ fn test_boost_factor_for_intent_understand_boosts_method() {
     assert!(boosted > base_method);
 }
 
-/// Test boost_factor_for_intent deprioritizes fields for Understand intent
+/// Understand intent deprioritizes Field to 0.3x
 #[test]
 fn test_boost_factor_for_intent_understand_deprioritizes_field() {
     let base_field = SymbolKind::Field.boost_factor();
@@ -289,7 +289,7 @@ fn test_boost_factor_for_intent_understand_deprioritizes_field() {
     assert!(boosted < base_field);
 }
 
-/// Test boost_factor_for_intent boosts structs for FindDefinition intent
+/// FindDefinition intent boosts Struct 2.0x
 #[test]
 fn test_boost_factor_for_intent_find_definition_boosts_struct() {
     let base_struct = SymbolKind::Struct.boost_factor();
@@ -300,7 +300,7 @@ fn test_boost_factor_for_intent_find_definition_boosts_struct() {
     assert!(boosted > base_struct);
 }
 
-/// Test boost_factor_for_intent boosts enums for FindDefinition intent
+/// FindDefinition intent boosts Enum 2.0x
 #[test]
 fn test_boost_factor_for_intent_find_definition_boosts_enum() {
     let base_enum = SymbolKind::Enum.boost_factor();
@@ -310,7 +310,7 @@ fn test_boost_factor_for_intent_find_definition_boosts_enum() {
     assert!((boosted - base_enum * 2.0).abs() < 0.001);
 }
 
-/// Test boost_factor_for_intent boosts traits for FindDefinition intent
+/// FindDefinition intent boosts Trait 2.0x
 #[test]
 fn test_boost_factor_for_intent_find_definition_boosts_trait() {
     let base_trait = SymbolKind::Trait.boost_factor();
@@ -320,7 +320,7 @@ fn test_boost_factor_for_intent_find_definition_boosts_trait() {
     assert!((boosted - base_trait * 2.0).abs() < 0.001);
 }
 
-/// Test boost_factor_for_intent returns base for Search intent
+/// Search intent uses base boost unchanged
 #[test]
 fn test_boost_factor_for_intent_search_uses_base() {
     let base_func = SymbolKind::Function.boost_factor();
@@ -330,7 +330,7 @@ fn test_boost_factor_for_intent_search_uses_base() {
     assert!((boosted - base_func).abs() < 0.001);
 }
 
-/// Test that Understand intent changes function/field relative ordering
+/// Understand intent widens gap between function and field
 #[test]
 fn test_boost_factor_for_intent_understand_changes_ordering() {
     let func_boost = SymbolKind::Function.boost_factor_for_intent(&QueryIntent::Understand);
@@ -340,44 +340,42 @@ fn test_boost_factor_for_intent_understand_changes_ordering() {
     assert!(func_boost > field_boost * 4.0);
 }
 
-// ==================== ContentType Tests ====================
-
-/// Test ContentType::from_document_type classifies SourceCode as Code
+/// from_document_type maps SourceCode to Code
 #[test]
 fn test_content_type_from_document_type_source_code() {
     let content_type = ContentType::from_document_type(&DocumentType::SourceCode);
     assert_eq!(content_type, ContentType::Code);
 }
 
-/// Test ContentType::from_document_type classifies Test as Code
+/// from_document_type maps Test to Code
 #[test]
 fn test_content_type_from_document_type_test() {
     let content_type = ContentType::from_document_type(&DocumentType::Test);
     assert_eq!(content_type, ContentType::Code);
 }
 
-/// Test ContentType::from_document_type classifies Documentation as Doc
+/// from_document_type maps Documentation to Doc
 #[test]
 fn test_content_type_from_document_type_documentation() {
     let content_type = ContentType::from_document_type(&DocumentType::Documentation);
     assert_eq!(content_type, ContentType::Doc);
 }
 
-/// Test ContentType::from_document_type classifies Notes as Notes
+/// from_document_type maps Notes to Notes
 #[test]
 fn test_content_type_from_document_type_notes() {
     let content_type = ContentType::from_document_type(&DocumentType::Notes);
     assert_eq!(content_type, ContentType::Notes);
 }
 
-/// Test ContentType::from_document_type classifies Benchmark as Notes
+/// from_document_type maps Benchmark to Notes
 #[test]
 fn test_content_type_from_document_type_benchmark() {
     let content_type = ContentType::from_document_type(&DocumentType::Benchmark);
     assert_eq!(content_type, ContentType::Notes);
 }
 
-/// Test ContentType::from_path classifies source files as Code
+/// from_path classifies source files as Code
 #[test]
 fn test_content_type_from_path_source() {
     let path = Path::new("/project/src/main.rs");
@@ -387,7 +385,7 @@ fn test_content_type_from_path_source() {
     assert_eq!(ContentType::from_path(path), ContentType::Code);
 }
 
-/// Test ContentType::from_path classifies test files as Code
+/// from_path classifies test files as Code
 #[test]
 fn test_content_type_from_path_test() {
     let path = Path::new("/project/tests/unit.rs");
@@ -397,7 +395,7 @@ fn test_content_type_from_path_test() {
     assert_eq!(ContentType::from_path(path), ContentType::Code);
 }
 
-/// Test ContentType::from_path classifies doc files as Doc
+/// from_path classifies doc/ files as Doc
 #[test]
 fn test_content_type_from_path_doc() {
     let path = Path::new("/project/doc/api.md");
@@ -407,7 +405,7 @@ fn test_content_type_from_path_doc() {
     assert_eq!(ContentType::from_path(path), ContentType::Doc);
 }
 
-/// Test ContentType::from_path classifies notes files as Notes
+/// from_path classifies notes/ files as Notes
 #[test]
 fn test_content_type_from_path_notes() {
     let path = Path::new("/project/notes/implementation.md");
@@ -417,7 +415,7 @@ fn test_content_type_from_path_notes() {
     assert_eq!(ContentType::from_path(path), ContentType::Notes);
 }
 
-/// Test ContentType::all returns all 3 variants
+/// ContentType::all returns all 3 variants
 #[test]
 fn test_content_type_all() {
     let all = ContentType::all();
@@ -427,7 +425,7 @@ fn test_content_type_all() {
     assert!(all.contains(&ContentType::Notes));
 }
 
-/// Test ContentType::name returns correct names
+/// ContentType::name returns lowercase labels
 #[test]
 fn test_content_type_name() {
     assert_eq!(ContentType::Code.name(), "code");
@@ -435,7 +433,7 @@ fn test_content_type_name() {
     assert_eq!(ContentType::Notes.name(), "notes");
 }
 
-/// Test ContentType Display implementation
+/// ContentType Display matches name()
 #[test]
 fn test_content_type_display() {
     assert_eq!(format!("{}", ContentType::Code), "code");
@@ -443,7 +441,7 @@ fn test_content_type_display() {
     assert_eq!(format!("{}", ContentType::Notes), "notes");
 }
 
-/// Test DocumentType::boost_factor_for_intent boosts source code 3.0x for Understand
+/// Understand intent boosts SourceCode 3.0x
 #[test]
 fn test_document_type_understand_source_boost() {
     let base = DocumentType::SourceCode.boost_factor(); // 1.5
@@ -454,7 +452,7 @@ fn test_document_type_understand_source_boost() {
     assert_eq!(boosted, 4.5);
 }
 
-/// Test DocumentType::boost_factor_for_intent reduces docs for Understand
+/// Understand intent reduces Documentation to 0.1x
 #[test]
 fn test_document_type_understand_reduces_docs() {
     let base = DocumentType::Documentation.boost_factor(); // 1.0

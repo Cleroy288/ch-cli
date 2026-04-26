@@ -1,41 +1,46 @@
 //! Tests for ProjectType expected_language.
 
 use rustean::indexer::analyzer::ProjectType;
-use rustean::indexer::crawler::{DetectedLanguage, Language};
+use rustean::indexer::crawler::{
+	DetectedLanguage, Language,
+};
 
-/// Test expected_language returns Rust for RustCargo
+/// expected_language maps project types correctly
 #[test]
-fn test_expected_language_rust() {
-	let result = ProjectType::RustCargo.expected_language();
+fn expected_language_table() {
+	let cases: &[(
+		ProjectType,
+		Option<DetectedLanguage>,
+	)] = &[
+		(
+			ProjectType::RustCargo,
+			Some(DetectedLanguage::Supported(
+				Language::Rust,
+			)),
+		),
+		(
+			ProjectType::NodeJs,
+			Some(DetectedLanguage::JavaScript),
+		),
+		(
+			ProjectType::Python,
+			Some(DetectedLanguage::Python),
+		),
+		(
+			ProjectType::GoMod,
+			Some(DetectedLanguage::GoLang),
+		),
+		(
+			ProjectType::Gradle,
+			Some(DetectedLanguage::Java),
+		),
+	];
 
-	let expected = DetectedLanguage::Supported(Language::Rust);
-	assert_eq!(result, Some(expected));
-}
-
-/// Test expected_language returns JavaScript for NodeJs
-#[test]
-fn test_expected_language_nodejs() {
-	let result = ProjectType::NodeJs.expected_language();
-	assert_eq!(result, Some(DetectedLanguage::JavaScript));
-}
-
-/// Test expected_language returns Python for Python
-#[test]
-fn test_expected_language_python() {
-	let result = ProjectType::Python.expected_language();
-	assert_eq!(result, Some(DetectedLanguage::Python));
-}
-
-/// Test expected_language returns Go for GoMod
-#[test]
-fn test_expected_language_go() {
-	let result = ProjectType::GoMod.expected_language();
-	assert_eq!(result, Some(DetectedLanguage::GoLang));
-}
-
-/// Test expected_language returns Java for Gradle
-#[test]
-fn test_expected_language_gradle() {
-	let result = ProjectType::Gradle.expected_language();
-	assert_eq!(result, Some(DetectedLanguage::Java));
+	for (proj, expected) in cases {
+		assert_eq!(
+			proj.expected_language(),
+			*expected,
+			"expected_language for {proj:?}",
+		);
+	}
 }

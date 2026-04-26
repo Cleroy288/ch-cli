@@ -1,9 +1,6 @@
-//! File system filters for memory store.
-
 use std::path::Path;
 use std::time::SystemTime;
 
-/// Check if path has .jsonl extension
 pub(crate) fn is_jsonl_file(
 	path: &Path,
 ) -> bool {
@@ -12,7 +9,6 @@ pub(crate) fn is_jsonl_file(
 		== Some("jsonl")
 }
 
-/// Get file modification time for sorting
 pub(crate) fn file_modified_time(
 	path: &Path,
 ) -> SystemTime {

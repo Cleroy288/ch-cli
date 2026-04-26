@@ -1,5 +1,3 @@
-//! User prompts with codebase analysis information.
-
 use std::io::{self, Write};
 
 use crossterm::{
@@ -34,7 +32,6 @@ pub fn prompt_for_indexing_with_analysis(
     read_analysis_choice(&mut stdout)
 }
 
-/// Display the analysis prompt screen
 fn display_analysis_prompt(
     stdout: &mut io::Stdout,
     show_partial_note: bool,
@@ -61,19 +58,18 @@ fn display_analysis_prompt(
     display_ynq_row(stdout)
 }
 
-/// Read the user's Y/N/Q choice
 fn read_analysis_choice(
     stdout: &mut io::Stdout,
 ) -> io::Result<StartupAction> {
     terminal::enable_raw_mode()?;
 
-    let result = match read_ynq_key()? {
+    let result = read_ynq_key();
+    terminal::disable_raw_mode()?;
+    let action = match result? {
         KeyAction::Yes => StartupAction::Index,
         KeyAction::No => StartupAction::Skip,
         KeyAction::Quit => StartupAction::Quit,
     };
-
-    terminal::disable_raw_mode()?;
     writeln!(stdout)?;
-    Ok(result)
+    Ok(action)
 }

@@ -1,5 +1,3 @@
-//! DocChunk struct representing a parsed documentation section
-
 /// A parsed documentation chunk from a markdown file
 #[derive(Debug, Clone)]
 pub struct DocChunk {

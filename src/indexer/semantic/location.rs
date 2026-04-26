@@ -1,5 +1,3 @@
-//! Location-based lookup methods for SemanticGraph.
-
 use std::path::Path;
 
 use super::types::{Definition, SymbolReference};
@@ -17,7 +15,6 @@ impl SemanticGraph {
 		})
 	}
 
-	/// Find all definitions in a file
 	pub fn definitions_in_file(&self, file: &Path) -> Vec<&Definition> {
 		self.definitions_by_file
 			.get(file)
@@ -25,7 +22,6 @@ impl SemanticGraph {
 			.unwrap_or_default()
 	}
 
-	/// Find all references in a file
 	pub fn references_in_file(&self, file: &Path) -> Vec<&SymbolReference> {
 		self.references_by_file
 			.get(file)

@@ -1,6 +1,3 @@
-//! Format memory results as human-readable text
-//! for MCP tool responses.
-
 use crate::domain::memory::Interaction;
 use crate::domain::memory_helpers;
 use crate::indexer::memory::types::{
@@ -10,7 +7,6 @@ use crate::indexer::memory::types::{
 /// No results placeholder
 const NO_RESULTS: &str = "(no results)";
 
-/// Format a list of interactions as text
 pub fn format_interactions(
 	items: &[Interaction],
 ) -> String {
@@ -21,7 +17,6 @@ pub fn format_interactions(
 		.join("\n---\n")
 }
 
-/// Format search hits with scores
 pub fn format_search_hits(
 	hits: &[MemoryHit],
 ) -> String {
@@ -40,7 +35,6 @@ pub fn format_search_hits(
 		.join("\n---\n")
 }
 
-/// Format memory stats as text
 pub fn format_stats(stats: &MemoryStats) -> String {
 	format!(
 		"Total: {}\nSessions: {}\n\
@@ -52,7 +46,6 @@ pub fn format_stats(stats: &MemoryStats) -> String {
 	)
 }
 
-/// Format a single interaction
 fn format_one(item: &Interaction) -> String {
 	let rtype = memory_helpers::response_type_label(
 		&item.response,
@@ -66,19 +59,15 @@ fn format_one(item: &Interaction) -> String {
 	)
 }
 
-/// Extract text from any AiResponse variant
 fn response_text(
 	resp: &crate::domain::memory::AiResponse,
 ) -> &str {
+	use crate::domain::memory::AiResponse;
 	match resp {
-		crate::domain::memory::AiResponse::Answer {
-			text,
-		} => text,
-		crate::domain::memory::AiResponse::Question {
-			text,
-		} => text,
-		crate::domain::memory::AiResponse::CodeChange {
-			text, ..
-		} => text,
+		AiResponse::Answer { text }
+		| AiResponse::Question { text }
+		| AiResponse::CodeChange { text, .. } => {
+			text
+		}
 	}
 }

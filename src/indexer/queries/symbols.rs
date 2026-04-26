@@ -1,17 +1,3 @@
-//! Tree-sitter query for extracting Rust symbol definitions.
-
-/// Tree-sitter query for extracting Rust symbols.
-///
-/// This query captures:
-/// - Function definitions (with visibility and name)
-/// - Struct definitions
-/// - Enum definitions
-/// - Trait definitions
-/// - Impl blocks
-/// - Constants and statics
-/// - Type aliases
-/// - Modules
-/// - Macro definitions
 pub const RUST_SYMBOLS_QUERY: &str = r#"
 ; Function definitions
 (function_item

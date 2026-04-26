@@ -7,41 +7,25 @@ use crate::indexer::crawler::CrawlerConfig;
 use super::types::ProgressCallback;
 
 #[allow(clippy::struct_excessive_bools)]
-/// Boolean feature toggles for IndexManager
 #[derive(Debug, Clone, Default)]
 pub struct IndexManagerFlags {
-	/// Build a semantic graph for name resolution
 	pub semantic_analysis: bool,
-	/// Extract references from AST
 	pub reference_extraction: bool,
-	/// Persist the index to disk (incremental)
 	pub persistence: bool,
 }
 
 /// The main index manager for semantic code indexing
 pub struct IndexManager {
-	/// Crawler configuration
-	#[doc(hidden)]
-	pub crawler_config: CrawlerConfig,
-	/// Optional progress callback
-	#[doc(hidden)]
-	pub progress_callback: Option<ProgressCallback>,
-	/// Feature toggles
-	#[doc(hidden)]
-	pub flags: IndexManagerFlags,
+	pub(crate) crawler_config: CrawlerConfig,
+	pub(crate) progress_callback: Option<ProgressCallback>,
+	pub(crate) flags: IndexManagerFlags,
 }
 
 impl IndexManager {
-	/// Create a new IndexManager with default config
 	pub fn new() -> Self {
-		Self {
-			crawler_config: CrawlerConfig::default(),
-			progress_callback: None,
-			flags: IndexManagerFlags::default(),
-		}
+		Self::with_config(CrawlerConfig::default())
 	}
 
-	/// Create IndexManager with custom crawler config
 	pub fn with_config(
 		config: CrawlerConfig,
 	) -> Self {
@@ -52,12 +36,29 @@ impl IndexManager {
 		}
 	}
 
+	pub fn flags(&self) -> &IndexManagerFlags {
+		&self.flags
+	}
+
+	pub fn has_progress_callback(&self) -> bool {
+		self.progress_callback.is_some()
+	}
+}
+
+impl IndexManager {
 	/// Set a progress callback
-	pub fn on_progress<F>(mut self, callback: F) -> Self
+	pub fn on_progress<F>(
+		mut self,
+		callback: F,
+	) -> Self
 	where
-		F: Fn(usize, usize, &Path) + Send + Sync + 'static,
+		F: Fn(usize, usize, &Path)
+			+ Send
+			+ Sync
+			+ 'static,
 	{
-		self.progress_callback = Some(Box::new(callback));
+		self.progress_callback =
+			Some(Box::new(callback));
 		self
 	}
 }

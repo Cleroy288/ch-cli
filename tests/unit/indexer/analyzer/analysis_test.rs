@@ -16,14 +16,14 @@ fn make_empty_analysis() -> CodebaseAnalysis {
 	}
 }
 
-/// Test has_supported_files returns false when no files exist
+/// has_supported_files is false when no files exist
 #[test]
 fn test_has_supported_files_empty() {
 	let analysis = make_empty_analysis();
 	assert!(!analysis.has_supported_files());
 }
 
-/// Test has_supported_files returns true when supported files exist
+/// has_supported_files is true when Rust files present
 #[test]
 fn test_has_supported_files_with_rust() {
 	let mut analysis = make_empty_analysis();
@@ -33,7 +33,7 @@ fn test_has_supported_files_with_rust() {
 	assert!(analysis.has_supported_files());
 }
 
-/// Test has_supported_files false when only unsupported exist
+/// has_supported_files is false with only unsupported langs
 #[test]
 fn test_has_supported_files_only_unsupported() {
 	let mut analysis = make_empty_analysis();
@@ -44,14 +44,14 @@ fn test_has_supported_files_only_unsupported() {
 	assert!(!analysis.has_supported_files());
 }
 
-/// Test supported_file_count returns 0 for empty analysis
+/// supported_file_count is 0 for empty analysis
 #[test]
 fn test_supported_file_count_empty() {
 	let analysis = make_empty_analysis();
 	assert_eq!(analysis.supported_file_count(), 0);
 }
 
-/// Test supported_file_count sums only supported languages
+/// supported_file_count sums only supported languages
 #[test]
 fn test_supported_file_count_mixed() {
 	let mut analysis = make_empty_analysis();

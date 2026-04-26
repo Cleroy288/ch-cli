@@ -1,12 +1,11 @@
-//! Tantivy schema for memory search index.
-
-use tantivy::schema::*;
+use tantivy::schema::{
+	Field, Schema, INDEXED, STORED, STRING, TEXT,
+};
 
 use crate::domain::errors::memory::{
 	MemoryError, MemoryResult,
 };
 
-/// Tantivy field name constants
 const FIELD_ID: &str = "id";
 const FIELD_SESSION: &str = "session_id";
 const FIELD_TIMESTAMP: &str = "timestamp";
@@ -15,19 +14,18 @@ const FIELD_RESPONSE: &str = "response_text";
 const FIELD_RTYPE: &str = "response_type";
 const FIELD_FILES: &str = "files";
 
-/// Field handles for the memory schema
 #[derive(Clone)]
 pub struct MemoryFields {
-	pub id: Field,            // interaction ID
-	pub session_id: Field,    // session grouping
-	pub timestamp: Field,     // unix epoch
-	pub input_text: Field,    // user query text
-	pub response_text: Field, // AI response text
-	pub response_type: Field, // answer/question/code
-	pub files: Field,         // referenced files
+	pub id: Field,
+	pub session_id: Field,
+	pub timestamp: Field,
+	pub input_text: Field,
+	pub response_text: Field,
+	pub response_type: Field,
+	/// Space-separated file paths
+	pub files: Field,
 }
 
-/// Build the Tantivy schema for memory indexing
 pub fn build_memory_schema() -> Schema {
 	let mut builder = Schema::builder();
 
@@ -55,7 +53,6 @@ pub fn build_memory_schema() -> Schema {
 }
 
 impl MemoryFields {
-	/// Extract field handles from schema
 	pub fn from_schema(
 		schema: &Schema,
 	) -> MemoryResult<Self> {
@@ -81,7 +78,6 @@ impl MemoryFields {
 	}
 }
 
-/// Get a field from schema by name
 fn get(
 	schema: &Schema,
 	name: &str,

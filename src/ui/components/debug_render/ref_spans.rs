@@ -1,8 +1,3 @@
-//! Reference span helpers for debug panel.
-//!
-//! Shared types and functions for rendering file
-//! and folder reference spans in the debug display.
-
 use ratatui::{
     style::{Color, Modifier, Style},
     text::Span,
@@ -28,13 +23,13 @@ pub(super) fn append_ref_spans<'ref_info>(
     info: &RefSpanInfo<'ref_info>,
 ) {
     spans.push(Span::styled(
-        info.label.to_string(),
+        info.label.to_owned(),
         Style::default()
             .fg(info.label_color)
             .add_modifier(Modifier::BOLD),
     ));
     spans.push(Span::styled(
-        info.display_name.to_string(),
+        info.display_name.to_owned(),
         Style::default()
             .fg(colors::INPUT_TEXT)
             .add_modifier(Modifier::BOLD),
@@ -44,7 +39,7 @@ pub(super) fn append_ref_spans<'ref_info>(
         Style::default().fg(colors::SEPARATOR),
     ));
     spans.push(Span::styled(
-        info.full_path.to_string(),
+        info.full_path.to_owned(),
         Style::default().fg(colors::PATH_DISPLAY),
     ));
 }

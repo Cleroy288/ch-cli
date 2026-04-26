@@ -39,7 +39,7 @@ fn build_interaction(
 fn add_and_show_recent_roundtrip() {
 	// Arrange
 	let tmp = TempMemDir::new("integ-lifecycle");
-	let svc = DefaultMemoryService::new();
+	let svc = DefaultMemoryService::default();
 	let item = build_interaction(
 		"ses-1", "how to parse JSON",
 		"use serde_json", 1000,
@@ -63,7 +63,7 @@ fn add_and_show_recent_roundtrip() {
 fn show_recent_respects_limit() {
 	// Arrange
 	let tmp = TempMemDir::new("integ-limit");
-	let svc = DefaultMemoryService::new();
+	let svc = DefaultMemoryService::default();
 	for idx in 0..5u64 {
 		let item = build_interaction(
 			"ses-1",
@@ -87,7 +87,7 @@ fn show_recent_respects_limit() {
 fn search_finds_matching_interactions() {
 	// Arrange
 	let tmp = TempMemDir::new("integ-search");
-	let svc = DefaultMemoryService::new();
+	let svc = DefaultMemoryService::default();
 	let items = vec![
 		build_interaction(
 			"ses-1", "how to parse JSON",
@@ -118,7 +118,7 @@ fn search_finds_matching_interactions() {
 fn stats_reflect_stored_counts() {
 	// Arrange
 	let tmp = TempMemDir::new("integ-stats");
-	let svc = DefaultMemoryService::new();
+	let svc = DefaultMemoryService::default();
 	let items = vec![
 		build_interaction(
 			"ses-a", "q1", "a1", 1000,
@@ -155,12 +155,12 @@ fn data_persists_across_service_restart() {
 
 	// Act — write with first instance
 	{
-		let svc = DefaultMemoryService::new();
+		let svc = DefaultMemoryService::default();
 		svc.add(&tmp.path, &item).unwrap();
 	}
 
 	// Recreate service (simulates restart)
-	let svc2 = DefaultMemoryService::new();
+	let svc2 = DefaultMemoryService::default();
 	let recent =
 		svc2.show_recent(&tmp.path, 10).unwrap();
 

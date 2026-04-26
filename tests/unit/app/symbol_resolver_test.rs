@@ -13,7 +13,7 @@ fn resolve_skips_text_segments() {
 
     // Act
     symbol_resolver::resolve_symbols(
-        &mut segments, &[],
+        &mut segments,
     );
 
     // Assert
@@ -39,7 +39,7 @@ fn resolve_skips_existing_source_code() {
 
     // Act
     symbol_resolver::resolve_symbols(
-        &mut segments, &[],
+        &mut segments,
     );
 
     // Assert
@@ -67,7 +67,7 @@ fn resolve_nonexistent_file_returns_none() {
 
     // Act
     symbol_resolver::resolve_symbols(
-        &mut segments, &[],
+        &mut segments,
     );
 
     // Assert
@@ -88,7 +88,7 @@ fn resolve_empty_segments_is_noop() {
 
     // Act
     symbol_resolver::resolve_symbols(
-        &mut segments, &[],
+        &mut segments,
     );
 
     // Assert
@@ -112,7 +112,7 @@ fn resolve_skips_file_and_folder_refs() {
 
     // Act
     symbol_resolver::resolve_symbols(
-        &mut segments, &[],
+        &mut segments,
     );
 
     // Assert — segments remain unchanged

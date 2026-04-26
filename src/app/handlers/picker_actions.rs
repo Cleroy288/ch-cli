@@ -1,7 +1,7 @@
 use crate::app::App;
 
 /// Trigger characters that activate picker modes
-const TRIGGER_CHARS: [char; 2] = ['@', '#'];
+const TRIGGER_CHARS: [char; 3] = ['@', '#', '/'];
 
 impl App {
     /// Cancel picker and remove the trigger from input
@@ -10,16 +10,15 @@ impl App {
         self.picker.deactivate();
     }
 
-    /// Remove the trigger character (@ or #) from input
     pub(crate) fn remove_trigger_char(&mut self) {
         let pos = self.picker.trigger_position();
-        let chr = self.input.chars().nth(pos);
+        let chr = self.input[pos..].chars().next();
         let is_trigger = chr
-            .is_some_and(|c| TRIGGER_CHARS.contains(&c));
+            .is_some_and(|chr| TRIGGER_CHARS.contains(&chr));
         if pos < self.input.len() && is_trigger {
             self.input.remove(pos);
             if self.cursor_position.get() > pos {
-                self.cursor_position.move_left();
+                self.cursor_position.set(pos);
             }
         }
     }

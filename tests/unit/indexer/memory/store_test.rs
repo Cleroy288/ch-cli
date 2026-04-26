@@ -7,7 +7,7 @@ use crate::helpers::factories::{
 	make_memory_test_dir,
 };
 
-/// Test append and load_session round-trip
+/// append then load_session round-trips data
 #[test]
 fn append_then_load_session() {
 	// Arrange
@@ -26,7 +26,7 @@ fn append_then_load_session() {
 	cleanup_test_dir(&dir);
 }
 
-/// Test load_recent returns items
+/// load_recent returns all appended items
 #[test]
 fn load_recent_returns_items() {
 	// Arrange
@@ -46,7 +46,7 @@ fn load_recent_returns_items() {
 	cleanup_test_dir(&dir);
 }
 
-/// Test load_recent respects limit
+/// load_recent caps results at the given limit
 #[test]
 fn load_recent_respects_limit() {
 	// Arrange
@@ -67,7 +67,7 @@ fn load_recent_respects_limit() {
 	cleanup_test_dir(&dir);
 }
 
-/// Test list_sessions returns session IDs
+/// list_sessions returns all distinct session IDs
 #[test]
 fn list_sessions_returns_ids() {
 	// Arrange
@@ -94,7 +94,7 @@ fn list_sessions_returns_ids() {
 	cleanup_test_dir(&dir);
 }
 
-/// Test load_session missing returns error
+/// load_session returns error for missing session
 #[test]
 fn load_session_not_found() {
 	// Arrange

@@ -11,20 +11,8 @@ use super::types::IndexOptions;
 use super::IndexService;
 
 /// Default index service backed by IndexManager
+#[derive(Default)]
 pub struct DefaultIndexService;
-
-impl Default for DefaultIndexService {
-	fn default() -> Self {
-		Self
-	}
-}
-
-impl DefaultIndexService {
-	/// Create a new default index service
-	pub fn new() -> Self {
-		Self
-	}
-}
 
 impl IndexService for DefaultIndexService {
 	fn index_project(
@@ -32,13 +20,10 @@ impl IndexService for DefaultIndexService {
 		path: &Path,
 		opts: &IndexOptions,
 	) -> Result<IndexResult, IndexError> {
-		let mut manager = IndexManager::new();
-		if opts.flags.semantic {
-			manager = manager
-				.with_semantic_analysis()
-				.with_reference_extraction();
-		}
-		if opts.flags.persistence {
+		let mut manager = IndexManager::new()
+			.with_semantic_analysis()
+			.with_reference_extraction();
+		if opts.persistence {
 			manager = manager.with_persistence();
 		}
 		manager.index_project(path)

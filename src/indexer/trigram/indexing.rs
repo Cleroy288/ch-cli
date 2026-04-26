@@ -1,13 +1,8 @@
-//! Indexing functions for trigram index
-//!
-//! Functions to add and remove files from the trigram index
-
 use std::path::{Path, PathBuf};
 
 use crate::indexer::trigram::types::{Trigram, TrigramIndex};
 
 impl TrigramIndex {
-	/// Create a new empty trigram index
 	pub fn new() -> Self {
 		Self::default()
 	}
@@ -41,15 +36,15 @@ impl TrigramIndex {
 		Ok(())
 	}
 
-	/// Remove a file from the index
 	pub fn remove_file(&mut self, path: &Path) {
-		for files in self.index.values_mut() {
+		self.index.retain(|_, files| {
 			files.remove(path);
-		}
-		self.file_count = self.file_count.saturating_sub(1);
+			!files.is_empty()
+		});
+		self.file_count =
+			self.file_count.saturating_sub(1);
 	}
 
-	/// Extract trigrams from a string
 	pub fn extract_trigrams(text: &str) -> Vec<Trigram> {
 		let bytes = text.as_bytes();
 		if bytes.len() < 3 {

@@ -6,7 +6,6 @@ mod render_git_graph;
 mod render_git_history;
 mod render_git_select;
 mod render_git_spans;
-mod render_git_text;
 mod render;
 mod render_mcp_tools;
 mod render_repo_select;

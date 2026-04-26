@@ -6,8 +6,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::indexer::symbols::{Symbol, SymbolKind};
-use crate::picker::Picker;
+use crate::picker::{Picker, Symbol, SymbolKind};
 use crate::picker::symbol_browser::SymbolBrowser;
 use crate::ui::styles::colors;
 use crate::ui::styles;
@@ -17,7 +16,6 @@ use super::render::{
     render_picker_help_text,
 };
 
-/// Render the symbol list picker.
 pub fn render_symbol_list(
     frame: &mut Frame,
     area: Rect,
@@ -28,25 +26,33 @@ pub fn render_symbol_list(
         return;
     };
     let items = browser.current_items(picker.query());
-
     if items.is_empty() {
         render_empty_results(frame, area, picker);
         return;
     }
-
     let selected = picker.selected_index();
     let list_items = build_visible_items(
         &items, selected, area, browser,
     );
-    let title = build_symbol_title(
-        picker, selected, items.len(),
+    let title = format!(
+        "{} [{}/{}]",
+        build_picker_title(picker),
+        selected + 1,
+        items.len()
     );
-    let list = build_symbol_list(list_items, title);
+    let list = List::new(list_items).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .title(title)
+            .title_alignment(Alignment::Left)
+            .style(
+                Style::default().fg(colors::PICKER),
+            ),
+    );
     frame.render_widget(list, area);
     render_picker_help_text(frame, area);
 }
 
-/// Build visible symbol items with doc indicators
 fn build_visible_items(
     items: &[&Symbol],
     selected: usize,
@@ -75,7 +81,6 @@ fn build_visible_items(
         .collect()
 }
 
-/// Build a single symbol list item
 fn build_symbol_item(
     sym: &Symbol,
     selected: bool,
@@ -100,37 +105,6 @@ fn build_symbol_item(
     ListItem::new(Line::from(spans))
 }
 
-/// Build the symbol picker title
-fn build_symbol_title(
-    picker: &Picker,
-    selected: usize,
-    count: usize,
-) -> String {
-    format!(
-        "{} [{}/{}]",
-        build_picker_title(picker),
-        selected + 1,
-        count
-    )
-}
-
-/// Build the symbol list widget
-fn build_symbol_list(
-    items: Vec<ListItem<'static>>,
-    title: String,
-) -> List<'static> {
-    List::new(items).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .title(title)
-            .title_alignment(Alignment::Left)
-            .style(
-                Style::default().fg(colors::PICKER),
-            ),
-    )
-}
-
-/// Map SymbolKind to a compact icon character
 pub fn symbol_kind_icon(
     kind: SymbolKind,
 ) -> &'static str {

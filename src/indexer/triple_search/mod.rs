@@ -1,8 +1,3 @@
-//! Triple Search Index
-//!
-//! Provides separate Tantivy indexes for Code, Doc, and Notes content types.
-//! Enables parallel search across all three indexes without interference.
-
 mod index;
 mod search;
 mod types;

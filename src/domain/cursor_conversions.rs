@@ -1,10 +1,8 @@
-//! From/Default implementations for CursorPosition.
-
 use super::CursorPosition;
 
 impl Default for CursorPosition {
 	fn default() -> Self {
-		Self::new()
+		Self(0)
 	}
 }
 

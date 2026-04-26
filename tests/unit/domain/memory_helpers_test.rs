@@ -4,51 +4,52 @@ use rustean::domain::memory::{
 	AiResponse, UserInput,
 };
 use rustean::domain::memory_helpers;
+use rustean::service::memory::id_gen;
 
-/// Test generate_id returns non-empty string
+/// generate_id returns a non-empty UUID-like string
 #[test]
 fn generate_id_non_empty() {
 	// Act
-	let id = memory_helpers::generate_id();
+	let id = id_gen::generate_id();
 
 	// Assert
 	assert!(!id.is_empty());
 	assert!(id.contains('-'));
 }
 
-/// Test generate_id returns unique values
+/// generate_id produces distinct values each call
 #[test]
 fn generate_id_unique() {
 	// Act
-	let id1 = memory_helpers::generate_id();
-	let id2 = memory_helpers::generate_id();
+	let id1 = id_gen::generate_id();
+	let id2 = id_gen::generate_id();
 
 	// Assert — extremely unlikely to collide
 	assert_ne!(id1, id2);
 }
 
-/// Test current_timestamp returns reasonable value
+/// current_timestamp is after 2024-01-01
 #[test]
 fn current_timestamp_reasonable() {
 	// Act
-	let ts = memory_helpers::current_timestamp();
+	let ts = id_gen::current_timestamp();
 
 	// Assert — after 2024-01-01
 	assert!(ts > 1_704_067_200);
 }
 
-/// Test new_session_id format
+/// new_session_id starts with "s-"
 #[test]
 fn new_session_id_format() {
 	// Act
-	let sid = memory_helpers::new_session_id();
+	let sid = id_gen::new_session_id();
 
 	// Assert
 	assert!(sid.starts_with("s-"));
 	assert!(sid.len() > 5);
 }
 
-/// Test new_interaction builds correctly
+/// new_interaction populates all required fields
 #[test]
 fn new_interaction_builds_fields() {
 	// Arrange
@@ -62,7 +63,7 @@ fn new_interaction_builds_fields() {
 	};
 
 	// Act
-	let item = memory_helpers::new_interaction(
+	let item = id_gen::new_interaction(
 		"sess-1", input, response,
 	);
 
@@ -72,7 +73,7 @@ fn new_interaction_builds_fields() {
 	assert!(item.timestamp > 0);
 }
 
-/// Test response_type_label for all variants
+/// response_type_label maps each variant correctly
 #[test]
 fn response_type_label_all_variants() {
 	let cases = [
@@ -106,7 +107,7 @@ fn response_type_label_all_variants() {
 	}
 }
 
-/// Test response_from_label for all variants
+/// response_from_label reconstructs each variant
 #[test]
 fn response_from_label_all_labels() {
 	let cases = [

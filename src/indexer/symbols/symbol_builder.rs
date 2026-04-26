@@ -1,5 +1,3 @@
-//! Builder methods for Symbol construction.
-
 use super::symbol::Symbol;
 use super::visibility::Visibility;
 

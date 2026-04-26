@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use rustean::indexer::state::{ChangeSet, IndexState, INDEX_VERSION};
 
-/// Test has_changes returns false for an empty changeset
+/// has_changes is false for an empty changeset
 #[test]
 fn test_has_changes_empty() {
 	// empty changeset with no additions, modifications, or deletions
@@ -13,7 +13,7 @@ fn test_has_changes_empty() {
 	assert!(!cs.has_changes());
 }
 
-/// Test has_changes returns true when there are additions
+/// has_changes is true when additions exist
 #[test]
 fn test_has_changes_with_additions() {
 	// changeset with one added file
@@ -25,7 +25,7 @@ fn test_has_changes_with_additions() {
 	assert!(cs.has_changes());
 }
 
-/// Test files_to_index returns added and modified files
+/// files_to_index returns added + modified only
 #[test]
 fn test_files_to_index_added_and_modified() {
 	let added_file = PathBuf::from("src/new.rs"); // a newly added file
@@ -44,7 +44,7 @@ fn test_files_to_index_added_and_modified() {
 	assert!(result.contains(&&modified_file));
 }
 
-/// Test total_changes returns the sum of added, modified, deleted
+/// total_changes sums added + modified + deleted
 #[test]
 fn test_total_changes_known_counts() {
 	// changeset with 2 added, 1 modified, 3 deleted, 1 unchanged
@@ -62,7 +62,7 @@ fn test_total_changes_known_counts() {
 	assert_eq!(cs.total_changes(), 6);
 }
 
-/// Test IndexState::new creates empty state with correct version
+/// IndexState::new creates empty state at current version
 #[test]
 fn test_index_state_new_creates_empty() {
 	let root = PathBuf::from("/tmp/test_project"); // project root path
@@ -77,7 +77,7 @@ fn test_index_state_new_creates_empty() {
 	assert!(state.last_updated > 0);
 }
 
-/// Test IndexState::new canonicalizes root path
+/// IndexState::new canonicalizes the root path
 #[test]
 fn test_index_state_new_canonicalizes_root() {
 	use tempfile::tempdir;
@@ -92,7 +92,7 @@ fn test_index_state_new_canonicalizes_root() {
 	assert!(state.root.is_absolute());
 }
 
-/// Test IndexState::default creates valid empty state
+/// IndexState::default creates a valid empty state
 #[test]
 fn test_index_state_default() {
 	// state: IndexState created via Default trait

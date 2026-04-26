@@ -1,85 +1,68 @@
-//! Execute the Claude Code CLI as a child process.
-
 use std::process::{Command, Output};
 
 use crate::domain::errors::ClaudeError;
 
-/// CLI binary name on PATH
-const CLAUDE_BIN: &str = "claude";
-/// Flag for non-interactive prompt mode
-const FLAG_PRINT: &str = "-p";
-/// Flag to request JSON output
-const FLAG_OUTPUT_FMT: &str = "--output-format";
-/// JSON output format value
-const FMT_JSON: &str = "json";
-/// Flag to continue the most recent session
-const FLAG_CONTINUE: &str = "--continue";
-/// Flag to bypass all permission checks
-const FLAG_SKIP_PERMS: &str =
-	"--dangerously-skip-permissions";
+use super::cli_args::{
+	self, CLAUDE_BIN, FLAG_EFFORT, FLAG_MODEL,
+	FLAG_OUTPUT_FMT, FLAG_PRINT, FLAG_RESUME,
+	FLAG_SKIP_PERMS, FMT_JSON,
+};
 
-/// Run Claude CLI and return raw stdout.
-///
 /// Spawns `claude -p "prompt" --output-format json`
-/// with pre-approved tools and optional `--continue`.
+/// with `--resume <id>` if a session exists,
+/// and `--model <alias>`.
 pub fn execute_claude_cli(
 	prompt: &str,
-	continue_session: bool,
+	session_id: Option<&str>,
+	model: &str,
+	effort: &str,
 ) -> Result<String, ClaudeError> {
-	let output =
-		spawn_process(prompt, continue_session)?;
-	check_exit_status(&output)?;
-	parse_stdout(&output)
+	let out = spawn_process(
+		prompt, session_id, model, effort,
+	)?;
+	check_exit_status(&out)?;
+	into_stdout(out)
 }
 
-/// Build and run the claude command
 fn spawn_process(
 	prompt: &str,
-	continue_session: bool,
+	session_id: Option<&str>,
+	model: &str,
+	effort: &str,
 ) -> Result<Output, ClaudeError> {
 	let mut cmd = Command::new(CLAUDE_BIN);
 	cmd.arg(FLAG_PRINT)
 		.arg(prompt)
 		.arg(FLAG_OUTPUT_FMT)
 		.arg(FMT_JSON)
-		.arg(FLAG_SKIP_PERMS);
+		.arg(FLAG_SKIP_PERMS)
+		.arg(FLAG_MODEL)
+		.arg(model)
+		.arg(FLAG_EFFORT)
+		.arg(effort);
 
-	if continue_session {
-		cmd.arg(FLAG_CONTINUE);
+	if let Some(id) = session_id {
+		cmd.arg(FLAG_RESUME).arg(id);
 	}
 
-	cmd.output().map_err(map_io_error)
+	cmd.output().map_err(cli_args::map_io_error)
 }
 
-/// Extract stdout as a UTF-8 string
-fn parse_stdout(
-	output: &Output,
+fn into_stdout(
+	output: Output,
 ) -> Result<String, ClaudeError> {
-	String::from_utf8(output.stdout.clone())
-		.map_err(|err| {
-			ClaudeError::ProcessFailed(
-				err.to_string(),
-			)
-		})
+	String::from_utf8(output.stdout).map_err(|e| {
+		ClaudeError::Process(e.to_string())
+	})
 }
 
-/// Map IO error to ClaudeError
-fn map_io_error(err: std::io::Error) -> ClaudeError {
-	if err.kind() == std::io::ErrorKind::NotFound {
-		ClaudeError::NotInstalled
-	} else {
-		ClaudeError::ProcessFailed(err.to_string())
-	}
-}
-
-/// Check process exit status
 fn check_exit_status(
 	output: &Output,
 ) -> Result<(), ClaudeError> {
 	if !output.status.success() {
 		let stderr =
 			String::from_utf8_lossy(&output.stderr);
-		return Err(ClaudeError::ProcessFailed(
+		return Err(ClaudeError::Process(
 			stderr.to_string(),
 		));
 	}

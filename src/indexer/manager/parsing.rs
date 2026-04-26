@@ -2,9 +2,12 @@
 
 use std::path::Path;
 
+use crate::domain::errors::parse::ParseResult;
 use crate::indexer::crawler::{FileResult, Language};
 use crate::indexer::doc_parser::DocParser;
-use crate::indexer::parser::{ExtractedReference, RustParser};
+use crate::indexer::parser::{
+	ExtractedReference, RustParser,
+};
 
 use super::builder::IndexManager;
 
@@ -13,14 +16,11 @@ impl IndexManager {
 	pub(super) fn parse_references(
 		&self,
 		path: &Path,
-	) -> Result<Vec<ExtractedReference>, String> {
+	) -> ParseResult<Vec<ExtractedReference>> {
 		match Language::from_path(path) {
 			Some(Language::Rust) => {
-				let mut parser = RustParser::new()
-					.map_err(|err| err.to_string())?;
-				parser
-					.parse_file_references(path)
-					.map_err(|err| err.to_string())
+				let mut parser = RustParser::new()?;
+				parser.parse_file_references(path)
 			}
 			_ => Ok(Vec::new()),
 		}

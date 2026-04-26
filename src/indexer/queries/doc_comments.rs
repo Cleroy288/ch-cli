@@ -1,5 +1,3 @@
-//! Tree-sitter query for extracting Rust doc comments.
-
 /// Query for extracting doc comments (separate query for efficiency).
 pub const RUST_DOC_COMMENTS_QUERY: &str = r#"
 ; Line doc comments

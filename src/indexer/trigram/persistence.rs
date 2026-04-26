@@ -1,7 +1,3 @@
-//! Persistence functions for trigram index
-//!
-//! Functions to save and load the index from disk
-
 use std::path::Path;
 
 use crate::indexer::trigram::conversion::{
@@ -10,7 +6,6 @@ use crate::indexer::trigram::conversion::{
 use crate::indexer::trigram::types::{SerializableIndex, TrigramIndex};
 
 impl TrigramIndex {
-	/// Save index to disk as JSON
 	pub fn save(
 		&self,
 		path: &Path,
@@ -38,7 +33,6 @@ impl TrigramIndex {
 		std::fs::write(path, content)
 	}
 
-	/// Load index from disk JSON file
 	pub fn load(path: &Path) -> std::io::Result<Self> {
 		let content = std::fs::read_to_string(path)?;
 

@@ -6,9 +6,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use rustean::retrieval::daemon::protocol::{
-	QueryIntent,
-};
+use rustean::service::search::boost::QueryIntent;
 use rustean::service::index::types::IndexOptions;
 use rustean::service::search::types::{
 	SearchOptions, SearchResult,
@@ -29,20 +27,12 @@ pub fn make_search_result() -> SearchResult {
 	SearchResult {
 		hits: vec![],
 		intent: QueryIntent::Search,
-		context_xml: None,
 	}
 }
 
 /// Create default IndexOptions for tests
 pub fn make_index_options() -> IndexOptions {
-	IndexOptions {
-		flags: rustean::service::index::types
-			::IndexFlags {
-			semantic: true,
-			verbose: false,
-			persistence: false,
-		},
-	}
+	IndexOptions::default()
 }
 
 /// Create a temp dir with a small Rust project

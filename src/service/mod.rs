@@ -1,27 +1,23 @@
-//! Service layer — use case orchestration.
-//!
-//! Each service defines a trait (for DI/mocking) and
-//! a default implementation backed by infrastructure.
-//!
-//! Services import domain types only. Never import
-//! handlers, never import database/framework code
-//! directly.
-
+pub mod agents;
+pub mod aikido;
+pub mod atlassian;
+pub mod backend;
+pub mod skills;
 pub mod claude;
-pub mod daemon;
-pub mod docgen;
+pub mod config;
+pub mod git;
 pub mod index;
+pub mod manifest;
 pub mod memory;
-pub mod retrieval;
+pub mod prompt_history_io;
+pub mod review_write;
 pub mod search;
+pub mod tools;
 
-pub use daemon::{DaemonService, DefaultDaemonService};
-pub use docgen::{DefaultDocGenService, DocGenService};
 pub use index::{DefaultIndexService, IndexService};
 pub use memory::{
 	DefaultMemoryService, MemoryService,
 };
-pub use retrieval::{
-	DefaultRetrievalService, RetrievalService,
+pub use search::{
+	DefaultSearchService, SearchService,
 };
-pub use search::{DefaultSearchService, SearchService};

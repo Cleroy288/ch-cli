@@ -1,10 +1,5 @@
-//! Helper functions for the parser module.
-//!
-//! Contains utility functions for visibility parsing and keyword detection.
-
 use crate::indexer::symbols::Visibility;
 
-/// Parse a visibility modifier string into a Visibility enum.
 /// Handles pub, pub(crate), pub(super), and private (default).
 pub fn parse_visibility(text: &str) -> Visibility {
 	match text.trim() {
@@ -15,7 +10,6 @@ pub fn parse_visibility(text: &str) -> Visibility {
 	}
 }
 
-/// Check if a string is a Rust keyword.
 /// Used to filter out keywords from reference extraction.
 pub fn is_rust_keyword(word: &str) -> bool {
 	matches!(

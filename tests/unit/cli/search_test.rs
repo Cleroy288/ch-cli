@@ -5,7 +5,7 @@ use rustean::cli::commands::error::CommandError;
 use rustean::cli::commands::search::parse_symbol_kind;
 use rustean::indexer::SymbolKind;
 
-/// Test parsing function kind variants
+/// parse_symbol_kind accepts function aliases
 #[test]
 fn parse_kind_function_variants() {
     assert!(matches!(
@@ -22,7 +22,7 @@ fn parse_kind_function_variants() {
     ));
 }
 
-/// Test parsing struct kind
+/// parse_symbol_kind recognizes "struct"
 #[test]
 fn parse_kind_struct() {
     assert!(matches!(
@@ -31,7 +31,7 @@ fn parse_kind_struct() {
     ));
 }
 
-/// Test parsing invalid kind returns error
+/// parse_symbol_kind rejects unknown kind string
 #[test]
 fn parse_kind_invalid() {
     let result = parse_symbol_kind("invalid");
@@ -44,7 +44,7 @@ fn parse_kind_invalid() {
     }
 }
 
-/// Test parsing empty string returns error
+/// parse_symbol_kind rejects empty string
 #[test]
 fn parse_kind_empty() {
     assert!(parse_symbol_kind("").is_err());

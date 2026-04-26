@@ -3,9 +3,7 @@
 //! Exercises real IndexService operations:
 //! indexing, stats, has_index, clear_index.
 
-use rustean::service::index::types::{
-	IndexFlags, IndexOptions,
-};
+use rustean::service::index::types::IndexOptions;
 use rustean::service::{
 	DefaultIndexService, IndexService,
 };
@@ -16,28 +14,21 @@ use crate::helpers::factories_service::{
 
 /// Shared options: semantic on, no persistence
 fn opts() -> IndexOptions {
-	IndexOptions {
-		flags: IndexFlags {
-			semantic: true,
-			verbose: false,
-			persistence: false,
-		},
-	}
+	IndexOptions::default()
 }
 
 #[test]
 fn index_project_returns_stats() {
 	// Arrange
 	let dir = make_rust_project("lifecycle_stats");
-	let svc = DefaultIndexService::new();
+	let svc = DefaultIndexService::default();
 
 	// Act
 	let result =
 		svc.index_project(&dir, &opts());
 
 	// Assert
-	assert!(result.is_ok());
-	let r = result.unwrap();
+	let r = result.expect("index_project failed");
 	assert!(!r.symbols.is_empty());
 
 	cleanup_project(&dir);
@@ -47,14 +38,8 @@ fn index_project_returns_stats() {
 fn has_index_true_after_indexing() {
 	// Arrange
 	let dir = make_rust_project("lifecycle_has");
-	let svc = DefaultIndexService::new();
-	let persist_opts = IndexOptions {
-		flags: IndexFlags {
-			semantic: true,
-			verbose: false,
-			persistence: true,
-		},
-	};
+	let svc = DefaultIndexService::default();
+	let persist_opts = IndexOptions::persistent();
 
 	// Act
 	let _ = svc.index_project(
@@ -73,14 +58,8 @@ fn clear_index_removes_data() {
 	// Arrange
 	let dir =
 		make_rust_project("lifecycle_clear");
-	let svc = DefaultIndexService::new();
-	let persist_opts = IndexOptions {
-		flags: IndexFlags {
-			semantic: true,
-			verbose: false,
-			persistence: true,
-		},
-	};
+	let svc = DefaultIndexService::default();
+	let persist_opts = IndexOptions::persistent();
 	let _ = svc.index_project(
 		&dir,
 		&persist_opts,
@@ -88,10 +67,8 @@ fn clear_index_removes_data() {
 	assert!(svc.has_index(&dir));
 
 	// Act
-	let clear = svc.clear_index(&dir);
-
-	// Assert
-	assert!(clear.is_ok());
+	svc.clear_index(&dir)
+		.expect("clear_index failed");
 	assert!(!svc.has_index(&dir));
 
 	cleanup_project(&dir);
@@ -102,14 +79,8 @@ fn get_stats_after_persistent_index() {
 	// Arrange
 	let dir =
 		make_rust_project("lifecycle_persist");
-	let svc = DefaultIndexService::new();
-	let persist_opts = IndexOptions {
-		flags: IndexFlags {
-			semantic: true,
-			verbose: false,
-			persistence: true,
-		},
-	};
+	let svc = DefaultIndexService::default();
+	let persist_opts = IndexOptions::persistent();
 
 	// Act
 	let _ = svc.index_project(
@@ -119,10 +90,9 @@ fn get_stats_after_persistent_index() {
 	let stats = svc.get_stats(&dir);
 
 	// Assert
-	assert!(stats.is_ok());
-	let s = stats.unwrap();
-	assert!(s.is_some());
-	let info = s.unwrap();
+	let info = stats
+		.expect("get_stats failed")
+		.expect("stats should be Some");
 	assert!(info.symbol_count > 0);
 
 	cleanup_project(&dir);

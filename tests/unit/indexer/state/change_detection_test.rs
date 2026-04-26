@@ -4,7 +4,7 @@ use tempfile::tempdir;
 
 use rustean::indexer::state::IndexState;
 
-/// Test update_file adds a new file to the index
+/// update_file registers a new file in state
 #[test]
 fn test_update_file_adds_new_file() {
 	let temp_dir = tempdir().unwrap(); // temporary directory for test files
@@ -24,7 +24,7 @@ fn test_update_file_adds_new_file() {
 	assert_eq!(stored.symbol_count, symbol_count);
 }
 
-/// Test update_file updates existing file
+/// update_file replaces data for existing file
 #[test]
 fn test_update_file_replaces_existing() {
 	let temp_dir = tempdir().unwrap(); // temporary directory for test files
@@ -48,7 +48,7 @@ fn test_update_file_replaces_existing() {
 	assert_eq!(stored.symbol_count, 5);
 }
 
-/// Test remove_file deletes a file from the index
+/// remove_file drops the entry from state
 #[test]
 fn test_remove_file_deletes_entry() {
 	let temp_dir = tempdir().unwrap(); // temporary directory for test files
@@ -67,7 +67,7 @@ fn test_remove_file_deletes_entry() {
 	assert_eq!(state.files.len(), 0);
 }
 
-/// Test detect_changes identifies added files
+/// detect_changes flags files not in index as added
 #[test]
 fn test_detect_changes_finds_added_files() {
 	let temp_dir = tempdir().unwrap(); // temporary directory for test files
@@ -92,7 +92,7 @@ fn test_detect_changes_finds_added_files() {
 	assert!(changes.added.contains(&new_file));
 }
 
-/// Test detect_changes identifies modified files
+/// detect_changes flags files with newer mtime as modified
 #[test]
 fn test_detect_changes_finds_modified_files() {
 	let temp_dir = tempdir().unwrap(); // temporary directory for test files
@@ -120,7 +120,7 @@ fn test_detect_changes_finds_modified_files() {
 	assert!(changes.modified.contains(&file_path));
 }
 
-/// Test detect_changes identifies deleted files
+/// detect_changes flags indexed files missing from disk
 #[test]
 fn test_detect_changes_finds_deleted_files() {
 	let temp_dir = tempdir().unwrap(); // temporary directory for test files
@@ -147,7 +147,7 @@ fn test_detect_changes_finds_deleted_files() {
 	assert_eq!(changes.modified.len(), 0);
 }
 
-/// Test detect_changes identifies unchanged files
+/// detect_changes reports unmodified files as unchanged
 #[test]
 fn test_detect_changes_finds_unchanged_files() {
 	let temp_dir = tempdir().unwrap(); // temporary directory for test files
@@ -173,7 +173,7 @@ fn test_detect_changes_finds_unchanged_files() {
 	assert!(changes.unchanged.contains(&file_path));
 }
 
-/// Test touch updates the last_updated timestamp
+/// touch bumps the last_updated timestamp
 #[test]
 fn test_touch_updates_timestamp() {
 	let temp_dir = tempdir().unwrap();

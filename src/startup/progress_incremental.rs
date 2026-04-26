@@ -1,5 +1,3 @@
-//! Progress display for incremental indexing.
-
 use std::io::{self, Write};
 use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
@@ -12,15 +10,16 @@ use crossterm::{
     terminal::{self, ClearType},
 };
 
-use crate::indexer::{
-    ChangeSet, IndexManager, IndexResult,
-};
+use crate::indexer::{ChangeSet, IndexResult};
 
-use super::progress_shared::{
-    ProgressState, SPINNER, build_progress_callback,
-    collect_index_result, draw_elapsed_time,
-    format_progress_bar, truncate_name,
+use super::progress_incremental_draw::{
+    draw_incremental_bar, draw_incremental_stats,
 };
+use super::progress_shared::{
+    ProgressState, collect_index_result,
+    draw_elapsed_time,
+};
+use super::progress_spawn::spawn_index_thread;
 
 /// Display a progress bar during incremental indexing
 pub fn index_with_progress_incremental(
@@ -30,7 +29,7 @@ pub fn index_with_progress_incremental(
     display_update_header(&mut stdout, changes)?;
 
     let state = ProgressState::new();
-    let handle = spawn_incremental_thread(&state);
+    let handle = spawn_index_thread(&state);
 
     run_incremental_loop(&mut stdout, &state)?;
     collect_index_result(&mut stdout, handle)
@@ -67,29 +66,6 @@ fn display_update_header(
     )
 }
 
-/// Spawn the incremental indexing thread
-fn spawn_incremental_thread(
-    state: &ProgressState,
-) -> std::thread::JoinHandle<
-    crate::indexer::IndexManagerResult<IndexResult>,
-> {
-    let callback = build_progress_callback(state);
-    let done_clone = state.done.clone();
-
-    std::thread::spawn(move || {
-        let manager = IndexManager::new()
-            .with_persistence()
-            .with_semantic_analysis()
-            .with_reference_extraction()
-            .on_progress(callback);
-
-        let result = manager.index_project(".");
-        done_clone.store(true, Ordering::SeqCst);
-        result
-    })
-}
-
-/// Run the progress display loop
 fn run_incremental_loop(
     stdout: &mut io::Stdout,
     state: &ProgressState,
@@ -109,7 +85,6 @@ fn run_incremental_loop(
     Ok(())
 }
 
-/// Draw one frame of incremental progress
 fn draw_incremental_frame(
     stdout: &mut io::Stdout,
     state: &ProgressState,
@@ -120,11 +95,7 @@ fn draw_incremental_frame(
         state.files_done.load(Ordering::SeqCst);
     let total =
         state.total.load(Ordering::SeqCst).max(1);
-    let current = state
-        .current_file
-        .lock()
-        .map(|val| val.clone())
-        .unwrap_or_default();
+    let current = state.current_file_name();
 
     draw_incremental_bar(
         stdout, processed, total, spin_idx,
@@ -134,66 +105,4 @@ fn draw_incremental_frame(
     )?;
     draw_elapsed_time(stdout, start, 9)?;
     stdout.flush()
-}
-
-/// Draw one frame of the incremental progress bar
-fn draw_incremental_bar(
-    stdout: &mut io::Stdout,
-    processed: usize,
-    total: usize,
-    spin_idx: usize,
-) -> io::Result<()> {
-    let (progress_bar, progress) =
-        format_progress_bar(processed, total);
-    let spinner = SPINNER[spin_idx % SPINNER.len()];
-
-    execute!(
-        stdout,
-        cursor::MoveTo(0, 5),
-        terminal::Clear(ClearType::CurrentLine),
-        SetForegroundColor(Color::Yellow),
-        Print(format!("  {} ", spinner)),
-        SetForegroundColor(Color::Cyan),
-        Print("["),
-        SetForegroundColor(Color::Yellow),
-        Print(&progress_bar),
-        SetForegroundColor(Color::Cyan),
-        Print("]"),
-        SetForegroundColor(Color::White),
-        Print(format!(
-            " {:.0}%",
-            progress * 100.0
-        )),
-        ResetColor
-    )
-}
-
-/// Draw file count and current file name
-fn draw_incremental_stats(
-    stdout: &mut io::Stdout,
-    processed: usize,
-    total: usize,
-    current: &str,
-) -> io::Result<()> {
-    execute!(
-        stdout,
-        cursor::MoveTo(0, 7),
-        terminal::Clear(ClearType::CurrentLine),
-        SetForegroundColor(Color::DarkGrey),
-        Print(format!(
-            "  Files: {}/{}",
-            processed, total
-        )),
-        ResetColor
-    )?;
-
-    let display = truncate_name(current, 50);
-    execute!(
-        stdout,
-        cursor::MoveTo(0, 8),
-        terminal::Clear(ClearType::CurrentLine),
-        SetForegroundColor(Color::DarkGrey),
-        Print(format!("  Current: {}", display)),
-        ResetColor
-    )
 }

@@ -1,14 +1,8 @@
-//! Heading renderer.
-//!
-//! Strips # prefix and applies level-based styles
-//! with inline formatting support.
-
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 
 use crate::ui::styles::colors;
 
-/// Render a markdown heading line.
 ///
 /// Strips `#` markers, applies heading style,
 /// and parses inline bold/italic/code within.
@@ -24,28 +18,23 @@ pub fn render(line: &str) -> Line<'static> {
 	Line::from(spans)
 }
 
-/// Get style for heading level.
 fn heading_style(level: usize) -> Style {
 	match level {
 		1 => Style::new()
-			.fg(Color::Cyan)
-			.add_modifier(
-				Modifier::BOLD
-					.union(Modifier::UNDERLINED),
-			),
+			.fg(Color::White)
+			.add_modifier(Modifier::BOLD),
 		2 => Style::new()
-			.fg(Color::Cyan)
+			.fg(colors::ACCENT)
 			.add_modifier(Modifier::BOLD),
 		3 => Style::new()
-			.fg(colors::AMBER)
+			.fg(colors::TEXT_LIGHT)
 			.add_modifier(Modifier::BOLD),
 		_ => Style::new()
-			.fg(colors::AMBER)
+			.fg(colors::TEXT_LIGHT)
 			.add_modifier(Modifier::ITALIC),
 	}
 }
 
-/// Parse inline markers and merge heading style.
 fn apply_style(
 	text: &str,
 	base: Style,

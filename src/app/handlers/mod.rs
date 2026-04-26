@@ -1,32 +1,52 @@
-/// Keyboard input handlers module.
-///
-/// This module contains separate handlers:
-/// - `input_keys`: Key event routing
-/// - `input_edit`: Text editing and file reference ops
-/// - `input_insert`: Path insertion into input buffer
-/// - `cursor_movement`: Cursor left/right movement
-/// - `picker_keys`: Picker key event routing
-/// - `picker_actions`: Picker action handlers
-/// - `picker_browse`: Browse mode key handler
-/// - `picker_symbols`: Symbols mode key handler
-/// - `picker_symbol_actions`: Symbol picker activation
-/// - `picker_symbol_finalize`: Symbol selection finalize
-/// - `picker_tools`: Tools mode key handler
-/// - `picker_doc_browser`: Doc browser key handler
+mod agent_suggest;
 mod cursor_movement;
-#[doc(hidden)]
-pub mod doc_preview_fetch;
+mod debug_click;
+mod enhance_prompt;
+mod input_delete;
 mod input_edit;
+mod input_history;
 mod input_insert;
+mod input_insert_tool;
 mod input_keys;
+mod input_keys_mode;
+mod input_multiline;
+pub(crate) mod input_paste;
+mod input_paste_remove;
+mod preflight;
 mod picker_actions;
 mod picker_browse;
-mod picker_doc_browser;
 mod picker_keys;
-mod picker_symbol_actions;
+mod picker_mcp_browse;
+mod picker_repo_select;
+pub mod picker_symbol_actions;
 mod picker_symbol_finalize;
 mod picker_symbols;
+mod picker_slash;
+mod picker_slash_cancel;
+mod picker_slash_select;
 mod picker_tools;
+pub(crate) mod picker_tools_fetch;
+pub(crate) mod picker_tools_fetch_ctx;
+mod picker_tools_select;
+mod picker_tool_results;
+mod picker_tool_results_jira;
+mod picker_tool_count;
+mod picker_tool_helpers;
+mod picker_jira_assignees_fetch;
+mod picker_jira_board_select;
+mod picker_jira_boards_fetch;
+mod picker_git_actions;
+mod picker_git_history;
+mod picker_git_select;
+mod picker_jira_detail;
+mod picker_jira_detail_fetch;
+mod picker_jira_filter;
+mod picker_jira_filter_list;
+mod inline_actions;
+mod inline_keys;
+mod inline_keys_mode;
+mod inline_mouse;
 mod scroll;
-#[doc(hidden)]
+mod slash_commands;
+mod slash_git;
 pub mod symbol_resolver;

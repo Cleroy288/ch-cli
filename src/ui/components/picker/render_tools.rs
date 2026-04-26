@@ -1,62 +1,104 @@
-//! Render the tools picker list.
-//!
-//! Shows available tools when '#' is pressed.
-
 use ratatui::{
-	layout::{Alignment, Rect},
-	style::Style,
-	text::{Line, Span},
-	widgets::{Block, Borders, List, ListItem},
-	Frame,
+    layout::{Alignment, Rect},
+    style::Style,
+    text::{Line, Span},
+    widgets::{Block, Borders, List, ListItem},
+    Frame,
 };
 
+use crate::picker::tool_items;
 use crate::picker::Picker;
-use crate::ui::strings::tui_labels::{
-	TOOL_DOC_BROWSER, TOOL_DOC_BROWSER_DESC,
-};
 use crate::ui::styles;
 use crate::ui::styles::colors;
 
-use super::render::render_picker_help_text;
+use super::render::render_empty_results;
 
-/// Render the tools list picker.
 pub fn render_tools_list(
-	frame: &mut Frame,
-	area: Rect,
-	picker: &Picker,
+    frame: &mut Frame,
+    area: Rect,
+    picker: &Picker,
 ) {
-	let selected = picker.selected_index();
-	let items = build_tools_items(selected);
-	let title = " Tools [1/1] ";
-	let list = List::new(items).block(
-		Block::default()
-			.borders(Borders::ALL)
-			.title(title)
-			.title_alignment(Alignment::Left)
-			.style(Style::default().fg(colors::PICKER)),
-	);
-	frame.render_widget(list, area);
-	render_picker_help_text(frame, area);
+    let items = get_tool_items(picker);
+    if items.is_empty() {
+        render_empty_results(frame, area, picker);
+        return;
+    }
+    let selected = picker.selected_index();
+    let list_items =
+        build_tool_items(&items, selected, area);
+    let list =
+        build_tools_widget(&items, selected, list_items);
+    frame.render_widget(list, area);
 }
 
-/// Build the list items for available tools
-fn build_tools_items(
-	selected: usize,
+fn get_tool_items(
+    picker: &Picker,
+) -> Vec<(&'static str, &'static str)> {
+    tool_items::filter_tools(picker.query())
+        .into_iter()
+        .map(|i| (i.name, i.description))
+        .collect()
+}
+
+fn build_tool_items(
+    items: &[(&'static str, &'static str)],
+    selected: usize,
+    area: Rect,
 ) -> Vec<ListItem<'static>> {
-	let style = if selected == 0 {
-		styles::file_list_selected_style()
-	} else {
-		Style::default().fg(colors::INPUT_TEXT)
-	};
-	let spans = vec![
-		Span::styled(
-			format!("D {}", TOOL_DOC_BROWSER),
-			style,
-		),
-		Span::styled(
-			format!(" - {}", TOOL_DOC_BROWSER_DESC),
-			Style::default().fg(colors::DIM_TEXT),
-		),
-	];
-	vec![ListItem::new(Line::from(spans))]
+    let visible =
+        area.height.saturating_sub(2) as usize;
+    let scroll = if selected >= visible {
+        selected - visible + 1
+    } else {
+        0
+    };
+    items
+        .iter()
+        .enumerate()
+        .skip(scroll)
+        .take(visible)
+        .map(|(idx, (name, desc))| {
+            build_one_item(name, desc, idx == selected)
+        })
+        .collect()
+}
+
+fn build_one_item(
+    name: &'static str,
+    desc: &'static str,
+    selected: bool,
+) -> ListItem<'static> {
+    let style = if selected {
+        styles::file_list_selected_style()
+    } else {
+        Style::default().fg(colors::INPUT_TEXT)
+    };
+    let dim = Style::default().fg(colors::DIM_TEXT);
+    let spans = vec![
+        Span::styled(name, style),
+        Span::styled(" — ", dim),
+        Span::styled(desc, dim),
+    ];
+    ListItem::new(Line::from(spans))
+}
+
+fn build_tools_widget(
+    items: &[(&'static str, &'static str)],
+    selected: usize,
+    list_items: Vec<ListItem<'static>>,
+) -> List<'static> {
+    let title = format!(
+        " Tools [{}/{}]",
+        selected + 1,
+        items.len()
+    );
+    List::new(list_items).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .title(title)
+            .title_alignment(Alignment::Left)
+            .style(
+                Style::default().fg(colors::PICKER),
+            ),
+    )
 }

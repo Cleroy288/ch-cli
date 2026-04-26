@@ -7,7 +7,7 @@ use tempfile::tempdir;
 
 use rustean::indexer::state::FileState;
 
-/// Test from_path creates FileState with correct metadata
+/// from_path captures relative path, mtime, and size
 #[test]
 fn test_from_path_creates_valid_state() {
 	let temp_dir = tempdir().unwrap(); // temporary directory for test files
@@ -27,7 +27,7 @@ fn test_from_path_creates_valid_state() {
 	assert_eq!(state.symbol_count, 0);
 }
 
-/// Test from_path with nested path
+/// from_path stores relative path for nested dirs
 #[test]
 fn test_from_path_nested_directory() {
 	let temp_dir = tempdir().unwrap(); // temporary directory for test files
@@ -45,7 +45,7 @@ fn test_from_path_nested_directory() {
 	assert!(state.mtime > 0);
 }
 
-/// Test has_changed returns false for unchanged file
+/// has_changed is false when file is untouched
 #[test]
 fn test_has_changed_unchanged_file() {
 	let temp_dir = tempdir().unwrap(); // temporary directory for test files
@@ -57,13 +57,10 @@ fn test_has_changed_unchanged_file() {
 	// state: FileState created from the file
 	let state = FileState::from_path(&file_path, root).unwrap();
 
-	// Wait a bit to ensure mtime would change if we modified
-	std::thread::sleep(std::time::Duration::from_millis(10));
-
 	assert!(!state.has_changed(root));
 }
 
-/// Test has_changed returns true for modified file
+/// has_changed detects appended content via mtime
 #[test]
 fn test_has_changed_modified_file() {
 	let temp_dir = tempdir().unwrap(); // temporary directory for test files
@@ -89,7 +86,7 @@ fn test_has_changed_modified_file() {
 	assert!(state.has_changed(root));
 }
 
-/// Test has_changed returns true for deleted file
+/// has_changed is true when file is deleted
 #[test]
 fn test_has_changed_deleted_file() {
 	let temp_dir = tempdir().unwrap(); // temporary directory for test files
@@ -107,7 +104,7 @@ fn test_has_changed_deleted_file() {
 	assert!(state.has_changed(root));
 }
 
-/// Test has_changed detects size change without mtime change
+/// has_changed detects size mismatch even if mtime same
 #[test]
 fn test_has_changed_size_only() {
 	let temp_dir = tempdir().unwrap(); // temporary directory for test files

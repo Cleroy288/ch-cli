@@ -16,7 +16,7 @@ fn create_test_symbol(name: &str, path: &str) -> Symbol {
     )
 }
 
-/// Test TripleSearchIndex routes symbols correctly
+/// Symbols routed to code/doc/notes indexes by path
 #[test]
 fn test_triple_index_routes_symbols() {
     let index = TripleSearchIndex::in_memory().unwrap();
@@ -42,7 +42,7 @@ fn test_triple_index_routes_symbols() {
     assert_eq!(stats.total(), 5);
 }
 
-/// Test TripleSearchIndex searches code index only
+/// search_code only returns src/ symbols
 #[test]
 fn test_triple_index_search_code() {
     let index = TripleSearchIndex::in_memory().unwrap();
@@ -60,7 +60,7 @@ fn test_triple_index_search_code() {
     assert_eq!(results[0].symbol.name, "handle_request");
 }
 
-/// Test TripleSearchIndex searches doc index only
+/// search_docs only returns doc/ symbols
 #[test]
 fn test_triple_index_search_docs() {
     let index = TripleSearchIndex::in_memory().unwrap();
@@ -78,7 +78,7 @@ fn test_triple_index_search_docs() {
     assert_eq!(results[0].symbol.name, "handle_docs");
 }
 
-/// Test TripleSearchIndex searches notes index only
+/// search_notes only returns notes/ symbols
 #[test]
 fn test_triple_index_search_notes() {
     let index = TripleSearchIndex::in_memory().unwrap();
@@ -96,7 +96,7 @@ fn test_triple_index_search_notes() {
     assert_eq!(results[0].symbol.name, "handle_notes");
 }
 
-/// Test TripleSearchIndex parallel search returns all results
+/// search_parallel returns results from all three indexes
 #[test]
 fn test_triple_index_parallel_search() {
     let index = TripleSearchIndex::in_memory().unwrap();
@@ -122,9 +122,7 @@ fn test_triple_index_parallel_search() {
     assert_eq!(results.notes_results[0].symbol.name, "handle_notes");
 }
 
-// ==================== Extra Tests ====================
-
-/// Test TripleSearchIndex with empty symbols
+/// Indexing zero symbols yields all-zero stats
 #[test]
 fn test_triple_index_empty() {
     let index = TripleSearchIndex::in_memory().unwrap();
@@ -137,7 +135,7 @@ fn test_triple_index_empty() {
     assert_eq!(stats.total(), 0);
 }
 
-/// Test TripleSearchIndex respects limits
+/// search_code respects the limit parameter
 #[test]
 fn test_triple_index_respects_limits() {
     let index = TripleSearchIndex::in_memory().unwrap();

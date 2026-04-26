@@ -1,8 +1,3 @@
-//! First-time indexing prompt flow.
-//!
-//! Displayed when no code index exists and the user
-//! has not opted for the analysis-based prompt.
-
 use std::io::{self, Write};
 
 use crossterm::{
@@ -20,7 +15,6 @@ use super::prompts_shared::{
 };
 use super::StartupAction;
 
-/// Run the first-time indexing prompt
 pub fn prompt_for_indexing(
 ) -> io::Result<StartupAction> {
     let mut stdout = io::stdout();
@@ -28,7 +22,6 @@ pub fn prompt_for_indexing(
     read_index_choice(&mut stdout)
 }
 
-/// Display the first-time indexing prompt
 fn display_index_prompt(
     stdout: &mut io::Stdout,
 ) -> io::Result<()> {
@@ -53,7 +46,6 @@ fn display_index_prompt(
     display_loading_hint(stdout)
 }
 
-/// Display the indexing benefits list
 fn display_index_benefits(
     stdout: &mut io::Stdout,
 ) -> io::Result<()> {
@@ -83,19 +75,18 @@ fn display_index_benefits(
     )
 }
 
-/// Read the user's Y/N/Q choice for indexing
 fn read_index_choice(
     stdout: &mut io::Stdout,
 ) -> io::Result<StartupAction> {
     terminal::enable_raw_mode()?;
 
-    let result = match read_ynq_key()? {
+    let result = read_ynq_key();
+    terminal::disable_raw_mode()?;
+    let action = match result? {
         KeyAction::Yes => StartupAction::Index,
         KeyAction::No => StartupAction::Skip,
         KeyAction::Quit => StartupAction::Quit,
     };
-
-    terminal::disable_raw_mode()?;
     writeln!(stdout)?;
-    Ok(result)
+    Ok(action)
 }

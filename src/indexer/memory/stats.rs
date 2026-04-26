@@ -1,5 +1,3 @@
-//! Stats computation and caching for memory store.
-
 use std::fs;
 use std::path::Path;
 
@@ -11,7 +9,6 @@ use super::paths;
 use super::store_helpers;
 use super::types::MemoryStats;
 
-/// Compute fresh stats from the session files
 pub fn compute_stats(
 	root: &Path,
 ) -> MemoryResult<MemoryStats> {
@@ -40,7 +37,6 @@ pub fn compute_stats(
 	Ok(stats)
 }
 
-/// Load cached stats from meta file
 pub fn load_cached(
 	root: &Path,
 ) -> MemoryResult<MemoryStats> {
@@ -53,7 +49,6 @@ pub fn load_cached(
 	)
 }
 
-/// Save stats to meta file
 pub fn save_stats(
 	root: &Path,
 	stats: &MemoryStats,
@@ -71,7 +66,6 @@ pub fn save_stats(
 	Ok(())
 }
 
-/// Update last_updated from interaction timestamps
 fn update_last_ts(
 	items: &[crate::domain::memory::Interaction],
 	last: &mut u64,
@@ -83,7 +77,6 @@ fn update_last_ts(
 	}
 }
 
-/// Get file size in bytes, 0 on error
 fn file_size(path: &Path) -> u64 {
 	fs::metadata(path)
 		.map(|meta| meta.len())

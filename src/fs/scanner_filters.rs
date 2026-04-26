@@ -1,14 +1,7 @@
-//! FileScanner filter and search operations.
-//!
-//! Provides filtering by type (files/directories)
-//! and case-insensitive name search.
-
 use super::scanner::FileScanner;
 use crate::fs::FsEntry;
 
-/// Filter and search methods for FileScanner.
 impl FileScanner {
-	/// Get only directories
 	pub fn directories(&self) -> Vec<&FsEntry> {
 		self.entries()
 			.iter()
@@ -16,7 +9,6 @@ impl FileScanner {
 			.collect()
 	}
 
-	/// Get only files
 	pub fn files(&self) -> Vec<&FsEntry> {
 		self.entries()
 			.iter()

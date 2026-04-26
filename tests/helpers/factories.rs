@@ -38,16 +38,6 @@ pub fn make_symbol(name: &str) -> Symbol {
 	}
 }
 
-/// Create a test Symbol with a specific kind
-pub fn make_symbol_with_kind(
-	name: &str,
-	kind: SymbolKind,
-) -> Symbol {
-	let mut sym = make_symbol(name);
-	sym.kind = kind;
-	sym
-}
-
 /// Create a test CodeLocation
 pub fn make_location(
 	file: &str,
@@ -62,18 +52,15 @@ pub fn make_location(
 	}
 }
 
-/// Create a temporary project directory for tests
-pub fn make_test_dir(name: &str) -> PathBuf {
-	let dir = std::env::temp_dir()
-		.join("rustean-test")
-		.join(name);
-	std::fs::create_dir_all(&dir).ok();
-	dir
-}
-
-/// Remove a temporary test directory
+/// Remove a temporary test directory + its
+/// centralized data dir
 pub fn cleanup_test_dir(dir: &Path) {
+	// Resolve centralized path BEFORE deleting
+	// (canonicalize needs path to exist)
+	let data =
+		rustean::domain::data_paths::data_dir(dir);
 	std::fs::remove_dir_all(dir).ok();
+	std::fs::remove_dir_all(&data).ok();
 }
 
 /// RAII guard that cleans up a temp directory
@@ -83,20 +70,37 @@ pub struct TempMemDir {
 }
 
 impl TempMemDir {
-	/// Create a new temp dir with unique suffix
+	/// Create a new temp dir with unique suffix.
+	/// Pre-cleans stale centralized data from prior
+	/// failed runs.
 	pub fn new(prefix: &str) -> Self {
 		let id = next_test_id();
 		let path = std::env::temp_dir()
 			.join("rustean-mem-test")
 			.join(format!("{prefix}-{id}"));
 		std::fs::create_dir_all(&path).ok();
+		// Pre-clean centralized dir (stale data
+		// from prior panicked tests)
+		let data =
+			rustean::domain::data_paths::data_dir(
+				&path,
+			);
+		std::fs::remove_dir_all(&data).ok();
 		Self { path }
 	}
 }
 
 impl Drop for TempMemDir {
 	fn drop(&mut self) {
+		// Resolve centralized path BEFORE deleting
+		// temp dir (canonicalize needs the path to
+		// exist on macOS: /tmp → /private/tmp)
+		let data =
+			rustean::domain::data_paths::data_dir(
+				&self.path,
+			);
 		std::fs::remove_dir_all(&self.path).ok();
+		std::fs::remove_dir_all(&data).ok();
 	}
 }
 
@@ -147,7 +151,9 @@ pub fn make_ai_answer(
 	}
 }
 
-/// Create a temp dir for memory tests
+/// Create a temp dir for memory tests.
+/// Pre-cleans stale centralized data from prior
+/// runs to avoid cross-run pollution.
 pub fn make_memory_test_dir(
 	name: &str,
 ) -> PathBuf {
@@ -156,6 +162,11 @@ pub fn make_memory_test_dir(
 		.join("rustean-mem-test")
 		.join(format!("{name}-{id}"));
 	std::fs::create_dir_all(&dir).ok();
+	// Pre-clean centralized dir (stale data
+	// from prior failed runs)
+	let data =
+		rustean::domain::data_paths::data_dir(&dir);
+	std::fs::remove_dir_all(&data).ok();
 	dir
 }
 

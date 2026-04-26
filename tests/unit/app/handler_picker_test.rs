@@ -84,6 +84,38 @@ fn backspace_empty_query_cancels_picker() {
     assert!(!app.picker().is_active());
 }
 
+/// Backspace cancel restores cursor to trigger pos
+#[test]
+fn backspace_cancel_restores_cursor() {
+    // Arrange — type "hi" then "@"
+    let mut app = App::default();
+    app.handle_key(
+        KeyCode::Char('h'),
+        KeyModifiers::NONE,
+    );
+    app.handle_key(
+        KeyCode::Char('i'),
+        KeyModifiers::NONE,
+    );
+    assert_eq!(app.cursor_position(), 2);
+    app.handle_key(
+        KeyCode::Char('@'),
+        KeyModifiers::NONE,
+    );
+    assert!(app.picker().is_active());
+
+    // Act — backspace closes picker
+    app.handle_key(
+        KeyCode::Backspace,
+        KeyModifiers::NONE,
+    );
+
+    // Assert — cursor at end, @ removed
+    assert!(!app.picker().is_active());
+    assert_eq!(app.input(), "hi");
+    assert_eq!(app.cursor_position(), 2);
+}
+
 /// Backspace in picker with query pops last char
 #[test]
 fn backspace_pops_last_query_char() {

@@ -1,12 +1,20 @@
 //! Tests for MCP tool execution.
 
-use rustean::cli::commands::mcp_server::mcp_tools;
+use rustean::cli::commands::mcp_server::{
+	mcp_tools, mcp_types::McpContext,
+};
 use serde_json::{Value, json};
+
+/// Build a context with no Atlassian credentials
+fn empty_ctx() -> McpContext {
+	McpContext::from_credentials(None)
+}
 
 /// Search returns content array with text type
 #[test]
 fn search_returns_content_array() {
 	// Arrange
+	let ctx = empty_ctx();
 	let params = json!({
 		"name": "memory_search",
 		"arguments": { "query": "test" },
@@ -14,13 +22,12 @@ fn search_returns_content_array() {
 
 	// Act
 	let raw = mcp_tools::execute_tool(
-		json!(1), Some(&params),
+		json!(1), Some(&params), &ctx,
 	);
 	let parsed: Value =
 		serde_json::from_str(&raw).unwrap();
 
-	// Assert — might be result or error depending
-	// on disk state, but structure should be valid
+	// Assert
 	if let Some(result) = parsed.get("result") {
 		let items = result["content"]
 			.as_array().unwrap();
@@ -32,6 +39,7 @@ fn search_returns_content_array() {
 #[test]
 fn recent_returns_content_array() {
 	// Arrange
+	let ctx = empty_ctx();
 	let params = json!({
 		"name": "memory_recent",
 		"arguments": { "limit": 5 },
@@ -39,7 +47,7 @@ fn recent_returns_content_array() {
 
 	// Act
 	let raw = mcp_tools::execute_tool(
-		json!(2), Some(&params),
+		json!(2), Some(&params), &ctx,
 	);
 	let parsed: Value =
 		serde_json::from_str(&raw).unwrap();
@@ -56,6 +64,7 @@ fn recent_returns_content_array() {
 #[test]
 fn stats_returns_content_array() {
 	// Arrange
+	let ctx = empty_ctx();
 	let params = json!({
 		"name": "memory_stats",
 		"arguments": {},
@@ -63,7 +72,7 @@ fn stats_returns_content_array() {
 
 	// Act
 	let raw = mcp_tools::execute_tool(
-		json!(3), Some(&params),
+		json!(3), Some(&params), &ctx,
 	);
 	let parsed: Value =
 		serde_json::from_str(&raw).unwrap();
@@ -80,6 +89,7 @@ fn stats_returns_content_array() {
 #[test]
 fn unknown_tool_returns_error() {
 	// Arrange
+	let ctx = empty_ctx();
 	let params = json!({
 		"name": "nonexistent_tool",
 		"arguments": {},
@@ -87,7 +97,7 @@ fn unknown_tool_returns_error() {
 
 	// Act
 	let raw = mcp_tools::execute_tool(
-		json!(4), Some(&params),
+		json!(4), Some(&params), &ctx,
 	);
 	let parsed: Value =
 		serde_json::from_str(&raw).unwrap();

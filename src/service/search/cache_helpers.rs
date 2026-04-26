@@ -1,5 +1,3 @@
-//! Helper functions for index cache operations.
-
 use std::path::{Path, PathBuf};
 
 use crate::domain::errors::search::SearchError;
@@ -13,7 +11,6 @@ pub fn canonicalize(path: &Path) -> PathBuf {
 		.unwrap_or_else(|_| path.to_path_buf())
 }
 
-/// Read last_updated from persisted IndexState
 pub fn read_disk_timestamp(
 	root: &Path,
 ) -> u64 {
@@ -22,20 +19,14 @@ pub fn read_disk_timestamp(
 		.unwrap_or(0)
 }
 
-/// Build a fresh IndexResult via IndexManager
 pub fn build_index(
 	path: &Path,
-	semantic: bool,
 ) -> Result<IndexResult, SearchError> {
-	let manager = if semantic {
-		IndexManager::new()
-			.with_persistence()
-			.with_semantic_analysis()
-	} else {
-		IndexManager::new().with_persistence()
-	};
+	let manager = IndexManager::new()
+		.with_persistence()
+		.with_semantic_analysis();
 	manager.index_project(path).map_err(|err| {
-		SearchError::IoError(std::io::Error::other(
+		SearchError::Io(std::io::Error::other(
 			err.to_string(),
 		))
 	})
@@ -43,7 +34,7 @@ pub fn build_index(
 
 /// Create a SearchError from a message string
 pub fn io_err(msg: &str) -> SearchError {
-	SearchError::IoError(std::io::Error::other(
+	SearchError::Io(std::io::Error::other(
 		msg.to_string(),
 	))
 }

@@ -1,8 +1,3 @@
-//! Reference processing functions.
-//!
-//! Contains logic for extracting symbol references (usages)
-//! from tree-sitter matches.
-
 use std::path::Path;
 
 use tree_sitter::Query;
@@ -21,17 +16,14 @@ pub fn process_reference_match(
 	file_path: &Path,
 	reference_query: &Query,
 ) -> Option<ExtractedReference> {
-	// Find the most specific capture
 	let capture = match_.captures.first()?;
-	let capture_name = reference_query.capture_names()[capture.index as usize];
+	let cap_name = &reference_query
+		.capture_names()[capture.index as usize];
 	let node = capture.node;
 	let text = &source[node.byte_range()];
+	let context = determine_reference_context(cap_name)?;
 
-	// Determine reference context from capture name
-	let context = determine_reference_context(capture_name)?;
-
-	// Skip keywords and common identifiers that aren't real references
-	if is_rust_keyword(text) || text == "self" || text == "Self" {
+	if is_rust_keyword(text) {
 		return None;
 	}
 
@@ -53,21 +45,26 @@ pub fn process_reference_match(
 	})
 }
 
-/// Determine the reference context from a capture name.
 /// Returns None for captures that should be skipped.
 fn determine_reference_context(capture_name: &str) -> Option<ReferenceContext> {
 	match capture_name {
-		"call.name" => Some(ReferenceContext::Call),
-		"method_call.name" => Some(ReferenceContext::Call),
-		"type_ref.name" => Some(ReferenceContext::Type),
+		"call.name" | "method_call.name" => {
+			Some(ReferenceContext::Call)
+		}
+		"type_ref.name" => {
+			Some(ReferenceContext::Type)
+		}
 		"use.name" | "use.type_name" | "use.simple"
 		| "use.list_item" | "use.list_type_item" => {
 			Some(ReferenceContext::Import)
 		}
-		"field_access.name" => Some(ReferenceContext::FieldAccess),
-		"ident.name" => Some(ReferenceContext::Identifier),
-		"scoped.name" => Some(ReferenceContext::Identifier),
-		_ => None, // Skip expression/declaration captures, we want names
+		"field_access.name" => {
+			Some(ReferenceContext::FieldAccess)
+		}
+		"ident.name" | "scoped.name" => {
+			Some(ReferenceContext::Identifier)
+		}
+		_ => None,
 	}
 }
 

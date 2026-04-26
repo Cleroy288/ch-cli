@@ -1,33 +1,25 @@
-//! Schema builder function for Tantivy index.
+use tantivy::schema::{
+	Schema, INDEXED, STORED, STRING, TEXT,
+};
 
-use tantivy::schema::*;
-
-/// Build the Tantivy schema for symbol indexing
+///
+/// Fields: symbol_name (TEXT), symbol_kind/file_path/
+/// visibility/parent/document_type (STRING),
+/// line/column (u64), signature/fqn/content (TEXT).
 pub fn build_schema() -> Schema {
-	let mut schema_builder = Schema::builder(); // schema builder instance
+	let mut b = Schema::builder();
 
-	// Primary search field - tokenized for full-text search
-	schema_builder.add_text_field("symbol_name", TEXT | STORED);
+	b.add_text_field("symbol_name", TEXT | STORED);
+	b.add_text_field("symbol_kind", STRING | STORED);
+	b.add_text_field("file_path", STRING | STORED);
+	b.add_text_field("visibility", STRING | STORED);
+	b.add_u64_field("line", STORED | INDEXED);
+	b.add_u64_field("column", STORED | INDEXED);
+	b.add_text_field("signature", TEXT | STORED);
+	b.add_text_field("fqn", TEXT | STORED);
+	b.add_text_field("parent", STRING | STORED);
+	b.add_text_field("content", TEXT | STORED);
+	b.add_text_field("document_type", STRING | STORED);
 
-	// Filterable fields - not tokenized
-	schema_builder.add_text_field("symbol_kind", STRING | STORED);
-	schema_builder.add_text_field("file_path", STRING | STORED);
-	schema_builder.add_text_field("visibility", STRING | STORED);
-
-	// Numeric fields for location
-	schema_builder.add_u64_field("line", STORED | INDEXED);
-	schema_builder.add_u64_field("column", STORED | INDEXED);
-
-	// Additional metadata
-	schema_builder.add_text_field("signature", TEXT | STORED);
-	schema_builder.add_text_field("fqn", TEXT | STORED);
-	schema_builder.add_text_field("parent", STRING | STORED);
-
-	// Content field for full-text search on documentation
-	schema_builder.add_text_field("content", TEXT | STORED);
-
-	// Document type field for boost scoring
-	schema_builder.add_text_field("document_type", STRING | STORED);
-
-	schema_builder.build()
+	b.build()
 }

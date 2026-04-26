@@ -1,13 +1,9 @@
-//! Conversion functions for trigram serialization.
-
 use crate::indexer::trigram::types::Trigram;
 
-/// Convert trigram to hex string for serialization
 pub fn trigram_to_string(tri: &Trigram) -> String {
 	format!("{:02x}{:02x}{:02x}", tri[0], tri[1], tri[2])
 }
 
-/// Convert hex string back to trigram
 pub fn string_to_trigram(hex: &str) -> Option<Trigram> {
 	if hex.len() != 6 {
 		return None;

@@ -1,27 +1,51 @@
-//! Domain types for Claude Code CLI integration.
-//!
-//! Holds the response structure, token usage stats,
-//! and active session state.
+use super::backend::{BackendResponse, BackendUsage};
 
-use serde::{Deserialize, Serialize};
+/// Backward-compat aliases
+pub type ClaudeResponse = BackendResponse;
+pub type ClaudeUsage = BackendUsage;
 
-/// Response from Claude Code CLI (JSON output)
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ClaudeResponse {
-	pub result: String,        // main text output
-	pub session_id: String,    // session for continuity
-	pub is_error: bool,        // true if Claude errored
-	pub num_turns: u32,        // agentic turns used
-	pub cost_usd: Option<f64>, // cost in USD
-	pub duration_ms: u64,      // wall clock duration
-	pub usage: ClaudeUsage,    // token breakdown
+/// Whether the response proposes code changes
+/// or just answers a question.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ResponseIntent {
+	#[default]
+	Question,
+	Implementation,
 }
 
-/// Token usage stats from Claude CLI
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ClaudeUsage {
-	pub input_tokens: u64,          // prompt tokens
-	pub output_tokens: u64,         // completion tokens
-	pub cache_read_tokens: u64,     // cache hits
-	pub cache_creation_tokens: u64, // cache writes
+pub const SUBTYPE_SUCCESS: &str = "success";
+
+#[derive(Debug, Clone)]
+pub struct ToolActivity {
+	pub tool_name: String,
+	pub summary: String,
+}
+
+#[derive(Debug, Clone)]
+pub enum StreamChunk {
+	Delta(String),
+	ToolUse(ToolActivity),
+	Done(ClaudeResponse),
+	Error(String),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum QueryMode {
+	Question,
+	Action,
+	Plan,
+}
+
+/// Heuristic: code fences preceded by a file
+/// path line → implementation intent.
+pub fn detect_intent(
+	blocks: &[crate::domain::review::ReviewBlock],
+) -> ResponseIntent {
+	let has_file_path =
+		blocks.iter().any(|b| b.file_path.is_some());
+	if has_file_path {
+		ResponseIntent::Implementation
+	} else {
+		ResponseIntent::Question
+	}
 }

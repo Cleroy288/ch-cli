@@ -140,10 +140,9 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[test]
 fn test_parse_real_file() {
     let mut parser = RustParser::new().unwrap();
-    // Parse the actual lib.rs file
-    let result = parser.parse_file("src/lib.rs");
-    assert!(result.is_ok());
-    let symbols = result.unwrap();
+    let symbols = parser
+        .parse_file("src/lib.rs")
+        .expect("failed to parse lib.rs");
     // Should find at least the App re-export
     assert!(!symbols.is_empty());
 }

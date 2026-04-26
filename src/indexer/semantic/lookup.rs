@@ -1,5 +1,3 @@
-//! Lookup methods for finding definitions and references.
-
 use crate::indexer::symbols::SymbolKind;
 
 use super::types::{Definition, SymbolReference};
@@ -14,7 +12,6 @@ impl SemanticGraph {
 			.unwrap_or_default()
 	}
 
-	/// Find all references to a symbol name
 	pub fn find_references(&self, name: &str) -> Vec<&SymbolReference> {
 		self.references_by_name
 			.get(name)
@@ -22,7 +19,6 @@ impl SemanticGraph {
 			.unwrap_or_default()
 	}
 
-	/// Get all unique symbol names
 	pub fn all_symbol_names(&self) -> Vec<&String> {
 		self.definitions_by_name.keys().collect()
 	}

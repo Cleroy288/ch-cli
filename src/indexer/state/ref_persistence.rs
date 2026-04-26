@@ -1,16 +1,12 @@
-//! Reference persistence with per-file storage.
-//!
-//! Stores references in a `refs/` directory with one
-//! JSON file per source file, enabling incremental
-//! updates instead of rewriting a monolithic refs.json.
-
 use std::path::Path;
 
 use crate::indexer::semantic::SymbolReference;
 
-use super::ref_persistence_helpers::{
-	delete_stale_files, load_all_refs,
-	migrate_if_needed, save_grouped_refs,
+use super::ref_persistence_helpers
+	::delete_stale_files;
+use super::ref_persistence_io::{
+	load_all_refs, migrate_if_needed,
+	save_grouped_refs,
 };
 use super::types::{ChangeSet, IndexState};
 

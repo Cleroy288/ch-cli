@@ -8,7 +8,7 @@ use crate::indexer::Symbol;
 
 use super::builder::IndexManager;
 use super::error::IndexManagerResult;
-use super::indexing_helpers::{
+use super::indexing_fns::{
 	build_stats, canonicalize_root,
 	collect_symbols, to_sym_refs,
 };

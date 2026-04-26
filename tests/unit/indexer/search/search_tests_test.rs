@@ -70,7 +70,7 @@ fn test_search_by_kind() {
     assert_eq!(results.len(), 2);
 }
 
-/// Test that document_type field is correctly indexed and stored
+/// document_type field is indexed and stored for all paths
 #[test]
 fn test_document_type_field_indexed() {
     let index = SearchIndex::in_memory().unwrap(); // create in-memory index
@@ -94,7 +94,7 @@ fn test_document_type_field_indexed() {
     assert_eq!(results.len(), 4);
 }
 
-/// Test that search_with_boost prefers source code over documentation/notes
+/// search_with_boost ranks source code above docs/notes
 #[test]
 fn test_search_with_boost_prefers_source_code() {
     let index = SearchIndex::in_memory().unwrap(); // create in-memory index

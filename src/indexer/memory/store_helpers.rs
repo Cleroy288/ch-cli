@@ -1,5 +1,3 @@
-//! Low-level I/O helpers for memory store.
-
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -21,7 +19,6 @@ pub fn ensure_dirs(
 	Ok(())
 }
 
-/// Parse a single JSONL line into Interaction
 pub fn parse_line(
 	line: &str,
 ) -> Option<Interaction> {
@@ -32,7 +29,6 @@ pub fn parse_line(
 	serde_json::from_str(trimmed).ok()
 }
 
-/// Read all interactions from a JSONL file
 pub fn read_lines(
 	path: &Path,
 ) -> Vec<Interaction> {

@@ -1,8 +1,3 @@
-//! Display helpers for the analysis-based prompt.
-//!
-//! Language notes, benefit items, and the Y/N/Q
-//! row specific to the first-launch analysis prompt.
-
 use std::io::{self, Write};
 
 use crossterm::{
@@ -105,7 +100,6 @@ fn display_benefit_items(
     )
 }
 
-/// Display the Y/N/Q button row for analysis prompt
 pub(super) fn display_ynq_row(
     stdout: &mut io::Stdout,
 ) -> io::Result<()> {

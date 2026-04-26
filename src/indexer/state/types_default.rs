@@ -1,5 +1,3 @@
-//! Default implementation for IndexState.
-
 use std::path::PathBuf;
 
 use super::types::IndexState;

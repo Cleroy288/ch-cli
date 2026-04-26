@@ -1,140 +1,135 @@
 use ratatui::{
-	layout::{Alignment, Rect},
+	layout::Rect,
 	style::Style,
 	text::Line,
-	widgets::{Block, Borders, Paragraph, Wrap},
 	Frame,
 };
 
 use crate::app::App;
-use crate::ui::strings::tui_labels;
 use crate::ui::styles::colors;
+use crate::ui::wrap::pre_wrap;
 
 use super::debug_render::{
 	build_claude_loading_lines,
 	build_claude_response_lines,
-	build_doc_preview_lines,
+	build_claude_streaming_lines,
 	build_message_history_lines,
 };
 
-/// Types of content for the output panel.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+/// Types of content for the output panel
+#[derive(
+	Debug, Clone, Copy, Default, PartialEq, Eq,
+)]
 pub enum DebugInfoType {
 	/// Display parsed message history
 	#[default]
 	MessageHistory,
-	/// Documentation for a selected symbol
-	DocPreview,
-	/// Doc fetch completed, no docs found
-	DocNotFound,
 	/// Claude response to display
 	ClaudeResponse,
+	/// Streaming text arriving in real-time
+	ClaudeStreaming,
 	/// Waiting for Claude CLI response
 	ClaudeLoading,
 }
 
 impl DebugInfoType {
-	/// Get the panel title for this content type
 	pub fn panel_title(&self) -> &'static str {
 		match self {
-			Self::MessageHistory => {
-				tui_labels::PANEL_OUTPUT
-			}
+			Self::MessageHistory => " output ",
 			Self::ClaudeResponse
-			| Self::ClaudeLoading => {
-				tui_labels::PANEL_CLAUDE
-			}
-			_ => tui_labels::PANEL_DOC_PREVIEW,
+			| Self::ClaudeStreaming
+			| Self::ClaudeLoading => " claude ",
 		}
 	}
 }
 
-/// Render the output panel.
+/// Output panel — direct buffer rendering.
 ///
-/// Shows doc preview/loading/not-found when a
-/// symbol fetch is active, otherwise message history.
+/// Pre-wraps all lines, computes the visible
+/// window, then writes each line directly to
+/// the frame buffer. No Paragraph widget.
 pub fn render_debug_panel(
 	frame: &mut Frame,
 	area: Rect,
 	app: &App,
 ) {
-	let info_type = detect_info_type(app);
-	let lines = build_debug_lines(app, info_type);
-	let title = info_type.panel_title();
-	let scroll = app.scroll_offset();
-	let widget =
-		create_panel_widget(lines, title, scroll);
-	frame.render_widget(widget, area);
+	if area.width == 0 || area.height == 0 {
+		return;
+	}
+	let lines = build_stacked_lines(app);
+	let wrapped = pre_wrap(lines, area.width);
+	let total = wrapped.len();
+	let h = area.height as usize;
+	let skip = scroll_skip(app, total, h);
+	let ranges = super::debug_hit::build_block_ranges(
+		&wrapped, skip, h, area,
+	);
+	app.set_block_ranges(ranges);
+	let base = Style::default().fg(colors::DIM_TEXT);
+	render_lines(frame, area, &wrapped, skip, base);
 }
 
-/// Detect which content type to show.
-fn detect_info_type(app: &App) -> DebugInfoType {
-	if app.is_claude_loading() {
-		return DebugInfoType::ClaudeLoading;
+/// Write visible lines directly to the buffer.
+///
+/// Clears every cell in the area first, then
+/// writes one Line per row with set_line.
+fn render_lines(
+	frame: &mut Frame,
+	area: Rect,
+	lines: &[Line<'_>],
+	skip: usize,
+	base: Style,
+) {
+	let buf = frame.buffer_mut();
+	let h = area.height as usize;
+	let w = area.width;
+	// Clear entire area
+	buf.set_style(area, Style::reset());
+	buf.set_style(area, base);
+	// Write each visible line
+	for i in 0..h {
+		let y = area.y + i as u16;
+		if let Some(line) = lines.get(skip + i) {
+			buf.set_line(area.x, y, line, w);
+		}
 	}
-	if app.last_claude_response().is_some() {
-		return DebugInfoType::ClaudeResponse;
-	}
-	if app.doc_preview().is_some() {
-		return DebugInfoType::DocPreview;
-	}
-	if app.doc_fetch_no_result() {
-		return DebugInfoType::DocNotFound;
-	}
-	DebugInfoType::MessageHistory
 }
 
-/// Build lines based on selected content type.
-fn build_debug_lines(
+/// How many wrapped lines to skip.
+fn scroll_skip(
 	app: &App,
-	info_type: DebugInfoType,
-) -> Vec<Line<'static>> {
-	match info_type {
-		DebugInfoType::MessageHistory => {
-			build_message_history_lines(
-				app.history(),
-			)
-		}
-		DebugInfoType::DocPreview => {
-			build_doc_preview_lines(
-				app.doc_preview(),
-			)
-		}
-		DebugInfoType::DocNotFound => {
-			build_doc_preview_lines(None)
-		}
-		DebugInfoType::ClaudeResponse => {
-			build_claude_response_lines(
-				app.last_claude_response(),
-			)
-		}
-		DebugInfoType::ClaudeLoading => {
-			build_claude_loading_lines()
-		}
+	total: usize,
+	height: usize,
+) -> usize {
+	let max = total.saturating_sub(height);
+	if app.is_claude_loading() {
+		return max;
 	}
+	(app.scroll_offset() as usize).min(max)
 }
 
-/// Create the output panel widget with given lines.
-fn create_panel_widget(
-	lines: Vec<Line<'static>>,
-	title: &str,
-	scroll: u16,
-) -> Paragraph<'static> {
-	Paragraph::new(lines)
-		.block(
-			Block::default()
-				.borders(Borders::ALL)
-				.border_style(
-					Style::default()
-						.fg(colors::BORDER),
-				)
-				.title(title.to_string())
-				.title_alignment(Alignment::Left)
-				.title_style(
-					Style::default()
-						.fg(colors::DIM_TEXT),
-				),
-		)
-		.wrap(Wrap { trim: false })
-		.scroll((scroll, 0))
+fn build_stacked_lines(
+	app: &App,
+) -> Vec<Line<'static>> {
+	let mut lines =
+		build_message_history_lines(app.history());
+	lines.extend(build_claude_section(app));
+	lines
+}
+
+fn build_claude_section(
+	app: &App,
+) -> Vec<Line<'static>> {
+	if !app.is_claude_loading() {
+		return build_claude_response_lines(
+			app.last_claude_response(),
+		);
+	}
+	if !app.streaming_text().is_empty() {
+		return build_claude_streaming_lines(
+			app.streaming_text(),
+			app.tool_status(),
+		);
+	}
+	build_claude_loading_lines(app.tool_status())
 }

@@ -1,5 +1,3 @@
-//! Index and search operations on MemorySearchIndex.
-
 use crate::domain::errors::memory::MemoryResult;
 use crate::domain::memory::Interaction;
 

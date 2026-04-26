@@ -1,70 +1,66 @@
-//! Core graph manipulation methods for SemanticGraph.
+use std::path::PathBuf;
 
-use crate::indexer::symbols::Symbol;
+use fxhash::FxHashMap;
 
-use super::types::{Definition, SymbolReference};
-use super::SemanticGraph;
+use super::types::{
+	Definition, SemanticStats, SymbolReference,
+};
+
+type Def = Definition;
+type SymRef = SymbolReference;
+
+pub struct SemanticGraph {
+	pub(super) definitions_by_name:
+		FxHashMap<String, Vec<Def>>,
+	pub(super) definitions_by_file:
+		FxHashMap<PathBuf, Vec<Def>>,
+	pub(super) references_by_name:
+		FxHashMap<String, Vec<SymRef>>,
+	pub(super) references_by_file:
+		FxHashMap<PathBuf, Vec<SymRef>>,
+	pub(super) scope_parents:
+		FxHashMap<String, String>,
+}
 
 impl SemanticGraph {
-	/// Add symbols from parsing as definitions
-	pub fn add_symbols(&mut self, symbols: &[Symbol]) {
-		for symbol in symbols {
-			self.add_definition(symbol.clone());
+	pub fn new() -> Self {
+		Self {
+			definitions_by_name:
+				FxHashMap::default(),
+			definitions_by_file:
+				FxHashMap::default(),
+			references_by_name:
+				FxHashMap::default(),
+			references_by_file:
+				FxHashMap::default(),
+			scope_parents: FxHashMap::default(),
 		}
 	}
 
-	/// Add a single definition
-	pub fn add_definition(&mut self, symbol: Symbol) {
-		let fqn = self.compute_fqn(&symbol); // fully qualified name
-		let scope = symbol.parent.clone(); // parent scope
-		let file = symbol.location.file.clone(); // file path
-
-		let definition = Definition {
-			symbol: symbol.clone(),
-			fqn: fqn.clone(),
-			scope,
-		};
-
-		// Index by name
-		self.definitions_by_name
-			.entry(symbol.name.clone())
-			.or_default()
-			.push(definition.clone());
-
-		// Index by file
-		self.definitions_by_file
-			.entry(file)
-			.or_default()
-			.push(definition);
-
-		// Track scope hierarchy
-		if let Some(ref parent) = symbol.parent {
-			self.scope_parents.insert(fqn, parent.clone());
+	pub fn stats(&self) -> SemanticStats {
+		SemanticStats {
+			total_definitions: self
+				.definitions_by_name
+				.values()
+				.map(|defs| defs.len())
+				.sum(),
+			total_references: self
+				.references_by_name
+				.values()
+				.map(|refs| refs.len())
+				.sum(),
+			unique_symbols: self
+				.definitions_by_name
+				.len(),
+			files_analyzed: self
+				.definitions_by_file
+				.len(),
 		}
 	}
+}
 
-	/// Add a reference
-	pub fn add_reference(&mut self, reference: SymbolReference) {
-		let file = reference.location.file.clone(); // file path
-		let name = reference.name.clone(); // symbol name
-
-		self.references_by_name
-			.entry(name)
-			.or_default()
-			.push(reference.clone());
-
-		self.references_by_file
-			.entry(file)
-			.or_default()
-			.push(reference);
-	}
-
-	/// Compute fully qualified name for a symbol
-	pub(super) fn compute_fqn(&self, symbol: &Symbol) -> String {
-		if let Some(ref parent) = symbol.parent {
-			format!("{}::{}", parent, symbol.name)
-		} else {
-			symbol.name.clone()
-		}
+impl Default for SemanticGraph {
+	fn default() -> Self {
+		Self::new()
 	}
 }

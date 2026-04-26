@@ -33,9 +33,9 @@ fn key_press_clears_status_message() {
     assert!(app.status_message().is_none());
 }
 
-/// Esc also clears status before quitting
+/// First Esc sets quit hint in status message
 #[test]
-fn esc_clears_status_message() {
+fn first_esc_shows_quit_hint() {
     // Arrange
     let mut app = App::default();
     app.set_status_message(
@@ -45,8 +45,13 @@ fn esc_clears_status_message() {
     // Act
     app.handle_key(KeyCode::Esc, KeyModifiers::NONE);
 
-    // Assert
-    assert!(app.status_message().is_none());
+    // Assert — hint replaces old message
+    assert!(app.status_message().is_some());
+    assert!(
+        app.status_message()
+            .unwrap()
+            .contains("Esc"),
+    );
 }
 
 /// Set and get status message round-trip

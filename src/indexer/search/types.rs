@@ -1,5 +1,3 @@
-//! Types for search results.
-
 use crate::indexer::symbols::Symbol;
 
 /// A search result with score and symbol information
