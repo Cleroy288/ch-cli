@@ -36,8 +36,5 @@ SCRATCH.md
 TODO.md
 PLAN.md
 
-# Local agent state (worktrees, ad-hoc plans, project agents)
-.claude/worktrees/
-.claude/plan.md
-.claude/agents/
-.claude/settings.local.json
+# Local agent state — full directory
+.claude/
